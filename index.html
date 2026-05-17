@@ -1,7 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      Apply theme before CSS loads to prevent a flash of the wrong palette.
+      Reads localStorage first; falls back to the OS preference.
+    -->
+    <script>
+      (function () {
+        var t = localStorage.getItem('td-theme');
+        document.documentElement.dataset.theme =
+          t === 'dark' || t === 'light' ? t
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }());
+    </script>
     <script src="coi-serviceworker.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
@@ -30,15 +42,36 @@
       </div>
     </div>
 
-    <main id="app" inert>
-      <header class="app-header">
-        <h1>Image Colour Contrast Checker</h1>
-        <p class="tagline">
-          Drop in images to check WCAG AA / AAA text-contrast. Runs entirely in
-          your browser &mdash; nothing is uploaded.
-        </p>
-      </header>
+    <!-- Branded header — always navy, regardless of light/dark mode -->
+    <header class="app-header">
+      <div class="app-header-inner">
+        <div class="app-header-text">
+          <h1>Image Colour <span class="header-accent">Contrast Checker</span></h1>
+          <p class="tagline">Drop in images to check WCAG AA / AAA text-contrast. Runs entirely in your browser &mdash; nothing is uploaded.</p>
+        </div>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle colour theme">
+          <!-- Sun icon: visible in dark mode (click to switch to light) -->
+          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="22" y2="12"/>
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+          </svg>
+          <!-- Moon icon: visible in light mode (click to switch to dark) -->
+          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <span class="theme-toggle-label" aria-hidden="true"></span>
+        </button>
+      </div>
+    </header>
 
+    <main id="app" inert>
       <section id="landing" class="landing">
         <div id="dropzone" class="dropzone" tabindex="0" role="button"
              aria-label="Drop images here or click to choose files">

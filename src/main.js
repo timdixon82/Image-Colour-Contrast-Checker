@@ -256,6 +256,41 @@ if (footerEl) {
 
 initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles: handleFiles });
 
+// ── Theme toggle ───────────────────────────────────────────────────────────
+(function initThemeToggle() {
+  const STORAGE_KEY = 'td-theme';
+  const html = document.documentElement;
+  const toggleBtn = document.getElementById('theme-toggle');
+  const toggleLabel = toggleBtn?.querySelector('.theme-toggle-label');
+
+  function syncToggle() {
+    if (!toggleBtn) return;
+    const isDark = html.dataset.theme === 'dark';
+    toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    if (toggleLabel) toggleLabel.textContent = isDark ? 'Light' : 'Dark';
+  }
+
+  function setTheme(theme, persist) {
+    html.dataset.theme = theme;
+    if (persist) localStorage.setItem(STORAGE_KEY, theme);
+    syncToggle();
+  }
+
+  // Sync button label with whatever the inline script already applied
+  syncToggle();
+
+  toggleBtn?.addEventListener('click', () => {
+    setTheme(html.dataset.theme === 'dark' ? 'light' : 'dark', true);
+  });
+
+  // Follow OS preference changes only when the user hasn't made a manual choice
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      setTheme(e.matches ? 'dark' : 'light', false);
+    }
+  });
+}());
+
 // Download all model and runtime files, show progress, then unlock the UI.
 preloadModels(({ pct, label, fileIndex, fileCount, done }) => {
   preloaderBar.style.width = pct + '%';
