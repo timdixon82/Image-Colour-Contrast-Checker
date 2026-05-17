@@ -9,7 +9,27 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <main id="app">
+    <!-- Preloader: covers the page until model files are downloaded.
+         Removed by JS once preloadModels() completes. -->
+    <div id="preloader" class="preloader" role="dialog" aria-modal="true" aria-labelledby="preloader-heading">
+      <div class="preloader-card">
+        <h2 id="preloader-heading" class="preloader-heading">Preparing the analysis engine</h2>
+        <p class="preloader-desc">
+          This app uses AI to detect and locate text in your images. The required models — around 30 MB — need to be
+          downloaded to your browser before you can start. This only happens once. After this, everything loads
+          instantly from your browser's cache.
+        </p>
+        <div class="preloader-progress" aria-hidden="true">
+          <div class="preloader-bar-track">
+            <div id="preloader-bar" class="preloader-bar-fill"></div>
+          </div>
+          <div id="preloader-pct" class="preloader-pct">0%</div>
+        </div>
+        <p id="preloader-status" class="preloader-status" aria-live="polite" aria-atomic="true">Starting download…</p>
+      </div>
+    </div>
+
+    <main id="app" inert>
       <header class="app-header">
         <h1>Image Colour Contrast Checker</h1>
         <p class="tagline">

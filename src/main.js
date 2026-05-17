@@ -1,6 +1,7 @@
 // UI controller: file queue + OCR driver + report rendering + exports.
 
 import './styles.css';
+import { preloadModels } from './lib/preloader.js';
 import { initDropzone } from './ui/dropzone.js';
 import { createQueueRow, setRowStage } from './ui/progress.js';
 import {
@@ -21,6 +22,12 @@ function loadOcrModule() {
 }
 import { buildMarkdown, downloadMarkdown } from './export/markdown.js';
 import { downloadPdf } from './export/pdf.js';
+
+const preloaderEl     = document.getElementById('preloader');
+const preloaderBar    = document.getElementById('preloader-bar');
+const preloaderPct    = document.getElementById('preloader-pct');
+const preloaderStatus = document.getElementById('preloader-status');
+const appEl           = document.getElementById('app');
 
 const dropzoneEl   = document.getElementById('dropzone');
 const inputEl      = document.getElementById('file-input');
@@ -233,8 +240,19 @@ function stamp() {
 
 initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles: handleFiles });
 
-// Warm the OCR pipeline on first user interaction so we don't bloat the
-// initial page load.
-['pointerdown', 'keydown', 'dragenter'].forEach((evt) => {
-  window.addEventListener(evt, () => warmOcr(), { once: true });
+// Download all model and runtime files, show progress, then unlock the UI.
+preloadModels(({ pct, label, fileIndex, fileCount, done }) => {
+  preloaderBar.style.width = pct + '%';
+  preloaderPct.textContent = Math.round(pct) + '%';
+  if (!done) {
+    preloaderStatus.textContent = label
+      ? `Downloading ${label} (${fileIndex + 1} of ${fileCount})`
+      : 'Starting download…';
+  } else {
+    preloaderStatus.textContent = 'Ready.';
+    appEl.removeAttribute('inert');
+    preloaderEl.classList.add('preloader-done');
+    setTimeout(() => preloaderEl.remove(), 400);
+    warmOcr();
+  }
 });
