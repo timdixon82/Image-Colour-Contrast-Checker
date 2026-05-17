@@ -13,9 +13,11 @@ const MODEL_PATHS = {
   dictionaryPath:  import.meta.env.BASE_URL + 'models/ppocr_keys_v1.txt'
 };
 
-// Tell ORT where to find its WASM assets. Both dev and the built dist/ serve
-// these from /ort/ via the public/ort symlink populated at install/build.
-ort.env.wasm.wasmPaths = import.meta.env.BASE_URL + 'ort/';
+// Tell ORT where to find its WASM assets. Must be an absolute URL: the .mjs
+// JSEP module is loaded via dynamic import(), which resolves relative to the
+// bundle file in assets/ — not the page root — so a relative path would point
+// to assets/ort/ instead of ort/.
+ort.env.wasm.wasmPaths = new URL('ort/', document.baseURI).href;
 
 let ocrPromise = null;
 
