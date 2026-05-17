@@ -1,6 +1,7 @@
 // UI controller: file queue + OCR driver + report rendering + exports.
 
 import './styles.css';
+import { version } from '../package.json';
 import { preloadModels } from './lib/preloader.js';
 import { initDropzone } from './ui/dropzone.js';
 import { createQueueRow, setRowStage } from './ui/progress.js';
@@ -236,6 +237,21 @@ resetBtn.addEventListener('click', () => {
 
 function stamp() {
   return new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+}
+
+// Footer: version + licence links (DOM-only, no innerHTML)
+const footerEl = document.getElementById('app-footer');
+if (footerEl) {
+  const repoBase = 'https://github.com/timdixon82/Image-Colour-Contrast-Checker';
+  const sep = () => { const s = document.createElement('span'); s.className = 'sep'; s.setAttribute('aria-hidden', 'true'); s.textContent = '·'; return s; };
+  const lnk = (href, text) => { const a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = text; return a; };
+  footerEl.append(
+    `v${version}`,
+    sep(),
+    lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence'),
+    sep(),
+    lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences')
+  );
 }
 
 initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles: handleFiles });

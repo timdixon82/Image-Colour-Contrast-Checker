@@ -2,15 +2,15 @@
   --bg: #f7f7f9;
   --bg-card: #ffffff;
   --fg: #1f2937;
-  --fg-muted: #6b7280;
+  --fg-muted: #4b5563; /* darkened from #6b7280 for WCAG AAA (7:1 on --bg) */
   --border: #e5e7eb;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --pass: #15803d;
+  --accent: #1d4ed8; /* darkened from #2563eb for improved contrast */
+  --accent-hover: #1e40af;
+  --pass: #166534; /* darkened from #15803d for AAA on card backgrounds */
   --pass-bg: #dcfce7;
-  --fail: #dc2626;
+  --fail: #b91c1c; /* darkened from #dc2626 for AAA on card backgrounds */
   --fail-bg: #fee2e2;
-  --neutral: #6b7280;
+  --neutral: #4b5563; /* darkened from #6b7280 for WCAG AAA */
   --neutral-bg: #f3f4f6;
   --code-bg: #f3f4f6;
   --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
@@ -30,6 +30,9 @@
     --neutral-bg: #1f2937;
   }
 }
+
+/* Ensure CSS display rules never override the HTML hidden attribute. */
+[hidden] { display: none !important; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -318,6 +321,18 @@ body {
 
 a { color: var(--accent); }
 a:hover { color: var(--accent-hover); }
+
+.app-footer {
+  text-align: center;
+  padding: 20px 20px 8px;
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  border-top: 1px solid var(--border);
+  margin-top: 32px;
+}
+.app-footer a { color: var(--fg-muted); }
+.app-footer a:hover { color: var(--accent); }
+.app-footer .sep { margin: 0 6px; opacity: 0.5; }
 
 @media (max-width: 640px) {
   .pair-table { font-size: 0.8rem; }

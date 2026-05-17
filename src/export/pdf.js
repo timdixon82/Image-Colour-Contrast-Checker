@@ -76,10 +76,12 @@ function buildDocDefinition(entries, timestamp) {
         { text: 'Ratio',       style: 'th' },
         { text: 'AA',          style: 'th' },
         { text: 'AAA',         style: 'th' },
+        { text: 'Check',       style: 'th' },
         { text: 'Examples',    style: 'th' }
       ]];
       for (const p of report.colourPairs) {
         const asset = assetByPair.get(p);
+        const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
         body.push([
           asset ? { image: asset.swatchDataUrl, width: 60, height: 15 } : '',
           p.fgHex,
@@ -87,11 +89,12 @@ function buildDocDefinition(entries, timestamp) {
           `${p.contrast.toFixed(2)}:1`,
           { text: p.pass ? '✓' : '✗', style: p.pass ? 'pass' : 'fail' },
           { text: p.passAaa ? '✓' : '✗', style: p.passAaa ? 'pass' : 'fail' },
+          { text: 'WebAIM ↗', link: webaim, style: 'link' },
           { text: p.examples.map((e) => `"${e}"`).join(', '), style: 'examples' }
         ]);
       }
       content.push({
-        table: { headerRows: 1, widths: [60, 'auto', 'auto', 'auto', 20, 20, '*'], body },
+        table: { headerRows: 1, widths: [60, 'auto', 'auto', 'auto', 20, 20, 'auto', '*'], body },
         layout: 'lightHorizontalLines',
         margin: [0, 0, 0, 10]
       });
@@ -139,6 +142,7 @@ function buildDocDefinition(entries, timestamp) {
       neutral:     { color: '#6b7280' },
       timestamp:   { fontSize: 9, color: '#6b7280' },
       examples:    { italics: true, color: '#374151' },
+      link:        { color: '#1d4ed8', decoration: 'underline' },
       clipHeading: { bold: true },
       footer:      { fontSize: 9, color: '#6b7280' }
     }
