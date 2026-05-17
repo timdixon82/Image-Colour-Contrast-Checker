@@ -1,0 +1,22 @@
+{
+  "name": "image-colour-contrast-checker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Client-side WCAG colour-contrast auditor for images. Runs OCR + contrast analysis entirely in the browser.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "postinstall": "node scripts/copy-models.mjs",
+    "predev": "node scripts/copy-models.mjs",
+    "prebuild": "node scripts/copy-models.mjs"
+  },
+  "dependencies": {
+    "@gutenye/ocr-browser": "^1.4.8",
+    "pdfmake": "^0.2.10"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}

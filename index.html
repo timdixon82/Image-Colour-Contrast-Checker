@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Image Colour Contrast Checker</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header class="app-header">
+        <h1>Image Colour Contrast Checker</h1>
+        <p class="tagline">
+          Drop in images to check WCAG AA / AAA text-contrast. Runs entirely in
+          your browser &mdash; nothing is uploaded.
+        </p>
+      </header>
+
+      <section id="landing" class="landing">
+        <div id="dropzone" class="dropzone" tabindex="0" role="button"
+             aria-label="Drop images here or click to choose files">
+          <div class="dropzone-inner">
+            <div class="dropzone-icon" aria-hidden="true">&#8682;</div>
+            <p class="dropzone-primary">Drop images here</p>
+            <p class="dropzone-secondary">or</p>
+            <button type="button" id="choose-files" class="button button-primary">
+              Choose files
+            </button>
+            <p class="dropzone-tertiary">
+              PNG, JPG, WebP. Multiple images OK.<br />
+              Runs entirely in your browser.
+            </p>
+          </div>
+          <input id="file-input" type="file" accept="image/*" multiple hidden />
+        </div>
+
+        <div id="model-banner" class="model-banner" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="model-banner-text">
+            Loading PaddleOCR PP-OCRv4 models (~28 MB on first run, cached after).
+          </span>
+        </div>
+      </section>
+
+      <section id="processing" class="processing" hidden>
+        <h2>Processing</h2>
+        <ul id="queue" class="queue" aria-live="polite"></ul>
+      </section>
+
+      <section id="results" class="results" hidden>
+        <div id="results-header" class="results-header"></div>
+        <div id="summary" class="summary"></div>
+        <div id="cards" class="cards"></div>
+        <footer id="thresholds" class="thresholds"></footer>
+      </section>
+
+      <div id="action-bar" class="action-bar" hidden>
+        <button type="button" id="download-pdf" class="button button-primary">
+          Download PDF
+        </button>
+        <button type="button" id="download-md" class="button"
+                title="Best viewed in VS Code / Obsidian / Typora &mdash; GitHub may strip embedded images.">
+          Download Markdown
+        </button>
+        <button type="button" id="reset" class="button button-ghost">
+          Audit another batch
+        </button>
+      </div>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
