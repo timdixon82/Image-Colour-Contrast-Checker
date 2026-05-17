@@ -41,4 +41,12 @@ if (existsSync(ortSrc)) {
   console.warn('[copy-models] onnxruntime-web/dist not found — ORT WASM will not be served');
 }
 
+// Copy coi-serviceworker so GitHub Pages gets COOP/COEP headers via Service Worker.
+const coiSrc = join(repoRoot, 'node_modules', 'coi-serviceworker', 'coi-serviceworker.min.js');
+if (existsSync(coiSrc)) {
+  copyFileSync(coiSrc, join(repoRoot, 'public', 'coi-serviceworker.js'));
+} else {
+  console.warn('[copy-models] coi-serviceworker not found — GitHub Pages cross-origin isolation will not work');
+}
+
 console.log('[copy-models] done');
