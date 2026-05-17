@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Navy background -->
+  <rect width="32" height="32" rx="6" fill="#061528"/>
+  <!-- Orange block — represents a dark foreground colour -->
+  <rect x="4" y="7" width="10" height="18" rx="2" fill="#FF7C00"/>
+  <!-- White block — represents a light background colour -->
+  <rect x="18" y="7" width="10" height="18" rx="2" fill="#FFFFFF"/>
+</svg>

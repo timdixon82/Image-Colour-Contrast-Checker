@@ -19,26 +19,42 @@
     <meta name="color-scheme" content="light dark" />
     <title>Image Colour Contrast Checker</title>
     <meta name="description" content="Drop in screenshots to audit WCAG AA and AAA text-colour contrast. Uses AI to detect text regions. Runs entirely in your browser — nothing is uploaded." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
     <!-- Preloader: covers the page until model files are downloaded.
          Removed by JS once preloadModels() completes. -->
     <div id="preloader" class="preloader" role="dialog" aria-modal="true" aria-labelledby="preloader-heading">
-      <div class="preloader-card">
-        <h2 id="preloader-heading" class="preloader-heading">Preparing the analysis engine</h2>
-        <p class="preloader-desc">
-          This app uses AI to detect and locate text in your images. The required models — around 30 MB — need to be
-          downloaded to your browser before you can start. This only happens once. After this, everything loads
-          instantly from your browser's cache.
-        </p>
-        <div class="preloader-progress" aria-hidden="true">
-          <div class="preloader-bar-track">
-            <div id="preloader-bar" class="preloader-bar-fill"></div>
+      <!-- Mirrors the branded app header so the loading screen looks like the app -->
+      <div class="preloader-header" aria-hidden="true">
+        <div class="app-header-inner">
+          <div class="app-header-text">
+            <p class="preloader-app-title">Image Colour <span class="header-accent">Contrast Checker</span></p>
+            <p class="tagline">Drop in images to check WCAG AA / AAA text-contrast. Runs entirely in your browser &mdash; nothing is uploaded.</p>
           </div>
-          <div id="preloader-pct" class="preloader-pct">0%</div>
         </div>
-        <p id="preloader-status" class="preloader-status" aria-live="polite" aria-atomic="true">Starting download…</p>
+      </div>
+      <div class="preloader-body">
+        <div class="preloader-card">
+          <h2 id="preloader-heading" class="preloader-heading">Preparing the analysis engine</h2>
+          <p class="preloader-desc">
+            This app uses AI to detect and locate text in your images. The required models &mdash;
+            around 30&nbsp;MB &mdash; are downloaded to your browser once, then cached instantly for every
+            visit after that.
+          </p>
+          <div class="preloader-progress" aria-hidden="true">
+            <div class="preloader-bar-track">
+              <div id="preloader-bar" class="preloader-bar-fill"></div>
+            </div>
+            <div id="preloader-pct" class="preloader-pct">0%</div>
+          </div>
+          <p id="preloader-status" class="preloader-status" aria-live="polite" aria-atomic="true">Starting download…</p>
+          <div class="privacy-notice">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Your images never leave your device. No upload. No server. Ever.
+          </div>
+        </div>
       </div>
     </div>
 
@@ -82,12 +98,14 @@
             <button type="button" id="choose-files" class="button button-primary">
               Choose files
             </button>
-            <p class="dropzone-tertiary">
-              PNG, JPG, WebP. Multiple images OK.<br />
-              Runs entirely in your browser.
-            </p>
+            <p class="dropzone-tertiary">PNG, JPG, WebP &mdash; multiple images OK.</p>
           </div>
           <input id="file-input" type="file" accept="image/*" multiple hidden />
+        </div>
+
+        <div class="privacy-badge" role="note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          100% private &mdash; your images never leave your device. No upload. No server.
         </div>
 
         <div id="model-banner" class="model-banner" hidden>
