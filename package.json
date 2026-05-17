@@ -4,6 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Client-side WCAG colour-contrast auditor for images. Runs OCR + contrast analysis entirely in the browser.",
+  "license": "MIT",
+  "author": "Tim Dixon",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/timdixon82/Image-Colour-Contrast-Checker.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
