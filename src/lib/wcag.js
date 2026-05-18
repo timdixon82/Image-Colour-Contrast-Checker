@@ -117,6 +117,12 @@ export function regionContrast(imageData, x, y, w, h) {
   if (!c) return null;
   const [cDark, cLight] = c;
 
+  // Skip near-uniform regions — both clusters are essentially the same colour,
+  // meaning there is no meaningful text/background separation. Without this
+  // guard, strips that land on pure background produce a spurious low-contrast
+  // result (false positive) because k-means splits subtle anti-aliasing noise.
+  if (cLight - cDark < 0.02) return null;
+
   // Re-assign each pixel to whichever centroid it is closer to, summing RGB
   // for the mean. Cluster 0 = dark (c[0]), cluster 1 = light (c[1]).
   let r0 = 0, g0 = 0, b0 = 0, n0 = 0;
@@ -156,8 +162,10 @@ export function regionContrast(imageData, x, y, w, h) {
 // Split the box into vertical strips ~one character wide, return the strip
 // with the WORST (lowest) contrast ratio. Catches gradient backgrounds
 // where contrast degrades across a word.
+// Split the box into vertical strips ~one character wide (≈ 60 % of cap height)
+// so each letter gets its own sample. Returns the strip with the worst contrast.
 export function worstStripContrast(imageData, x, y, w, h) {
-  const stripW = Math.max(6, Math.floor(h * 0.75));
+  const stripW = Math.max(4, Math.floor(h * 0.6));
   const nStrips = Math.max(3, Math.round(w / stripW));
   const actualStripW = w / nStrips;
 

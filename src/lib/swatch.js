@@ -12,8 +12,7 @@ function newCanvas(w, h) {
   return c;
 }
 
-// Side-by-side swatch: left = background, right = foreground, 2-px grey divider.
-// Matches make_swatch() in analyse_contrast.py.
+// Side-by-side swatch: left = background colour, right = foreground colour.
 export function makeSwatch(fgHex, bgHex) {
   const canvas = newCanvas(SWATCH_W, SWATCH_H);
   const ctx = canvas.getContext('2d');
@@ -22,8 +21,6 @@ export function makeSwatch(fgHex, bgHex) {
   ctx.fillRect(0, 0, half, SWATCH_H);
   ctx.fillStyle = fgHex;
   ctx.fillRect(half, 0, SWATCH_W - half, SWATCH_H);
-  ctx.fillStyle = 'rgb(200,200,200)';
-  ctx.fillRect(half - 1, 0, 2, SWATCH_H);
   return { canvas, dataUrl: canvas.toDataURL('image/png') };
 }
 
@@ -89,4 +86,8 @@ export function sourceDataUrl(sourceCanvas) {
 
 export const THRESHOLDS_FOOTER =
   'Contrast thresholds — AA: 4.5:1 normal / 3:1 large text · AAA: 7:1 normal / 4.5:1 large text. '
-  + 'Large text = ≥24 px OCR box height. Checked via Tesseract.js.';
+  + 'Large text = ≥24 px OCR box height. Detected via PaddleOCR PP-OCRv4.';
+
+export const DISCLAIMER_TEXT =
+  'This report is generated automatically to help speed up accessibility review. '
+  + 'Results are indicative only — manual verification is required before citing for formal WCAG compliance.';
