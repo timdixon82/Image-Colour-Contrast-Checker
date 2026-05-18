@@ -1,7 +1,6 @@
 // DOM renderer for the report (summary + per-image cards).
-// Mirrors the markdown reference report.md layout.
 
-import { makeSwatch, makeClip, makePreview, makeThumb, THRESHOLDS_FOOTER } from '../lib/swatch.js';
+import { makeSwatch, makeClip, makePreview, makeThumb, THRESHOLDS_FOOTER, DISCLAIMER_TEXT } from '../lib/swatch.js';
 
 export function renderResultsHeader(headerEl, timestamp) {
   headerEl.innerHTML = '';
@@ -10,7 +9,18 @@ export function renderResultsHeader(headerEl, timestamp) {
   const time = document.createElement('p');
   time.className = 'timestamp';
   time.textContent = timestamp;
-  headerEl.append(h2, time);
+
+  const disc = document.createElement('div');
+  disc.className = 'results-disclaimer';
+  disc.setAttribute('role', 'note');
+  disc.innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+    + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
+    + '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>'
+    + '<line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+    + `<span>${DISCLAIMER_TEXT}</span>`;
+
+  headerEl.append(h2, time, disc);
 }
 
 export function renderThresholdsFooter(footerEl) {
@@ -28,16 +38,19 @@ export function renderSummary(summaryEl, items) {
   h2.textContent = 'Summary';
   summaryEl.append(h2);
 
+  const scroll = document.createElement('div');
+  scroll.className = 'table-scroll';
+
   const table = document.createElement('table');
   table.className = 'summary-table';
   table.innerHTML = `
     <thead>
       <tr>
-        <th></th>
-        <th>Image</th>
-        <th>Result</th>
-        <th>Worst ratio</th>
-        <th>Failing pairs</th>
+        <th scope="col"></th>
+        <th scope="col">Image</th>
+        <th scope="col">Result</th>
+        <th scope="col">Worst ratio</th>
+        <th scope="col">Failing pairs</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -62,7 +75,8 @@ export function renderSummary(summaryEl, items) {
     tr.append(thumbCell, nameCell, resultCell, ratioCell, failCell);
     tbody.append(tr);
   }
-  summaryEl.append(table);
+  scroll.append(table);
+  summaryEl.append(scroll);
 }
 
 function verdictBadge(verdict) {
@@ -71,8 +85,6 @@ function verdictBadge(verdict) {
   return '— NO TEXT';
 }
 
-// Renders a single per-image card and appends it to `cardsEl`.
-// Returns the rendered card element so callers can scroll-to or replace.
 export function renderImageCard(cardsEl, entry) {
   const { id, filename, sourceCanvas, report } = entry;
   const card = document.createElement('article');
@@ -100,19 +112,23 @@ export function renderImageCard(cardsEl, entry) {
     h4.textContent = 'Colour combinations detected';
     card.append(h4);
 
+    const scroll = document.createElement('div');
+    scroll.className = 'table-scroll';
+
     const table = document.createElement('table');
     table.className = 'pair-table';
+    // Background listed before Foreground — bg is the base context for reading
     table.innerHTML = `
       <thead>
         <tr>
-          <th>Swatch (bg · fg)</th>
-          <th>Foreground</th>
-          <th>Background</th>
-          <th>Ratio</th>
-          <th>AA</th>
-          <th>AAA</th>
-          <th>Check</th>
-          <th>Example words</th>
+          <th scope="col">Swatch</th>
+          <th scope="col">Background</th>
+          <th scope="col">Foreground</th>
+          <th scope="col">Ratio</th>
+          <th scope="col">AA</th>
+          <th scope="col">AAA</th>
+          <th scope="col">Check</th>
+          <th scope="col">Example words</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -124,10 +140,11 @@ export function renderImageCard(cardsEl, entry) {
       const tr = document.createElement('tr');
       const swatchCell = document.createElement('td');
       swatchCell.append(swatch.canvas);
-      const fgCell = document.createElement('td');
-      fgCell.innerHTML = `<code>${p.fgHex}</code>`;
+      // Background first, then Foreground
       const bgCell = document.createElement('td');
       bgCell.innerHTML = `<code>${p.bgHex}</code>`;
+      const fgCell = document.createElement('td');
+      fgCell.innerHTML = `<code>${p.fgHex}</code>`;
       const ratioCell = document.createElement('td');
       ratioCell.textContent = `${p.contrast.toFixed(2)}:1`;
       const aaCell = document.createElement('td');
@@ -146,7 +163,7 @@ export function renderImageCard(cardsEl, entry) {
       const exCell = document.createElement('td');
       exCell.className = 'examples';
       exCell.textContent = p.examples.map((e) => `"${e}"`).join(', ');
-      tr.append(swatchCell, fgCell, bgCell, ratioCell, aaCell, aaaCell, checkCell, exCell);
+      tr.append(swatchCell, bgCell, fgCell, ratioCell, aaCell, aaaCell, checkCell, exCell);
       tbody.append(tr);
 
       entry.pairAssets.push({
@@ -154,7 +171,8 @@ export function renderImageCard(cardsEl, entry) {
         swatchDataUrl: swatch.dataUrl
       });
     }
-    card.append(table);
+    scroll.append(table);
+    card.append(scroll);
 
     const failing = report.colourPairs.filter((p) => !p.pass);
     if (failing.length) {
@@ -164,7 +182,7 @@ export function renderImageCard(cardsEl, entry) {
       for (const p of failing) {
         const heading = document.createElement('p');
         heading.className = 'clip-heading';
-        heading.innerHTML = `<code>${p.fgHex}</code> on <code>${p.bgHex}</code> — ${p.contrast.toFixed(2)}:1`;
+        heading.innerHTML = `<code>${p.bgHex}</code> background / <code>${p.fgHex}</code> foreground — ${p.contrast.toFixed(2)}:1`;
         card.append(heading);
         const clip = makeClip(sourceCanvas, p.bboxes);
         clip.canvas.className = 'clip-canvas';
