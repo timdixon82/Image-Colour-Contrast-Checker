@@ -120,23 +120,6 @@ body {
   overflow: hidden;
 }
 
-/* Dark-grey diagonal overlay stripes for visual depth */
-.app-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 18px,
-      rgba(26, 48, 80, 0.45) 18px,
-      rgba(26, 48, 80, 0.45) 19px
-    );
-  pointer-events: none;
-  aria-hidden: true;
-}
-
 /* Orange accent line at the base of the header */
 .app-header::after {
   content: '';
