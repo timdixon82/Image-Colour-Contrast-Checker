@@ -234,7 +234,8 @@ if (footerEl) {
   footerEl.append(
     `v${version}`,
     sep(), lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence'),
-    sep(), lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences')
+    sep(), lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences'),
+    sep(), lnk('https://timdixon.net', '© Tim Dixon')
   );
 }
 
