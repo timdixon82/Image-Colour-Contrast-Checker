@@ -250,7 +250,9 @@ if (footerEl) {
     sep(),
     lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence'),
     sep(),
-    lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences')
+    lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences'),
+    sep(),
+    lnk('./privacy.html', 'Privacy')
   );
 }
 

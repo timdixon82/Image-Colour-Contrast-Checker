@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      (function () {
+        var t = localStorage.getItem('td-theme');
+        document.documentElement.dataset.theme =
+          t === 'dark' || t === 'light' ? t
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }());
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Privacy Statement — Image Colour Contrast Checker</title>
+    <meta name="description" content="Privacy statement for Image Colour Contrast Checker. All processing is client-side. Nothing is uploaded." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header-inner">
+        <div class="app-header-text">
+          <h1>Image Colour <span class="header-accent">Contrast Checker</span></h1>
+          <p class="tagline">Drop in images to check WCAG AA / AAA text-contrast. Runs entirely in your browser &mdash; nothing is uploaded.</p>
+        </div>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle colour theme">
+          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="22" y2="12"/>
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+          </svg>
+          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <span class="theme-toggle-label" aria-hidden="true"></span>
+        </button>
+      </div>
+    </header>
+
+    <main id="app">
+      <article class="privacy-page">
+        <h2>Privacy Statement</h2>
+        <p class="privacy-page-intro">This tool is designed to be 100% private by architecture. Here is exactly what happens — and does not happen — when you use it.</p>
+
+        <section>
+          <h3>Your images never leave your device</h3>
+          <p>Every step of the analysis — image decoding, OCR text detection, colour sampling, and contrast calculation — runs entirely inside your browser. No image file, pixel data, OCR result, or contrast report is sent to any server at any point.</p>
+        </section>
+
+        <section>
+          <h3>No accounts, no tracking, no analytics</h3>
+          <p>There are no user accounts, no login, and no registration. No analytics scripts, tracking pixels, or telemetry are included. Your usage of this tool is not monitored or recorded.</p>
+        </section>
+
+        <section>
+          <h3>No cookies</h3>
+          <p>This tool does not set any cookies.</p>
+        </section>
+
+        <section>
+          <h3>Local storage</h3>
+          <p>One value is stored in your browser's <code>localStorage</code>: your chosen colour theme (light or dark). It is used only to restore your preference on your next visit. It is never read by any server.</p>
+        </section>
+
+        <section>
+          <h3>Network requests</h3>
+          <p>The only network requests this tool makes are a one-time download of the AI model files and the WebAssembly runtime it needs to analyse your images. These files are served from the same origin as the tool itself (<code>image-colour-contrast-checker.timdixon.net</code>) and are cached by your browser after the first download. No third-party servers or content delivery networks are involved.</p>
+          <p>The files downloaded on first use are:</p>
+          <ul>
+            <li>PaddleOCR PP-OCRv4 text detection model (<code>ch_PP-OCRv4_det_infer.onnx</code>)</li>
+            <li>PaddleOCR PP-OCRv4 text recognition model (<code>ch_PP-OCRv4_rec_infer.onnx</code>)</li>
+            <li>PaddleOCR character key file (<code>ppocr_keys_v1.txt</code>)</li>
+            <li>ONNX Runtime Web WASM binaries</li>
+          </ul>
+          <p>Total first-run download: approximately 28 MB. After that, your browser cache serves them instantly.</p>
+        </section>
+
+        <section>
+          <h3>No third-party scripts</h3>
+          <p>All JavaScript code is bundled and served from <code>image-colour-contrast-checker.timdixon.net</code>. No external scripts, fonts, or stylesheets are loaded from third-party origins.</p>
+        </section>
+
+        <section>
+          <h3>Open source</h3>
+          <p>The full source code is publicly available under the MIT Licence. You can read it, audit it, or run your own copy. See the <a href="https://github.com/timdixon82/Image-Colour-Contrast-Checker" rel="noopener noreferrer">GitHub repository</a>.</p>
+        </section>
+
+        <section>
+          <h3>Contact</h3>
+          <p>If you have any questions about this privacy statement, contact <a href="https://timdixon.net">Tim Dixon</a>.</p>
+        </section>
+
+        <p class="privacy-back"><a href="./">&larr; Back to the tool</a></p>
+      </article>
+
+      <footer id="app-footer" class="app-footer"></footer>
+    </main>
+
+    <script type="module">
+      import { version } from './package.json';
+
+      const footerEl = document.getElementById('app-footer');
+      if (footerEl) {
+        const repoBase = 'https://github.com/timdixon82/Image-Colour-Contrast-Checker';
+        const sep = () => { const s = document.createElement('span'); s.className = 'sep'; s.setAttribute('aria-hidden', 'true'); s.textContent = '·'; return s; };
+        const lnk = (href, text, external) => { const a = document.createElement('a'); a.href = href; if (external) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } a.textContent = text; return a; };
+        footerEl.append(
+          `v${version}`,
+          sep(),
+          lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence', true),
+          sep(),
+          lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences', true),
+          sep(),
+          lnk('./privacy.html', 'Privacy')
+        );
+      }
+
+      const STORAGE_KEY = 'td-theme';
+      const html = document.documentElement;
+      const toggleBtn = document.getElementById('theme-toggle');
+      const toggleLabel = toggleBtn?.querySelector('.theme-toggle-label');
+
+      function syncToggle() {
+        if (!toggleBtn) return;
+        const isDark = html.dataset.theme === 'dark';
+        toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+        if (toggleLabel) toggleLabel.textContent = isDark ? 'Light' : 'Dark';
+      }
+
+      function setTheme(theme, persist) {
+        html.dataset.theme = theme;
+        if (persist) localStorage.setItem(STORAGE_KEY, theme);
+        syncToggle();
+      }
+
+      syncToggle();
+      toggleBtn?.addEventListener('click', () => {
+        setTheme(html.dataset.theme === 'dark' ? 'light' : 'dark', true);
+      });
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem(STORAGE_KEY)) setTheme(e.matches ? 'dark' : 'light', false);
+      });
+    </script>
+  </body>
+</html>

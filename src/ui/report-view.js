@@ -1,5 +1,4 @@
 // DOM renderer for the report (summary + per-image cards).
-// Mirrors the markdown reference report.md layout.
 
 import { makeSwatch, makeClip, makePreview, makeThumb, THRESHOLDS_FOOTER } from '../lib/swatch.js';
 
@@ -185,4 +184,3 @@ function escapeHtml(s) {
   }[c]));
 }
 
-export { verdictBadge };

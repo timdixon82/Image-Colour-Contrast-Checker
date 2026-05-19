@@ -1,5 +1,5 @@
-// Markdown export — single .md file mirroring report.md with embedded base64
-// images for swatches, clips, and per-image previews.
+// Markdown export — single .md file with embedded base64 images for swatches,
+// clips, and per-image previews.
 
 import { THRESHOLDS_FOOTER, sourceDataUrl } from '../lib/swatch.js';
 

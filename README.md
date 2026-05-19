@@ -1,8 +1,12 @@
 # Image Colour Contrast Checker
 
+**Live tool:** [image-colour-contrast-checker.timdixon.net](https://image-colour-contrast-checker.timdixon.net)
+
 A privacy-respecting, **fully client-side** web app that audits images for WCAG 2.2 AA / AAA text-contrast. Drop in one or more screenshots, get back a per-image report with foreground/background colour pairs, contrast ratios, AA/AAA pass-fail, failing-region clips, and one-click PDF or Markdown export.
 
-Nothing is uploaded. OCR, contrast analysis, and report generation all run in your browser.
+Nothing is uploaded. OCR, contrast analysis, and report generation all run in your browser. See the [Privacy Statement](https://image-colour-contrast-checker.timdixon.net/privacy.html) for full details.
+
+For a full technical description of every module, the data pipeline, and how to extend the tool, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
 
@@ -50,7 +54,7 @@ WCAG thresholds applied:
 - **AAA**: 7:1 normal text · 4.5:1 large text
 - Large text = OCR bbox height ≥ 24 px (in the canonical resized image space).
 
-The pipeline is a JavaScript port of an internal Python reference (`analyse_contrast.py`). See `src/lib/wcag.js` for the math.
+See `src/lib/wcag.js` for the contrast-ratio math.
 
 ## Browser support
 
@@ -66,8 +70,9 @@ First use downloads about 28 MB total (PaddleOCR detection + recognition models 
 
 ## Privacy
 
-- All processing happens in your browser. No images, OCR text, or contrast data leaves your device.
-- The only network traffic is the one-time fetch of the PaddleOCR model files and the `onnxruntime-web` WASM binaries (served from the same origin as the app).
+All processing happens in your browser. No images, OCR text, or contrast data leaves your device. The only network traffic is the one-time fetch of the PaddleOCR model files and the `onnxruntime-web` WASM binaries (served from the same origin as the app). No cookies, no analytics, no tracking.
+
+Full details: [Privacy Statement](https://image-colour-contrast-checker.timdixon.net/privacy.html)
 
 ## Tech stack
 

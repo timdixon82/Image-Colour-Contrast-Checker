@@ -1,5 +1,4 @@
 // WCAG 2.2 contrast math + region / strip analysis.
-// Direct port of analyse_contrast.py.
 
 // sRGB linearisation per IEC 61966-2-1 (the same threshold the Python source
 // uses: 0.04045, not the older 0.03928 approximation).

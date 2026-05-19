@@ -13,7 +13,6 @@ function newCanvas(w, h) {
 }
 
 // Side-by-side swatch: left = background, right = foreground, 2-px grey divider.
-// Matches make_swatch() in analyse_contrast.py.
 export function makeSwatch(fgHex, bgHex) {
   const canvas = newCanvas(SWATCH_W, SWATCH_H);
   const ctx = canvas.getContext('2d');
@@ -89,4 +88,4 @@ export function sourceDataUrl(sourceCanvas) {
 
 export const THRESHOLDS_FOOTER =
   'Contrast thresholds — AA: 4.5:1 normal / 3:1 large text · AAA: 7:1 normal / 4.5:1 large text. '
-  + 'Large text = ≥24 px OCR box height. Checked via Tesseract.js.';
+  + 'Large text = ≥24 px OCR box height. Text detected via PaddleOCR PP-OCRv4.';
