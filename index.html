@@ -17,16 +17,17 @@
     <script src="coi-serviceworker.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <title>Image Colour Contrast Checker</title>
+    <title>Image Colour Contrast Checker — Tim Dixon</title>
     <meta name="description" content="Drop in screenshots to audit WCAG AA and AAA text-colour contrast. Uses AI to detect text regions. Runs entirely in your browser — nothing is uploaded." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <!-- Preloader: covers the page until model files are downloaded.
-         Removed by JS once preloadModels() completes. -->
+    <!-- Skip navigation for keyboard users (WCAG 2.4.1) -->
+    <a href="#app" class="skip-link">Skip to main content</a>
+
+    <!-- Preloader: covers the page until model files are downloaded. -->
     <div id="preloader" class="preloader" role="dialog" aria-modal="true" aria-labelledby="preloader-heading">
-      <!-- Mirrors the branded app header so the loading screen looks like the app -->
       <div class="preloader-header" aria-hidden="true">
         <div class="app-header-inner">
           <div class="app-header-text">
@@ -65,7 +66,7 @@
           <h1>Image Colour <span class="header-accent">Contrast Checker</span></h1>
           <p class="tagline">Drop in images to check WCAG AA / AAA text-contrast. Runs entirely in your browser &mdash; nothing is uploaded.</p>
         </div>
-        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle colour theme">
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode">
           <!-- Sun icon: visible in dark mode (click to switch to light) -->
           <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
             <circle cx="12" cy="12" r="4"/>
@@ -108,6 +109,11 @@
           100% private &mdash; your images never leave your device. No upload. No server.
         </div>
 
+        <div class="disclaimer-notice" role="note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span><strong>Automated analysis only.</strong> Results are indicative and are designed to speed up accessibility review &mdash; manual verification is required before citing for formal WCAG compliance.</span>
+        </div>
+
         <div id="model-banner" class="model-banner" hidden>
           <span class="spinner" aria-hidden="true"></span>
           <span class="model-banner-text">
@@ -132,10 +138,10 @@
 
       <div id="action-bar" class="action-bar" hidden>
         <button type="button" id="download-pdf" class="button button-primary">
-          Download PDF
+          Download PDF report
         </button>
         <button type="button" id="download-md" class="button"
-                title="Best viewed in VS Code / Obsidian / Typora &mdash; GitHub may strip embedded images.">
+                title="Best viewed in VS Code / Obsidian / Typora — GitHub may strip embedded images.">
           Download Markdown
         </button>
         <button type="button" id="reset" class="button button-ghost">
