@@ -30,28 +30,40 @@ export function targetSize(width, height) {
   };
 }
 
+/** Create a drawing surface, preferring OffscreenCanvas where available. */
+function makeCanvas(width, height) {
+  return (typeof OffscreenCanvas !== 'undefined')
+    ? new OffscreenCanvas(width, height)
+    : Object.assign(document.createElement('canvas'), { width, height });
+}
+
 /**
  * Decode a Blob/File into a colour-management-off ImageBitmap at the
- * canonical long-edge target size. The heavy work is handled by the
- * browser's native decoder, which runs off the main thread where supported.
+ * canonical long-edge target size.
+ *
+ * The downscale is done by drawing onto a bounded canvas rather than via
+ * createImageBitmap's resize options: those options are silently ignored by
+ * older Safari, which would then return a full-resolution image. iPhone
+ * photos are 12–48 MP, and a full-resolution result reaching
+ * bitmapToImageData would make getImageData allocate a pixel buffer large
+ * enough to crash the iOS content process.
  *
  * @param {Blob|File} blob
  * @returns {Promise<ImageBitmap>}
  */
 export async function decodeAndResize(blob) {
-  const probe = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
-  const { width, height } = probe;
-  const t = targetSize(width, height);
+  const full = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
+  const t = targetSize(full.width, full.height);
 
-  if (t.scale === 1) return probe;
+  if (t.scale === 1) return full;
 
-  probe.close?.();
-  return createImageBitmap(blob, {
-    resizeWidth:   t.width,
-    resizeHeight:  t.height,
-    resizeQuality: 'high',
-    colorSpaceConversion: 'none'
-  });
+  const canvas = makeCanvas(t.width, t.height);
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(full, 0, 0, t.width, t.height);
+  full.close?.();
+  return createImageBitmap(canvas);
 }
 
 /**
@@ -62,11 +74,7 @@ export async function decodeAndResize(blob) {
  * @returns {{ canvas: OffscreenCanvas|HTMLCanvasElement, ctx: CanvasRenderingContext2D, imageData: ImageData }}
  */
 export function bitmapToImageData(bitmap) {
-  const canvas = (typeof OffscreenCanvas !== 'undefined')
-    ? new OffscreenCanvas(bitmap.width, bitmap.height)
-    : Object.assign(document.createElement('canvas'), {
-        width: bitmap.width, height: bitmap.height
-      });
+  const canvas = makeCanvas(bitmap.width, bitmap.height);
   const ctx = canvas.getContext('2d', { willReadFrequently: true, colorSpace: 'srgb' });
   ctx.drawImage(bitmap, 0, 0);
   const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
