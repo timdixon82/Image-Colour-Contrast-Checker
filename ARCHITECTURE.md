@@ -12,15 +12,16 @@ Live tool: [image-colour-contrast-checker.timdixon.net](https://image-colour-con
 
 ```
 /
-├── index.html              Main app entry point
+├── index.html              Main app entry point — includes the static
+│                           "What the checks mean" section
 ├── privacy.html            Privacy statement page
-├── methodology.html        Explains every check (linked from each ⓘ icon)
 ├── vite.config.js          Build configuration
 ├── package.json            Scripts and dependencies
 ├── scripts/
 │   └── copy-models.mjs     Copies model + WASM assets into public/ (install/build hook)
 ├── public/                 Static assets (served as-is)
 │   ├── favicon.svg
+│   ├── count.js            GoatCounter analytics client — self-hosted (vendored, ISC)
 │   ├── sw.js               Service worker — cross-origin isolation + model caching
 │   ├── models/             (generated, gitignored) PaddleOCR ONNX model files
 │   └── ort/                (generated, gitignored) ONNX Runtime Web WASM binaries
@@ -136,8 +137,8 @@ src/core/analyse.js — analyseImage()
 src/ui/report-view.js — renderImageCard()
   Builds the DOM card; draws preview, swatch, clip, and four
   colour-blindness simulation canvases via src/render/canvas.js.
-  One expandable row per colour combination; rows that fail any
-  check start expanded. Detail panel = the six checks (built by
+  One expandable row per colour combination; every row starts
+  collapsed. Detail panel = the six checks (built by
   export/checks.js) + the cropped image region.
   Side effect: populates entry.previewDataUrl, entry.pairAssets,
   entry.cbSimAssets
@@ -167,22 +168,25 @@ Application orchestrator and Vite entry point. No exports.
 
 - Wires DOM events (drag-drop, file picker, PDF/Markdown download, reset)
 - Runs the per-file pipeline (decode → OCR → analyse → render)
-- Holds the `state` object: `{ ocrReady, ocrLoading, queue, entries, busy, batchTimestamp }`
+- Holds the `state` object: `{ ocrPromise, queue, entries, busy, batchTimestamp }`
 - Builds the footer and initialises the theme toggle (`localStorage['td-theme']`)
 - Calls `preloadModels()` on startup, then warms the OCR engine
 
 OCR is loaded through a dynamic `import()` of `adapters/paddle-ocr.js`, keeping
-the ~10 MB OCR + runtime code out of the initial bundle. Warm-up (`getOcr()`) is
-triggered as soon as the preloader finishes downloading the model files, so the
-engine is ready before the user selects an image; `handleFiles()` also calls it
-as an idempotent fallback.
+the ~10 MB OCR + runtime code out of the initial bundle. Once `preloadModels()`
+has cached the model files, `warmOcr()` initialises the engine (`getOcr()`); the
+dropzone stays in its loading state until that resolves, so it becomes
+interactive only when the tool is fully ready. `warmOcr()` is idempotent — it
+memoises a single shared promise. The rest of the page (header, the "What the
+checks mean" section, footer) is usable and scrollable throughout the download.
 
 ### `src/preloader.js`
 
 Exported: `preloadModels(onProgress)`
 
-Downloads the OCR models and the ONNX runtime before the user can interact.
-WebGPU availability (and platform) decides which WASM variant is fetched:
+Downloads the OCR models and the ONNX runtime up front, before the dropzone is
+enabled (the rest of the page stays usable meanwhile). WebGPU availability (and
+platform) decides which WASM variant is fetched:
 
 | File | Size (approx) | When |
 |------|--------------|------|
@@ -303,20 +307,27 @@ strings, no app state.
 ### `src/export/strings.js`
 
 Exported: `APP_NAME`, `SITE_URL`, `THRESHOLDS_FOOTER`, `DISCLAIMER_TEXT`,
-`METHODOLOGY_URL`, `CVD_TYPES`
+`CVD_TYPES`, `checkInfoUrl`
 
 The single source of truth for user-facing copy shared by the export modules —
-edit once, and PDF and Markdown stay in sync.
+edit once, and PDF and Markdown stay in sync. `checkInfoUrl(id)` builds the deep
+link to a check's entry in the on-page "What the checks mean" section.
 
 ### `src/export/checks.js`
 
-Exported: `pairChecks`, `overallLine`, `cvdStatus`
+Exported: `pairChecks`, `overallLine`, `cvdStatus`, `advancedStatus`,
+`statusWord`, `pairBadges`, `CHECK_GROUPS`
 
 `pairChecks(pair)` shapes one `ColourPair` into the six display checks (WCAG AA,
 WCAG AAA, APCA, CVD contrast, Vestibular, Cognitive), each with a label, value,
-status and a methodology anchor. The web report, PDF and Markdown all consume
-this — the check list is never rebuilt in a renderer. `overallLine()` builds the
-"N combinations · X fail …" summary line.
+status and an `id` that doubles as its `#check-info-<id>` anchor in the on-page
+"What the checks mean" section. `CHECK_GROUPS` splits the six into the two
+display groups — WCAG compliance and Advanced checks. `pairBadges()` produces a
+pair's AA / AAA / Advanced badges, `advancedStatus()` rolls the four advanced
+checks into one verdict, and `statusWord()` maps a status to its display word.
+The web report, PDF and Markdown all consume these — the check list is never
+rebuilt in a renderer. `overallLine()` builds the "N combinations · X fail …"
+summary line.
 
 ### `src/export/markdown.js`
 
@@ -324,9 +335,9 @@ Exported: `buildMarkdown(entries, timestamp)`, `downloadMarkdown(markdown, filen
 
 Builds a Markdown report with a summary table and per-image sections; every
 image (preview, colour-blindness simulations, swatches, clips) is embedded as a
-base64 data URI. Each colour combination is a `<details>` element — combinations
-that fail open by default. GitHub strips embedded images from Markdown
-renders — the output is best viewed in VS Code, Obsidian, or Typora.
+base64 data URI. Each colour combination is a collapsed `<details>` element.
+GitHub strips embedded images from Markdown renders — the output is best viewed
+in VS Code, Obsidian, or Typora.
 
 ### `src/export/pdf.js`
 
@@ -360,12 +371,13 @@ Exported: `renderResultsHeader`, `renderThresholdsFooter`, `renderSummary`,
 
 Renders the DOM report. `renderImageCard()` draws the preview, the four
 colour-blindness simulations, and one expandable row per colour combination.
-The collapsed row shows the swatch, overall verdict, colours, WebAIM link and
-detected text; the expanded panel shows the six checks and the cropped image
-region. Rows whose `overall` is `FAIL` start expanded. It has a deliberate side
-effect: it populates `entry.previewDataUrl`, `entry.pairAssets` and
-`entry.cbSimAssets`, so the export modules can run afterwards without redrawing.
-`summaryItemFromEntry()` extracts the data `renderSummary()` needs.
+The collapsed row shows the swatch, the WCAG (AA / AAA) and Advanced-check
+badges, the colours, a WebAIM link and the detected text; the expanded panel
+shows the six checks and the cropped image region. Every row starts collapsed.
+It has a deliberate side effect: it populates `entry.previewDataUrl`,
+`entry.pairAssets` and `entry.cbSimAssets`, so the export modules can run
+afterwards without redrawing. `summaryItemFromEntry()` extracts the data
+`renderSummary()` needs.
 
 ---
 
@@ -408,8 +420,8 @@ npm run build        # outputs to dist/
 npm run preview      # preview the dist/ build locally
 ```
 
-Vite builds three HTML entry points (`index.html`, `privacy.html`,
-`methodology.html`). The build target is ES2022. `onnxruntime-web` is excluded from Vite's dependency
+Vite builds two HTML entry points (`index.html`, `privacy.html`). The build
+target is ES2022. `onnxruntime-web` is excluded from Vite's dependency
 optimisation because it ships pre-bundled WASM assets that must remain separate
 files.
 

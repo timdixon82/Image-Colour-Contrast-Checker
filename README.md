@@ -17,7 +17,7 @@ For a full technical description of every module, the data pipeline, and how to 
 - **Colour-vision-deficiency contrast** — each pair's contrast recomputed for deuteranopia, protanopia and tritanopia using the Machado (2009) matrices, flagging pairs that pass for normal vision but fail for a CVD viewer.
 - **Whole-image colour-blindness simulation** — every image rendered as four common deficiencies see it.
 - **Vestibular & cognitive checks** — flags highly saturated pairings that can shimmer, and rolls every check into one plain-language verdict.
-- **Expandable per-combination report** — one row per colour pair; rows that fail open automatically. Every check links to a [methodology page](https://image-colour-contrast-checker.timdixon.net/methodology.html) explaining what it means.
+- **Expandable per-combination report** — one row per colour pair, collapsed until you open it. A static "What the checks mean" section explains every check, and each check's ⓘ link jumps straight to its entry.
 - **PaddleOCR PP-OCRv4** text detection + recognition via [`@gutenye/ocr-browser`](https://github.com/gutenye/ocr) + [`onnxruntime-web`](https://github.com/microsoft/onnxruntime). WebGPU on Chrome/Edge desktop; WASM fallback everywhere else.
 - **k-means colour split** per OCR region — text = minority cluster, background = majority — so it works on real-world UI screenshots, not just plain text on solid backgrounds.
 - **Similar-colour merging** so visually-identical foreground/background pairs roll up into one row with their worst-case ratio.
@@ -94,6 +94,8 @@ Full details: [Privacy Statement](https://image-colour-contrast-checker.timdixon
 ## Dependencies and licensing
 
 Every runtime and build-time dependency uses a permissive licence (MIT / Apache-2.0 / BSD-3-Clause / ISC / Boost-1.0). The one piece of non-permissive code is the APCA contrast math, which is **vendored** into the source tree rather than installed as a dependency — see [A note on the APCA licence](#a-note-on-the-apca-licence) below.
+
+The GoatCounter analytics client (`public/count.js`, ISC) is also vendored — self-hosted rather than loaded from `gc.zgo.at` so it works under the app's cross-origin isolation (see [Privacy](#privacy)).
 
 ### Direct dependencies
 

@@ -232,7 +232,7 @@ Current version: **0.2.20** — bump `package.json` on every behavioural change.
 
 ## Service worker (`public/sw.js`)
 
-A single hand-written service worker, registered by `<script src="/sw.js">` in
+A single hand-written service worker, registered by `<script src="sw.js">` in
 `index.html`, does two things:
 
 1. **Cross-origin isolation** — injects COOP/COEP headers (the `coi-serviceworker`
@@ -246,8 +246,8 @@ There can only be one service worker per scope, so both jobs live in this file.
 
 ## Deployment
 
-GitHub Pages via `.github/workflows/deploy.yml`. The `dist/` folder is built by Vite and deployed from the `main` branch. The live URL is:
+GitHub Pages via `.github/workflows/deploy.yml` — every push to `main` builds with Vite and deploys the `dist/` artifact. The live site is:
 
-**https://timdixon82.github.io/Image-Colour-Contrast-Checker**
+**https://image-colour-contrast-checker.timdixon.net**
 
-This URL is the canonical value of `SITE_URL` in `src/export/strings.js`.
+This is the canonical value of `SITE_URL` in `src/export/strings.js`; the PDF and Markdown exports build their check links from it.
