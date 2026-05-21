@@ -80,6 +80,11 @@ function warmOcr() {
 }
 
 // ── File handling ─────────────────────────────────────────────────────────────
+// Safari before 15.4 has no crypto.randomUUID; fall back to a simple unique id.
+function uuid() {
+  return crypto.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 async function handleFiles(files) {
   warmOcr();
   state.busy           = true;
@@ -90,25 +95,34 @@ async function handleFiles(files) {
   results.hidden    = true;
   actionBar.hidden  = true;
 
-  for (const file of files) {
-    const id    = crypto.randomUUID();
-    const row   = createQueueRow(file.name);
-    queueEl.append(row);
-    const entry = { id, file, filename: file.name, row };
-    state.entries.set(id, entry);
-    state.queue.push(id);
-  }
-
-  for (const id of state.queue.slice()) {
-    const entry = state.entries.get(id);
-    if (!entry || entry.processed) continue;
-    entry.processed = true;
-    try {
-      await processOne(entry);
-    } catch (err) {
-      console.error(`[${entry.filename}]`, err);
-      setRowStage(entry.row, 'failed', err.message);
+  try {
+    for (const file of files) {
+      const id    = uuid();
+      const row   = createQueueRow(file.name);
+      queueEl.append(row);
+      const entry = { id, file, filename: file.name, row };
+      state.entries.set(id, entry);
+      state.queue.push(id);
     }
+
+    for (const id of state.queue.slice()) {
+      const entry = state.entries.get(id);
+      if (!entry || entry.processed) continue;
+      entry.processed = true;
+      try {
+        await processOne(entry);
+      } catch (err) {
+        console.error(`[${entry.filename}]`, err);
+        setRowStage(entry.row, 'failed', err.message);
+      }
+    }
+  } catch (err) {
+    console.error('[handleFiles]', err);
+    const li = document.createElement('li');
+    li.className = 'queue-row';
+    li.dataset.stage = 'failed';
+    li.textContent = `Could not process the selection: ${err?.message || err}`;
+    queueEl.append(li);
   }
 
   finishBatch();
@@ -173,10 +187,19 @@ function refreshSummary() {
 }
 
 function finishBatch() {
-  state.busy       = false;
-  actionBar.hidden = false;
-  landing.hidden   = true;
-  processing.hidden = true;
+  state.busy = false;
+  const anyResults = state.queue.some((id) => state.entries.get(id)?.report);
+  if (anyResults) {
+    actionBar.hidden  = false;
+    landing.hidden    = true;
+    processing.hidden = true;
+  } else {
+    // Nothing succeeded — keep the queue (with its error messages) and the
+    // dropzone on screen so the failure is visible and the user can retry.
+    actionBar.hidden  = true;
+    landing.hidden    = false;
+    processing.hidden = false;
+  }
 }
 
 function entriesForExport() {

@@ -32,4 +32,17 @@ export function setRowStage(row, stage, extra) {
   const stageEl = row.querySelector('.queue-stage');
   stageEl.textContent = STAGE_LABEL[stage] ?? stage;
   if (extra) stageEl.title = extra;
+
+  // Show failure detail inline — a title tooltip is invisible on touch devices.
+  let errEl = row.querySelector('.queue-error');
+  if (stage === 'failed' && extra) {
+    if (!errEl) {
+      errEl = document.createElement('span');
+      errEl.className = 'queue-error';
+      row.append(errEl);
+    }
+    errEl.textContent = extra;
+  } else if (errEl) {
+    errEl.remove();
+  }
 }

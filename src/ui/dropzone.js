@@ -26,8 +26,11 @@ export function initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles }) {
     }
   });
 
+  // The file input already constrains selection via accept="image/*", so
+  // trust it directly — iOS reports unreliable MIME types for picked photos,
+  // and the type filter below would silently drop otherwise-valid images.
   inputEl.addEventListener('change', () => {
-    if (inputEl.files?.length) emitFiles(inputEl.files);
+    if (inputEl.files?.length) onFiles([...inputEl.files]);
     inputEl.value = '';
   });
 
