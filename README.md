@@ -35,7 +35,7 @@ The `postinstall` / `prebuild` / `predev` hooks copy the PaddleOCR ONNX models a
 ## How it works
 
 ```
-File -> createImageBitmap (resize to 800-1400 long edge, sRGB, no colour management)
+File -> decode + downscale to 800-1400 px long edge (sRGB, no colour management)
      -> canvas + ImageData
      -> PaddleOCR PP-OCRv4 detection + recognition (via onnxruntime-web)
      -> per-detection vertical-strip scan
@@ -54,7 +54,7 @@ WCAG thresholds applied:
 - **AAA**: 7:1 normal text · 4.5:1 large text
 - Large text = OCR bbox height ≥ 24 px (in the canonical resized image space).
 
-See `src/lib/wcag.js` for the contrast-ratio math.
+See `src/core/contrast.js` for the contrast-ratio math.
 
 ## Browser support
 
@@ -64,13 +64,13 @@ See `src/lib/wcag.js` for the contrast-ratio math.
 | Safari (desktop)        | Full | WASM OCR (5-15s per image) |
 | Firefox (desktop)       | Full | WASM OCR |
 | Chrome (Android)        | Full | WASM OCR |
-| Safari (iOS)            | Works | WASM only; allow ~30s on first run for model + WASM cache |
+| Safari (iOS / iPadOS)   | Full | WASM OCR; WebGPU disabled (ORT's WebGPU backend is unsupported on iOS) |
 
-First use downloads about 28 MB total (PaddleOCR detection + recognition models + ORT WASM). Cached by the browser after that.
+First use downloads about 28 MB total (PaddleOCR detection + recognition models + ORT WASM). A service worker caches them in the Cache Storage API, so later visits load them without re-downloading.
 
 ## Privacy
 
-All processing happens in your browser. No images, OCR text, or contrast data leaves your device. The only network traffic is the one-time fetch of the PaddleOCR model files and the `onnxruntime-web` WASM binaries (served from the same origin as the app). No cookies, no analytics, no tracking.
+All processing happens in your browser. No images, OCR text, or contrast data ever leaves your device. Network traffic is limited to the one-time fetch of the PaddleOCR model files and the `onnxruntime-web` WASM binaries (served from the same origin as the app), plus a cookieless, privacy-friendly [GoatCounter](https://www.goatcounter.com/) page-view count — no cookies, no personal data, no cross-site tracking.
 
 Full details: [Privacy Statement](https://image-colour-contrast-checker.timdixon.net/privacy.html)
 
@@ -86,41 +86,35 @@ Full details: [Privacy Statement](https://image-colour-contrast-checker.timdixon
 
 Every runtime and build-time dependency uses a permissive licence. There are no copyleft (GPL / LGPL / AGPL) packages in the tree.
 
-### Direct production dependencies
+### Direct dependencies
 
-| Package | Version | Licence | Purpose |
+Declared in `package.json` — imported directly by the source, or consumed directly by the build:
+
+| Package | Spec | Licence | Role |
 |---|---|---|---|
-| [@gutenye/ocr-browser](https://github.com/gutenye/ocr)   | 1.4.x | MIT | Browser entry for the PaddleOCR pipeline |
-| [@gutenye/ocr-common](https://github.com/gutenye/ocr)    | 1.4.x | MIT | OCR detection + recognition core |
-| [@gutenye/ocr-models](https://github.com/gutenye/ocr)    | 1.4.x | MIT | Packaged PP-OCRv4 ONNX models (see "Models" below) |
-| [onnxruntime-web](https://github.com/microsoft/onnxruntime) | 1.26.x | MIT | ONNX inference runtime |
-| [onnxruntime-common](https://github.com/microsoft/onnxruntime) | 1.26.x | MIT | Shared ORT types |
-| [@techstark/opencv-js](https://github.com/TechStark/opencv-js) | 4.9.x | Apache-2.0 | OpenCV.js — used by OCR for contour finding |
-| [pdfmake](https://github.com/bpampuch/pdfmake) | 0.2.x | MIT | PDF export |
-| [tiny-invariant](https://github.com/alexreardon/tiny-invariant) | 1.3.x | MIT | Assertion helper (transitive via OCR) |
-| [js-clipper](https://www.npmjs.com/package/js-clipper) | 1.0.x | Boost-1.0 | Polygon clipping (transitive via OCR) |
+| [@gutenye/ocr-browser](https://github.com/gutenye/ocr) | ^1.4.8 | MIT | Browser PaddleOCR PP-OCRv4 pipeline |
+| [onnxruntime-web](https://github.com/microsoft/onnxruntime) | ^1.26.0 | MIT | ONNX inference runtime — imported by `src/adapters/paddle-ocr.js` |
+| [pdfmake](https://github.com/bpampuch/pdfmake) | ^0.2.10 | MIT | PDF export |
+| [@gutenye/ocr-models](https://github.com/gutenye/ocr) | ^1.4.2 | MIT | Packaged PP-OCRv4 ONNX models — copied into `public/models/` by `copy-models.mjs` (dev dependency) |
+| [vite](https://vitejs.dev/) | ^5.4.10 | MIT | Build tool (dev dependency) |
 
-### Transitive dependencies (selected)
+`onnxruntime-web` is declared explicitly even though `@gutenye/ocr-browser` also depends on it: `src/adapters/paddle-ocr.js` imports it directly, so it is a first-class dependency rather than an implicit transitive one. `@gutenye/ocr-models` is declared for the same reason — `scripts/copy-models.mjs` reads its files at build time.
 
-| Package | Licence |
-|---|---|
-| protobufjs + `@protobufjs/*` | BSD-3-Clause |
-| flatbuffers | Apache-2.0 |
-| long | Apache-2.0 |
-| platform | MIT |
-| guid-typescript | ISC |
-| pako | MIT / Zlib |
-| pdfmake's `@foliojs-fork/*` family (pdfkit, fontkit, linebreak, restructure) | MIT |
-| brotli, clone, deep-equal, dfa, png-js, sax, unicode-properties, unicode-trie | MIT (sax is BlueOak-1.0.0) |
+### Notable transitive dependencies
 
-### Build-time dependencies
+| Package | Licence | Pulled in by |
+|---|---|---|
+| [@gutenye/ocr-common](https://github.com/gutenye/ocr) | MIT | @gutenye/ocr-browser |
+| [@techstark/opencv-js](https://github.com/TechStark/opencv-js) | Apache-2.0 | @gutenye/ocr-browser — contour finding |
+| onnxruntime-common | MIT | onnxruntime-web |
+| tiny-invariant | MIT | @gutenye/ocr-browser |
+| js-clipper | Boost-1.0 | @gutenye/ocr-browser |
+| protobufjs + `@protobufjs/*` | BSD-3-Clause | onnxruntime-web |
+| flatbuffers, long | Apache-2.0 | onnxruntime-web |
+| pdfmake's `@foliojs-fork/*` family (pdfkit, fontkit, linebreak, restructure) | MIT | pdfmake |
+| Rollup, esbuild, PostCSS | MIT | vite |
 
-| Package | Licence |
-|---|---|
-| [Vite](https://vitejs.dev/) | MIT |
-| Rollup | MIT |
-| esbuild | MIT |
-| PostCSS | MIT |
+The complete, version-pinned tree is in `package-lock.json`.
 
 ### Models
 
