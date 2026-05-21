@@ -308,7 +308,11 @@ preloadModels(({ pct, label, fileIndex, fileCount, done }) => {
     appEl.removeAttribute('inert');
     preloaderEl.classList.add('preloader-done');
     setTimeout(() => preloaderEl.remove(), 400);
-    warmOcr();
+    // OCR engine warm-up is deliberately NOT triggered here. Loading the
+    // ONNX runtime and models up front makes the page heavy enough that iOS
+    // Safari discards the tab when the native file picker opens — which
+    // reloads the page and loses the selection. warmOcr() runs on first
+    // file selection instead, once the picker has already closed.
   }
 });
 
