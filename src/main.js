@@ -257,9 +257,11 @@ const lnkInternal = (href, text) => Object.assign(document.createElement('a'), {
 if (footerEl) {
   footerEl.append(
     `v${version}`,
+    sep(), lnk(repoBase, 'Open source on GitHub'),
     sep(), lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence'),
     sep(), lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences'),
     sep(), lnkInternal('./privacy.html', 'Privacy'),
+    sep(), lnk('https://www.timdixon.net/contact/', 'Contact / feedback'),
     sep(), lnk('https://timdixon.net', '© Tim Dixon')
   );
 }

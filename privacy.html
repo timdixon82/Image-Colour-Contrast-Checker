@@ -114,11 +114,15 @@
         footerEl.append(
           `v${version}`,
           sep(),
+          lnk(repoBase, 'Open source on GitHub', true),
+          sep(),
           lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence', true),
           sep(),
           lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences', true),
           sep(),
-          lnk('./privacy.html', 'Privacy')
+          lnk('./privacy.html', 'Privacy'),
+          sep(),
+          lnk('https://www.timdixon.net/contact/', 'Contact / feedback', true)
         );
       }
 
