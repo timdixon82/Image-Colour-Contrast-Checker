@@ -1,8 +1,16 @@
 // Drag-drop + file picker for the landing zone.
 
+const IMAGE_EXT = /\.(png|jpe?g|webp|gif|bmp|heic|heif|avif)$/i;
+
+// iOS Safari often hands photos from the library to the browser with an
+// empty or non-standard MIME type, so fall back to the file extension.
+function isImageFile(f) {
+  return /^image\//i.test(f.type) || IMAGE_EXT.test(f.name || '');
+}
+
 export function initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles }) {
   function emitFiles(fileList) {
-    const files = [...fileList].filter((f) => /^image\//.test(f.type));
+    const files = [...fileList].filter(isImageFile);
     if (files.length) onFiles(files);
   }
 
