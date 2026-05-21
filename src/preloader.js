@@ -2,8 +2,18 @@
 // the user can interact with the app. Files are detected based on WebGPU
 // availability so only the relevant WASM variant is downloaded (~30 MB total).
 
+// iOS/iPadOS expose navigator.gpu but ORT's WebGPU backend does not work
+// there, so those devices use the WASM runtime. Keep in sync with
+// adapters/paddle-ocr.js.
+function isAppleMobile() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iP(hone|ad|od)/.test(ua) ||
+    (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
 function getFiles() {
-  const useWebGpu = typeof navigator !== 'undefined' && !!navigator.gpu;
+  const useWebGpu = typeof navigator !== 'undefined' && !!navigator.gpu && !isAppleMobile();
   return [
     { label: 'Text detection model',  path: 'models/ch_PP-OCRv4_det_infer.onnx',                               approxBytes: 4_700_000  },
     { label: 'Text recognition model',path: 'models/ch_PP-OCRv4_rec_infer.onnx',                               approxBytes: 10_500_000 },

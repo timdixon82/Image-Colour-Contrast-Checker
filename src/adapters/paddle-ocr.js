@@ -63,8 +63,24 @@ export async function runOcrOnUrl(url) {
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
 
+/**
+ * Whether to use ONNX Runtime Web's WebGPU backend.
+ *
+ * iOS/iPadOS expose navigator.gpu, but ORT's WebGPU backend does not work on
+ * those devices — selecting it makes OCR fail to load. Apple mobile devices
+ * therefore fall back to the multi-threaded WASM backend.
+ * Keep this check in sync with preloader.js.
+ */
 function hasWebGpu() {
-  return typeof navigator !== 'undefined' && !!navigator.gpu;
+  return typeof navigator !== 'undefined' && !!navigator.gpu && !isAppleMobile();
+}
+
+function isAppleMobile() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  // iPadOS 13+ reports a desktop UA; detect it via touch support.
+  return /iP(hone|ad|od)/.test(ua) ||
+    (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
 }
 
 /** Convert a 4-point polygon [[x,y]…] to an axis-aligned BBox. */
