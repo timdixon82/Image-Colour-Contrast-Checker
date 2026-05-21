@@ -5,10 +5,8 @@
  * @module export/markdown
  */
 
-import { sourceDataUrl }                                          from '../render/canvas.js';
-import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES } from './strings.js';
-
-const CVD_DICHROMACIES = CVD_TYPES.filter((t) => t.key !== 'achromatopsia');
+import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, METHODOLOGY_URL } from './strings.js';
+import { pairChecks, overallLine } from './checks.js';
 
 function anchor(filename) {
   return filename.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -18,10 +16,6 @@ function verdictLabel(verdict) {
   if (verdict === 'PASS') return '✓ PASS';
   if (verdict === 'FAIL') return '✗ FAIL';
   return '— NO TEXT';
-}
-
-function cvdRatio(contrast, pass) {
-  return `${pass ? '✓' : '✗'} ${contrast.toFixed(2)}:1`;
 }
 
 /**
@@ -86,52 +80,41 @@ export function buildMarkdown(entries, timestamp) {
     }
 
     if (report.hasText && report.colourPairs.length) {
-      lines.push('**Colour combinations detected:**');
+      lines.push('**Contrast results:**');
       lines.push('');
-      // Background before Foreground
-      lines.push('| Swatch | Background | Foreground | Ratio | AA | AAA | Check | Example words |');
-      lines.push('|--------|-----------|-----------|-------|-----|-----|-------|---------------|');
+      lines.push(`_${overallLine(report)}_`);
+      lines.push('');
 
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
-
       for (const p of report.colourPairs) {
-        const asset   = assetByPair.get(p);
-        const swatch  = asset?.swatchDataUrl ? `![](${asset.swatchDataUrl})` : '';
-        const webaim  = `[WebAIM ↗](https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)})`;
-        const examples = p.examples.map((e) => `"${e}"`).join(', ');
-        lines.push(`| ${swatch} | \`${p.bgHex}\` | \`${p.fgHex}\` | ${p.contrast.toFixed(2)}:1 | ${p.pass ? '✓ Pass' : '✗ Fail'} | ${p.passAaa ? '✓ Pass' : '✗ Fail'} | ${webaim} | ${examples} |`);
-      }
-      lines.push('');
+        const asset  = assetByPair.get(p);
+        const open   = p.overall === 'FAIL' ? ' open' : '';
+        const words  = p.examples.map((e) => `"${e}"`).join(', ');
+        const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
 
-      lines.push('**Contrast under colour-vision deficiency:**');
-      lines.push('');
-      const cvdHead = ['Background', 'Foreground', 'Normal', ...CVD_DICHROMACIES.map((t) => t.label)];
-      lines.push(`| ${cvdHead.join(' | ')} |`);
-      lines.push(`|${cvdHead.map(() => '---').join('|')}|`);
-      for (const p of report.colourPairs) {
-        const cells = [
-          `\`${p.bgHex}\``,
-          `\`${p.fgHex}\``,
-          cvdRatio(p.contrast, p.pass),
-          ...CVD_DICHROMACIES.map((t) => cvdRatio(p.cvd[t.key].contrast, p.cvd[t.key].pass))
-        ];
-        lines.push(`| ${cells.join(' | ')} |`);
-      }
-      lines.push('');
-
-      const failing = report.colourPairs.filter((p) => !p.pass);
-      if (failing.length) {
-        lines.push('**Failing regions:**');
+        lines.push(`<details${open}>`);
+        lines.push(`<summary><strong>${p.overall}</strong> — \`${p.bgHex}\` background / \`${p.fgHex}\` foreground${words ? ` — ${words}` : ''}</summary>`);
         lines.push('');
-        for (const p of failing) {
-          const asset = assetByPair.get(p);
-          lines.push(`Background \`${p.bgHex}\` / Foreground \`${p.fgHex}\` — ${p.contrast.toFixed(2)}:1`);
+        if (asset?.swatchDataUrl) {
+          lines.push(`![Background / foreground swatch](${asset.swatchDataUrl})`);
           lines.push('');
-          if (asset?.clipDataUrl) {
-            lines.push(`![Failing region](${asset.clipDataUrl})`);
-            lines.push('');
-          }
         }
+        lines.push(`[Check this pair on WebAIM ↗](${webaim})`);
+        lines.push('');
+        lines.push('| Check | Value | Status | What it means |');
+        lines.push('|-------|-------|--------|---------------|');
+        for (const c of pairChecks(p)) {
+          lines.push(`| [${c.label}](${METHODOLOGY_URL}#${c.id}) | ${c.value || '—'} | ${c.status} | ${c.detail} |`);
+        }
+        lines.push('');
+        if (asset?.clipDataUrl) {
+          lines.push('Where this combination appears in the image:');
+          lines.push('');
+          lines.push(`![Cropped image region](${asset.clipDataUrl})`);
+          lines.push('');
+        }
+        lines.push('</details>');
+        lines.push('');
       }
     }
 

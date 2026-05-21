@@ -33,6 +33,31 @@
  */
 
 /**
+ * APCA perceptual-contrast result.
+ * @typedef {Object} ApcaResult
+ * @property {number} lc                              Signed APCA Lc value
+ * @property {'PASS'|'WARN'|'FAIL'} status
+ * @property {string} message
+ */
+
+/**
+ * Vestibular saturation result.
+ * @typedef {Object} VestibularResult
+ * @property {number} fgSat                           Foreground HSL saturation 0–100
+ * @property {number} bgSat                           Background HSL saturation 0–100
+ * @property {number} maxSat                          Higher of the two
+ * @property {'SAFE'|'WARN'|'HIGH'} status
+ * @property {string} message
+ */
+
+/**
+ * Derived cognitive-load verdict.
+ * @typedef {Object} CognitiveResult
+ * @property {'PASS'|'WARN'|'FAIL'|'HARSH'} status
+ * @property {string} message
+ */
+
+/**
  * A unique foreground/background colour combination found in the image.
  * @typedef {Object} ColourPair
  * @property {string}   fgHex       Foreground hex e.g. "#FFFFFF"
@@ -47,6 +72,10 @@
  * @property {{deuteranopia:CvdContrast,protanopia:CvdContrast,tritanopia:CvdContrast}} cvd
  *                                  Simulated contrast per dichromacy
  * @property {boolean}  cvdRisk     Passes AA normally but fails under a deficiency
+ * @property {ApcaResult}       apca        APCA perceptual contrast
+ * @property {VestibularResult} vestibular  Saturation / shimmer check
+ * @property {CognitiveResult}  cognitive   Derived cognitive-load verdict
+ * @property {'PASS'|'WARN'|'FAIL'} overall  Rolled-up verdict for this pair
  */
 
 /**

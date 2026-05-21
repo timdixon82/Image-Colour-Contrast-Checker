@@ -20,6 +20,8 @@ src/
     schema.js      JSDoc type definitions only — no runtime code
     contrast.js    WCAG math primitives
     colour-vision.js Colour-vision-deficiency simulation (Machado 2009 matrices)
+    apca.js        APCA contrast math (vendored verbatim from apca-w3 0.1.9)
+    perceptual.js  APCA verdict, vestibular saturation, cognitive verdict
     analyse.js     Analysis pipeline: ImageData + OcrWord[] → ReportData
     image.js       Image decode and resize
 
@@ -31,6 +33,7 @@ src/
 
   export/          Report generators — accept AnalysedEntry[], produce files
     strings.js     All user-facing copy: footers, disclaimers, URLs
+    checks.js      Shapes a ColourPair into the six display checks (shared)
     pdf.js         PDF via pdfmake
     markdown.js    Markdown with embedded base64 images
 
@@ -42,6 +45,10 @@ src/
   preloader.js     Model download progress (app-level, not shareable)
   main.js          Orchestration only — wires modules together, no logic
   styles.css       All CSS (CSS custom properties for theming)
+
+index.html         The tool itself
+privacy.html       Privacy statement (Vite multi-page entry)
+methodology.html   What every check means (Vite multi-page entry)
 ```
 
 ---
@@ -58,10 +65,16 @@ OcrWord         { text, score, bbox }  — one word from an OCR adapter
 CvdContrast     { fgHex, bgHex, contrast, pass }
                 — one pair's contrast recomputed for one dichromacy
 
+ApcaResult      { lc, status, message }              — APCA perceptual contrast
+VestibularResult{ fgSat, bgSat, maxSat, status, message } — saturation / shimmer
+CognitiveResult { status, message }                  — derived cognitive verdict
+
 ColourPair      { fgHex, bgHex, contrast, pass, required,
                   passAaa, requiredAaa, examples[], bboxes[],
-                  cvd{deuteranopia,protanopia,tritanopia}, cvdRisk }
-                — a unique fg/bg combination merged across the whole image
+                  cvd{deuteranopia,protanopia,tritanopia}, cvdRisk,
+                  apca, vestibular, cognitive, overall }
+                — a unique fg/bg combination merged across the whole image.
+                  `overall` (PASS|WARN|FAIL) rolls up every check.
 
 ReportData      { hasText, colourPairs[], verdict, flag, detail }
                 — the complete analysis result for one image
@@ -125,17 +138,28 @@ The orchestrator is `main.js`. It runs this pipeline for each file and calls the
 
 ### export/strings.js
 - **This is the single source of truth for all user-facing copy.**
-- `THRESHOLDS_FOOTER`, `DISCLAIMER_TEXT`, `SITE_URL`, `APP_NAME` are defined here.
+- `THRESHOLDS_FOOTER`, `DISCLAIMER_TEXT`, `SITE_URL`, `APP_NAME`, `METHODOLOGY_URL`
+  and `CVD_TYPES` are defined here.
 - Edit here once; PDF and Markdown are always in sync because both import from this file.
 - Do not hardcode any of these strings in `pdf.js`, `markdown.js`, or `report-view.js`.
+
+### export/checks.js
+- `pairChecks(pair)` shapes one `ColourPair` into the six display checks
+  (WCAG AA, WCAG AAA, APCA, CVD contrast, Vestibular, Cognitive). Each check's
+  `id` is also its anchor in `methodology.html`.
+- `overallLine(report)` builds the one-line "N combinations · X fail …" summary.
+- The web report, PDF and Markdown all consume these — never rebuild the
+  check list in a renderer.
 
 ### export/ (pdf.js, markdown.js)
 - Both accept `AnalysedEntry[]` as defined in `schema.js`.
 - They must not import from `ui/`, `adapters/`, or `core/image.js`.
-- Column order is **Background → Foreground** (bg is the reading context).
+- One expandable block per colour combination; in the report the detail is
+  always shown (PDF) or in a `<details>` element (Markdown).
 
 ### ui/report-view.js
-- Imports from `render/canvas.js` and `export/strings.js` only (within the project).
+- Imports from `render/canvas.js`, `export/strings.js` and `export/checks.js`
+  only (within the project).
 - `renderImageCard()` has a side-effect: it populates `entry.previewDataUrl`, `entry.pairAssets` and `entry.cbSimAssets` on the entry object it is passed. This is intentional — it means the export modules can run after rendering without re-drawing anything.
 - `summaryItemFromEntry()` extracts the data `renderSummary()` needs. Use it in `main.js` rather than building summary items manually.
 
@@ -164,10 +188,13 @@ The theme toggle switches between light and dark; OS preference is respected unl
 This tool targets **WCAG 2.2 AAA** for its own UI.
 
 Key colour contrast values (all ≥ 7:1 where required):
-- Light mode `--pass: #14532d`  — 9.1:1 on white ✓
-- Light mode `--fail: #7f1d1d`  — 10:1 on white ✓
-- Dark mode  `--pass: #4ade80`  — 8.8:1 on card bg ✓
-- Dark mode  `--fail: #fca5a5`  — 8.1:1 on card bg ✓
+- Light mode `--pass: #14532d` / `--fail: #7f1d1d` / `--warn: #663a00` — all ≥ 8:1 on their pill backgrounds ✓
+- Dark mode  `--pass: #4ade80` / `--fail: #fca5a5` / `--warn: #fcd34d` — all ≥ 7.9:1 on their pill backgrounds ✓
+- Status pills use **solid** backgrounds in both themes so contrast is independent of what is behind them.
+- `--fg-muted` is ≥ 7.7:1 on every surface it appears on (card, panel, page) in both themes.
+
+When adding a status colour, verify it ≥ 7:1 in **both** light and dark mode — pills and
+muted text appear on the card, on `--neutral-bg` panels, and on the page background.
 
 Other requirements already in place:
 - Skip-to-content link at top of `<body>`
@@ -198,7 +225,7 @@ No other files need to change.
 
 Every commit that changes behaviour must bump `package.json` → `version`. `package-lock.json` updates automatically on the next `npm install`. Commit both files together.
 
-Current version: **0.2.14** — bump `package.json` on every behavioural change.
+Current version: **0.2.16** — bump `package.json` on every behavioural change.
 
 ---
 

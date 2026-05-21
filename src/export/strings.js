@@ -31,3 +31,6 @@ export const CVD_TYPES = [
   { key: 'tritanopia',    label: 'Tritanopia',    note: 'blue-blind' },
   { key: 'achromatopsia', label: 'Achromatopsia', note: 'total colour-blindness' }
 ];
+
+/** The in-app page explaining what every check means. */
+export const METHODOLOGY_URL = `${SITE_URL}/methodology.html`;

@@ -6,10 +6,8 @@
  * @module export/pdf
  */
 
-import { sourceDataUrl }                            from '../render/canvas.js';
-import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES } from './strings.js';
-
-const CVD_DICHROMACIES = CVD_TYPES.filter((t) => t.key !== 'achromatopsia');
+import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, METHODOLOGY_URL } from './strings.js';
+import { pairChecks, overallLine } from './checks.js';
 
 let pdfMakePromise = null;
 
@@ -30,8 +28,11 @@ function verdictLabel(verdict) {
   return '— NO TEXT';
 }
 
-function cvdRatioCell(contrast, pass) {
-  return { text: `${pass ? '✓' : '✗'} ${contrast.toFixed(2)}:1`, style: pass ? 'pass' : 'fail' };
+/** Map a check status to a pdfmake style name. */
+function statusStyle(status) {
+  if (status === 'PASS' || status === 'SAFE') return 'pass';
+  if (status === 'FAIL' || status === 'HIGH') return 'fail';
+  return 'warn'; // WARN, HARSH
 }
 
 /** Whole-image colour-blindness simulations, two per row. */
@@ -53,31 +54,61 @@ function cbSimBlock(cbSimAssets) {
   ];
 }
 
-/** Per-pair WCAG contrast recomputed under each dichromacy. */
-function cvdContrastBlock(report) {
-  const head = [
-    { text: 'Background', style: 'th' },
-    { text: 'Foreground', style: 'th' },
-    { text: 'Normal',     style: 'th' },
-    ...CVD_DICHROMACIES.map((t) => ({ text: t.label, style: 'th' }))
-  ];
-  const body = [head];
-  for (const p of report.colourPairs) {
+/** One colour combination: header line, every check, and the cropped region. */
+function pairBlock(p, asset) {
+  const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
+  const out = [];
+
+  out.push({
+    columns: [
+      asset?.swatchDataUrl
+        ? { image: asset.swatchDataUrl, width: 48, height: 14, margin: [0, 2, 8, 0] }
+        : { text: '', width: 1 },
+      {
+        width: '*',
+        text: [
+          { text: `${p.overall}  `, style: statusStyle(p.overall), bold: true },
+          { text: `Background ${p.bgHex}  ·  Foreground ${p.fgHex}`, bold: true }
+        ]
+      }
+    ],
+    margin: [0, 10, 0, 2]
+  });
+
+  out.push({
+    text: [
+      p.examples.length ? { text: p.examples.map((e) => `"${e}"`).join(', ') + '   ', style: 'examples' } : '',
+      { text: 'WebAIM ↗', link: webaim, style: 'link' }
+    ],
+    fontSize: 9,
+    margin: [0, 0, 0, 4]
+  });
+
+  const body = [[
+    { text: 'Check',         style: 'th' },
+    { text: 'Value',         style: 'th' },
+    { text: 'Status',        style: 'th' },
+    { text: 'What it means', style: 'th' }
+  ]];
+  for (const c of pairChecks(p)) {
     body.push([
-      p.bgHex,
-      p.fgHex,
-      cvdRatioCell(p.contrast, p.pass),
-      ...CVD_DICHROMACIES.map((t) => cvdRatioCell(p.cvd[t.key].contrast, p.cvd[t.key].pass))
+      { text: c.label, link: `${METHODOLOGY_URL}#${c.id}`, style: 'link' },
+      c.value || '—',
+      { text: c.status, style: statusStyle(c.status) },
+      { text: c.detail, style: 'examples' }
     ]);
   }
-  return [
-    { text: 'Contrast under colour-vision deficiency', style: 'h3', margin: [0, 8, 0, 4] },
-    {
-      table: { headerRows: 1, widths: ['auto', 'auto', 'auto', '*', '*', '*'], body },
-      layout: 'lightHorizontalLines',
-      margin: [0, 0, 0, 10]
-    }
-  ];
+  out.push({
+    table: { headerRows: 1, widths: ['auto', 'auto', 'auto', '*'], body },
+    layout: 'lightHorizontalLines',
+    margin: [0, 0, 0, 4]
+  });
+
+  if (asset?.clipDataUrl) {
+    out.push({ text: 'Where this combination appears:', style: 'examples', margin: [0, 2, 0, 3] });
+    out.push({ image: asset.clipDataUrl, width: 360, margin: [0, 0, 0, 6] });
+  }
+  return out;
 }
 
 /**
@@ -182,59 +213,12 @@ function buildDocDefinition(entries, timestamp) {
     content.push(...cbSimBlock(cbSimAssets));
 
     if (report.hasText && report.colourPairs.length) {
-      content.push({ text: 'Colour combinations detected', style: 'h3', margin: [0, 8, 0, 4] });
+      content.push({ text: 'Contrast results', style: 'h3', margin: [0, 8, 0, 2] });
+      content.push({ text: overallLine(report), style: 'examples', margin: [0, 0, 0, 2] });
 
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
-
-      // Background before Foreground
-      const body = [[
-        { text: 'Swatch',     style: 'th' },
-        { text: 'Background', style: 'th' },
-        { text: 'Foreground', style: 'th' },
-        { text: 'Ratio',      style: 'th' },
-        { text: 'AA',         style: 'th' },
-        { text: 'AAA',        style: 'th' },
-        { text: 'Check',      style: 'th' },
-        { text: 'Examples',   style: 'th' }
-      ]];
-
       for (const p of report.colourPairs) {
-        const asset  = assetByPair.get(p);
-        const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
-        body.push([
-          asset?.swatchDataUrl ? { image: asset.swatchDataUrl, width: 60, height: 15 } : '',
-          p.bgHex,
-          p.fgHex,
-          `${p.contrast.toFixed(2)}:1`,
-          { text: p.pass    ? '✓' : '✗', style: p.pass    ? 'pass' : 'fail' },
-          { text: p.passAaa ? '✓' : '✗', style: p.passAaa ? 'pass' : 'fail' },
-          { text: 'WebAIM ↗', link: webaim, style: 'link' },
-          { text: p.examples.map((e) => `"${e}"`).join(', '), style: 'examples' }
-        ]);
-      }
-
-      content.push({
-        table: { headerRows: 1, widths: [60, 'auto', 'auto', 'auto', 20, 20, 'auto', '*'], body },
-        layout: 'lightHorizontalLines',
-        margin: [0, 0, 0, 10]
-      });
-
-      content.push(...cvdContrastBlock(report));
-
-      const failing = report.colourPairs.filter((p) => !p.pass);
-      if (failing.length) {
-        content.push({ text: 'Failing regions', style: 'h3', margin: [0, 8, 0, 4] });
-        for (const p of failing) {
-          const asset = assetByPair.get(p);
-          content.push({
-            text:   `Background ${p.bgHex} / Foreground ${p.fgHex} — ${p.contrast.toFixed(2)}:1`,
-            style:  'clipHeading',
-            margin: [0, 6, 0, 4]
-          });
-          if (asset?.clipDataUrl) {
-            content.push({ image: asset.clipDataUrl, width: 420, margin: [0, 0, 0, 8] });
-          }
-        }
+        content.push(...pairBlock(p, assetByPair.get(p)));
       }
     }
   }
@@ -261,11 +245,11 @@ function buildDocDefinition(entries, timestamp) {
       th:          { bold: true, fillColor: '#f3f4f6' },
       pass:        { color: '#14532d', bold: true },
       fail:        { color: '#7f1d1d', bold: true },
+      warn:        { color: '#854d0e', bold: true },
       neutral:     { color: '#4b5563' },
       timestamp:   { fontSize: 9, color: '#4b5563' },
       examples:    { italics: true, color: '#374151' },
       link:        { color: '#1d4ed8', decoration: 'underline' },
-      clipHeading: { bold: true },
       footer:      { fontSize: 9, color: '#4b5563' }
     }
   };

@@ -13,20 +13,31 @@ import {
   colourDistance
 } from './contrast.js';
 import { cvdPairContrast } from './colour-vision.js';
+import { apcaResult, vestibularResult, cognitiveResult } from './perceptual.js';
 
 // Dichromacies whose contrast is recomputed per pair. Achromatopsia is
 // omitted: it preserves luminance, so its WCAG ratio always equals the
 // unmodified one.
 const CVD_DICHROMACIES = ['deuteranopia', 'protanopia', 'tritanopia'];
 
+/** Roll the individual checks of one pair into a single PASS/WARN/FAIL. */
+function overallVerdict(p) {
+  if (!p.pass || p.apca.status === 'FAIL' || p.vestibular.status === 'HIGH' || p.cognitive.status === 'FAIL')
+    return 'FAIL';
+  if (p.apca.status === 'WARN' || p.vestibular.status === 'WARN' || p.cognitive.status === 'WARN' || p.cvdRisk)
+    return 'WARN';
+  return 'PASS';
+}
+
 /**
- * Attach simulated colour-vision-deficiency contrast to each colour pair.
- * `cvdRisk` is set when a pair passes WCAG AA for normal vision but drops
- * below the same threshold for at least one simulated deficiency.
+ * Attach every per-pair check to each colour pair: CVD contrast, APCA,
+ * vestibular saturation, the derived cognitive verdict, and a rolled-up
+ * `overall` verdict. `cvdRisk` is set when a pair passes WCAG AA for normal
+ * vision but drops below the same threshold for a simulated deficiency.
  *
  * @param {import('./schema.js').ColourPair[]} pairs
  */
-function annotateCvd(pairs) {
+function annotatePairs(pairs) {
   for (const p of pairs) {
     const cvd = {};
     let risk = false;
@@ -38,6 +49,18 @@ function annotateCvd(pairs) {
     }
     p.cvd     = cvd;
     p.cvdRisk = risk;
+
+    p.apca       = apcaResult(p.fgHex, p.bgHex);
+    p.vestibular = vestibularResult(p.fgHex, p.bgHex);
+    const heightPx = p.bboxes.length ? Math.min(...p.bboxes.map((b) => b.h)) : 0;
+    p.cognitive  = cognitiveResult({
+      contrast: p.contrast,
+      passAA:   p.pass,
+      heightPx,
+      apcaLc:   p.apca.lc,
+      maxSat:   p.vestibular.maxSat
+    });
+    p.overall = overallVerdict(p);
   }
 }
 
@@ -189,7 +212,7 @@ export function analyseImage(imageData, ocrDetections) {
   }
 
   const colourPairs = buildColourPairs(findings);
-  annotateCvd(colourPairs);
+  annotatePairs(colourPairs);
   const failures    = colourPairs.filter((p) => !p.pass);
   const verdict     = failures.length ? 'FAIL' : 'PASS';
   const minCr       = colourPairs[0].contrast;

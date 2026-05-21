@@ -7,6 +7,7 @@
 
 import { makeSwatch, makeClip, makePreview, makeThumb, makeCbSim } from '../render/canvas.js';
 import { THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES }            from '../export/strings.js';
+import { pairChecks, overallLine }                                 from '../export/checks.js';
 
 export function renderResultsHeader(headerEl, timestamp) {
   headerEl.innerHTML = '';
@@ -101,8 +102,8 @@ export function renderSummary(summaryEl, items) {
 
 /**
  * Render a single per-image card and append it to cardsEl.
- * Also populates entry.previewDataUrl and entry.pairAssets so the export
- * modules can consume them without touching the DOM again.
+ * Also populates entry.previewDataUrl, entry.pairAssets and entry.cbSimAssets
+ * so the export modules can consume them without touching the DOM again.
  *
  * @param {HTMLElement} cardsEl
  * @param {Object} entry  App-internal entry augmented with sourceCanvas
@@ -135,103 +136,9 @@ export function renderImageCard(cardsEl, entry) {
   // Colour-blindness simulation — applies to the whole image, text or not
   renderCbSim(card, entry);
 
+  entry.pairAssets = [];
   if (report.hasText && report.colourPairs.length) {
-    const h4 = document.createElement('h4');
-    h4.textContent = 'Colour combinations detected';
-    card.append(h4);
-
-    const scroll = document.createElement('div');
-    scroll.className = 'table-scroll';
-
-    const table = document.createElement('table');
-    table.className = 'pair-table';
-    // Background listed before Foreground — bg is the base context
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th scope="col">Swatch</th>
-          <th scope="col">Background</th>
-          <th scope="col">Foreground</th>
-          <th scope="col">Ratio</th>
-          <th scope="col">AA</th>
-          <th scope="col">AAA</th>
-          <th scope="col">Check</th>
-          <th scope="col">Example words</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-    const tbody = table.querySelector('tbody');
-    entry.pairAssets = [];
-
-    for (const p of report.colourPairs) {
-      const swatch = makeSwatch(p.fgHex, p.bgHex);
-      const tr     = document.createElement('tr');
-
-      const swatchCell = document.createElement('td');
-      swatchCell.append(swatch.canvas);
-
-      const bgCell = document.createElement('td');
-      bgCell.innerHTML = `<code>${p.bgHex}</code>`;
-
-      const fgCell = document.createElement('td');
-      fgCell.innerHTML = `<code>${p.fgHex}</code>`;
-
-      const ratioCell = document.createElement('td');
-      ratioCell.textContent = `${p.contrast.toFixed(2)}:1`;
-
-      const aaCell = document.createElement('td');
-      aaCell.className   = p.pass ? 'pass' : 'fail';
-      aaCell.textContent = p.pass ? '✓ Pass' : '✗ Fail';
-
-      const aaaCell = document.createElement('td');
-      aaaCell.className   = p.passAaa ? 'pass' : 'fail';
-      aaaCell.textContent = p.passAaa ? '✓ Pass' : '✗ Fail';
-
-      const checkCell = document.createElement('td');
-      const a = document.createElement('a');
-      a.href        = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
-      a.target      = '_blank';
-      a.rel         = 'noopener noreferrer';
-      a.textContent = 'WebAIM ↗';
-      checkCell.append(a);
-
-      const exCell = document.createElement('td');
-      exCell.className   = 'examples';
-      exCell.textContent = p.examples.map((e) => `"${e}"`).join(', ');
-
-      tr.append(swatchCell, bgCell, fgCell, ratioCell, aaCell, aaaCell, checkCell, exCell);
-      tbody.append(tr);
-
-      entry.pairAssets.push({ pair: p, swatchDataUrl: swatch.dataUrl });
-    }
-
-    scroll.append(table);
-    card.append(scroll);
-
-    renderCvdContrast(card, report);
-
-    // Failing-region clips
-    const failing = report.colourPairs.filter((p) => !p.pass);
-    if (failing.length) {
-      const fh = document.createElement('h4');
-      fh.textContent = 'Failing regions';
-      card.append(fh);
-
-      for (const p of failing) {
-        const heading = document.createElement('p');
-        heading.className = 'clip-heading';
-        heading.innerHTML = `<code>${p.bgHex}</code> background / <code>${p.fgHex}</code> foreground — ${p.contrast.toFixed(2)}:1`;
-        card.append(heading);
-
-        const clip = makeClip(sourceCanvas, p.bboxes);
-        clip.canvas.className = 'clip-canvas';
-        card.append(clip.canvas);
-
-        const asset = entry.pairAssets.find((a) => a.pair === p);
-        if (asset) asset.clipDataUrl = clip.dataUrl;
-      }
-    }
+    renderContrastResults(card, entry);
   }
 
   cardsEl.append(card);
@@ -242,8 +149,7 @@ export function renderImageCard(cardsEl, entry) {
 
 /**
  * Append a colour-blindness simulation grid: the source image transformed for
- * each common colour-vision deficiency, so the user can see how colour pairs
- * shift (or collapse) for those viewers. Also populates entry.cbSimAssets so
+ * each common colour-vision deficiency. Also populates entry.cbSimAssets so
  * the export modules can embed the same images without redrawing.
  *
  * @param {HTMLElement} card
@@ -289,69 +195,199 @@ function renderCbSim(card, entry) {
 }
 
 /**
- * Append the per-pair contrast table recomputed under each dichromacy.
- * Rows where a pair passes WCAG AA for normal vision but fails a simulation
- * are flagged with the `cvd-risk` class.
+ * Append the unified contrast-results table: one expandable row per colour
+ * combination. The collapsed row shows swatch, overall verdict, colours,
+ * WebAIM link and detected text; the expanded panel shows every check plus
+ * the cropped image region. Rows that fail any check start expanded.
  *
  * @param {HTMLElement} card
- * @param {Object} report  ReportData (see core/schema.js)
+ * @param {Object} entry
  */
-function renderCvdContrast(card, report) {
-  const dichromacies = CVD_TYPES.filter((t) => t.key !== 'achromatopsia');
-  const riskCount    = report.colourPairs.filter((p) => p.cvdRisk).length;
+function renderContrastResults(card, entry) {
+  const { id, sourceCanvas, report } = entry;
+  const pairs = report.colourPairs;
 
   const heading = document.createElement('h4');
-  heading.textContent = 'Contrast under colour-vision deficiency';
+  heading.textContent = 'Contrast results';
   card.append(heading);
 
-  const note = document.createElement('p');
-  note.className   = 'cvd-note';
-  note.textContent = riskCount
-    ? `${riskCount} colour combination(s) pass WCAG AA for normal vision but fall below `
-      + 'the threshold under a simulated deficiency.'
-    : 'WCAG contrast recomputed for each pair as the colours appear to dichromatic viewers.';
-  card.append(note);
+  // Overall summary line
+  const overall = document.createElement('p');
+  overall.className   = 'results-overall';
+  overall.textContent = overallLine(report);
+  card.append(overall);
 
   const scroll = document.createElement('div');
   scroll.className = 'table-scroll';
 
   const table = document.createElement('table');
-  table.className = 'cvd-table';
-  const headCells = ['Background', 'Foreground', 'Normal', ...dichromacies.map((t) => t.label)];
+  table.className = 'results-table';
   table.innerHTML = `
     <thead>
-      <tr>${headCells.map((h) => `<th scope="col">${h}</th>`).join('')}</tr>
+      <tr>
+        <th scope="col"><span class="sr-only">Expand</span></th>
+        <th scope="col">Swatch</th>
+        <th scope="col">Result</th>
+        <th scope="col">Background</th>
+        <th scope="col">Foreground</th>
+        <th scope="col">Check</th>
+        <th scope="col">Detected text</th>
+      </tr>
     </thead>
     <tbody></tbody>
   `;
   const tbody = table.querySelector('tbody');
 
-  for (const p of report.colourPairs) {
-    const tr = document.createElement('tr');
-    if (p.cvdRisk) tr.className = 'cvd-risk';
+  pairs.forEach((p, i) => {
+    const swatch = makeSwatch(p.fgHex, p.bgHex);
+    const clip   = makeClip(sourceCanvas, p.bboxes);
+    entry.pairAssets.push({ pair: p, swatchDataUrl: swatch.dataUrl, clipDataUrl: clip.dataUrl });
+
+    const detailId = `detail-${id}-${i}`;
+    const open     = p.overall === 'FAIL';
+
+    // ── Collapsed header row ──
+    const hdr = document.createElement('tr');
+    hdr.className = `result-row result-row-${p.overall.toLowerCase()}`;
+
+    const toggleCell = document.createElement('td');
+    const toggle = document.createElement('button');
+    toggle.type      = 'button';
+    toggle.className = 'row-toggle';
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-controls', detailId);
+    toggle.innerHTML = `<span class="caret" aria-hidden="true">${open ? '▾' : '▸'}</span>`
+      + `<span class="sr-only">Toggle checks for background ${p.bgHex}, foreground ${p.fgHex}</span>`;
+    toggleCell.append(toggle);
+
+    swatch.canvas.className = 'swatch-canvas';
+    const swatchCell = document.createElement('td');
+    swatchCell.append(swatch.canvas);
+
+    const resultCell = document.createElement('td');
+    resultCell.append(pill(p.overall, p.overall));
 
     const bgCell = document.createElement('td');
     bgCell.innerHTML = `<code>${p.bgHex}</code>`;
     const fgCell = document.createElement('td');
     fgCell.innerHTML = `<code>${p.fgHex}</code>`;
 
-    tr.append(bgCell, fgCell, ratioCell(p.contrast, p.pass));
-    for (const t of dichromacies) {
-      const c = p.cvd[t.key];
-      tr.append(ratioCell(c.contrast, c.pass));
-    }
-    tbody.append(tr);
-  }
+    const checkCell = document.createElement('td');
+    checkCell.append(webaimLink(p.fgHex, p.bgHex));
+
+    const textCell = document.createElement('td');
+    textCell.className   = 'examples';
+    textCell.textContent = p.examples.map((e) => `"${e}"`).join(', ');
+
+    hdr.append(toggleCell, swatchCell, resultCell, bgCell, fgCell, checkCell, textCell);
+
+    // ── Expandable detail row ──
+    const det = document.createElement('tr');
+    det.className = 'result-detail';
+    det.id = detailId;
+    if (!open) det.hidden = true;
+    const detCell = document.createElement('td');
+    detCell.colSpan = 7;
+    detCell.append(buildDetailPanel(p, clip.canvas));
+    det.append(detCell);
+
+    toggle.addEventListener('click', () => {
+      const willOpen = det.hidden;
+      det.hidden = !willOpen;
+      toggle.setAttribute('aria-expanded', String(willOpen));
+      toggle.querySelector('.caret').textContent = willOpen ? '▾' : '▸';
+    });
+
+    tbody.append(hdr, det);
+  });
 
   scroll.append(table);
   card.append(scroll);
 }
 
-function ratioCell(contrast, pass) {
-  const td = document.createElement('td');
-  td.className   = pass ? 'pass' : 'fail';
-  td.textContent = `${pass ? '✓' : '✗'} ${contrast.toFixed(2)}:1`;
-  return td;
+/**
+ * Build the expanded detail panel for one colour pair: the six-check grid
+ * followed by the cropped image region.
+ *
+ * @param {Object} p             ColourPair (see core/schema.js)
+ * @param {HTMLCanvasElement} clipCanvas
+ * @returns {HTMLElement}
+ */
+function buildDetailPanel(p, clipCanvas) {
+  const panel = document.createElement('div');
+  panel.className = 'detail-panel';
+
+  const grid = document.createElement('div');
+  grid.className = 'check-grid';
+  for (const c of pairChecks(p)) {
+    grid.append(checkItem(c.id, c.label, c.value, c.status, c.detail));
+  }
+  panel.append(grid);
+
+  const fig = document.createElement('figure');
+  fig.className = 'detail-clip';
+  const cap = document.createElement('figcaption');
+  cap.textContent = 'Where this combination appears in the image';
+  clipCanvas.className = 'detail-clip-canvas';
+  fig.append(cap, clipCanvas);
+  panel.append(fig);
+
+  return panel;
+}
+
+/** One label/value/status item in the expanded check grid. */
+function checkItem(checkId, label, value, status, sub) {
+  const item = document.createElement('div');
+  item.className = 'check-item';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'check-label';
+  lbl.append(document.createTextNode(label + ' '), infoLink(checkId, label));
+
+  const val = document.createElement('div');
+  val.className = 'check-value';
+  if (value) val.append(document.createTextNode(value + ' '));
+  val.append(pill(status, status));
+
+  const subEl = document.createElement('div');
+  subEl.className = 'check-sub';
+  subEl.textContent = sub;
+
+  item.append(lbl, val, subEl);
+  return item;
+}
+
+function pill(text, status) {
+  const span = document.createElement('span');
+  span.className   = `pill pill-${pillClass(status)}`;
+  span.textContent = text;
+  return span;
+}
+
+function pillClass(status) {
+  if (status === 'PASS' || status === 'SAFE') return 'pass';
+  if (status === 'FAIL' || status === 'HIGH') return 'fail';
+  return 'warn'; // WARN, HARSH
+}
+
+function infoLink(checkId, label) {
+  const a = document.createElement('a');
+  a.className = 'check-info';
+  a.href      = `methodology.html#${checkId}`;
+  a.target    = '_blank';
+  a.rel       = 'noopener';
+  a.textContent = 'ⓘ';
+  a.setAttribute('aria-label', `What does the ${label} check mean? Opens the methodology page.`);
+  return a;
+}
+
+function webaimLink(fgHex, bgHex) {
+  const a = document.createElement('a');
+  a.href        = `https://webaim.org/resources/contrastchecker/?fcolor=${fgHex.slice(1)}&bcolor=${bgHex.slice(1)}`;
+  a.target      = '_blank';
+  a.rel         = 'noopener noreferrer';
+  a.textContent = 'WebAIM ↗';
+  return a;
 }
 
 function verdictBadge(verdict) {
