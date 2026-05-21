@@ -417,6 +417,26 @@ body {
   margin-bottom: 8px;
 }
 
+/* ── Colour-blindness simulation ─────────────────────────────────────────── */
+.cb-sim-note { margin: 0 0 10px; font-size: 0.9rem; color: var(--fg-muted); }
+.cb-sim-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.cb-sim-figure { margin: 0; }
+.cb-sim-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.cb-sim-caption { margin-top: 6px; font-size: 0.85rem; line-height: 1.4; }
+.cb-sim-caption strong { display: block; }
+.cb-sim-caption span { color: var(--fg-muted); }
+
 /* ── Thresholds footer ───────────────────────────────────────────────────── */
 .thresholds { margin-top: 24px; }
 .thresholds-line {
@@ -613,6 +633,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 @media (max-width: 640px) {
   body { font-size: 14px; }
   .image-card { padding: 14px; }
+  .cb-sim-grid { grid-template-columns: 1fr; }
   .app-header h1 { font-size: 1.2rem; }
   .pair-table { font-size: 0.78rem; }
   .pair-table .examples { max-width: 100px; }

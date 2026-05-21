@@ -5,8 +5,16 @@
  * @module ui/report-view
  */
 
-import { makeSwatch, makeClip, makePreview, makeThumb } from '../render/canvas.js';
-import { THRESHOLDS_FOOTER, DISCLAIMER_TEXT }           from '../export/strings.js';
+import { makeSwatch, makeClip, makePreview, makeThumb, makeCbSim } from '../render/canvas.js';
+import { THRESHOLDS_FOOTER, DISCLAIMER_TEXT }                      from '../export/strings.js';
+
+// Colour-vision deficiencies simulated for each image, worst-prevalence first.
+const CB_TYPES = [
+  { key: 'deuteranopia',  label: 'Deuteranopia',  note: 'green-blind' },
+  { key: 'protanopia',    label: 'Protanopia',    note: 'red-blind' },
+  { key: 'tritanopia',    label: 'Tritanopia',    note: 'blue-blind' },
+  { key: 'achromatopsia', label: 'Achromatopsia', note: 'no colour' }
+];
 
 export function renderResultsHeader(headerEl, timestamp) {
   headerEl.innerHTML = '';
@@ -132,6 +140,9 @@ export function renderImageCard(cardsEl, entry) {
   resultLine.innerHTML = `<strong>Result:</strong> ${verdictBadge(report.verdict)} — ${escapeHtml(report.detail)}`;
   card.append(resultLine);
 
+  // Colour-blindness simulation — applies to the whole image, text or not
+  renderCbSim(card, sourceCanvas, filename);
+
   if (report.hasText && report.colourPairs.length) {
     const h4 = document.createElement('h4');
     h4.textContent = 'Colour combinations detected';
@@ -234,6 +245,49 @@ export function renderImageCard(cardsEl, entry) {
 }
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Append a colour-blindness simulation grid: the source image transformed for
+ * each common colour-vision deficiency, so the user can see how colour pairs
+ * shift (or collapse) for those viewers.
+ *
+ * @param {HTMLElement} card
+ * @param {HTMLCanvasElement} sourceCanvas
+ * @param {string} filename
+ */
+function renderCbSim(card, sourceCanvas, filename) {
+  const heading = document.createElement('h4');
+  heading.textContent = 'Colour-blindness simulation';
+  card.append(heading);
+
+  const note = document.createElement('p');
+  note.className   = 'cb-sim-note';
+  note.textContent = 'How this image may appear to viewers with the most common colour-vision deficiencies.';
+  card.append(note);
+
+  const grid = document.createElement('div');
+  grid.className = 'cb-sim-grid';
+
+  for (const t of CB_TYPES) {
+    const sim = makeCbSim(sourceCanvas, t.key, 600);
+
+    const figure = document.createElement('figure');
+    figure.className = 'cb-sim-figure';
+
+    sim.canvas.className = 'cb-sim-canvas';
+    sim.canvas.setAttribute('role', 'img');
+    sim.canvas.setAttribute('aria-label', `${filename} simulated for ${t.label} (${t.note})`);
+
+    const caption = document.createElement('figcaption');
+    caption.className = 'cb-sim-caption';
+    caption.innerHTML = `<strong>${escapeHtml(t.label)}</strong><span>${escapeHtml(t.note)}</span>`;
+
+    figure.append(sim.canvas, caption);
+    grid.append(figure);
+  }
+
+  card.append(grid);
+}
 
 function verdictBadge(verdict) {
   if (verdict === 'PASS') return '✓ PASS';
