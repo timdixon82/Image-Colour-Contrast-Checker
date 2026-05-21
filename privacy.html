@@ -110,7 +110,7 @@
       if (footerEl) {
         const repoBase = 'https://github.com/timdixon82/Image-Colour-Contrast-Checker';
         const sep = () => { const s = document.createElement('span'); s.className = 'sep'; s.setAttribute('aria-hidden', 'true'); s.textContent = '·'; return s; };
-        const lnk = (href, text, external) => { const a = document.createElement('a'); a.href = href; if (external) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } a.textContent = text; return a; };
+        const lnk = (href, text, external, sendReferrer) => { const a = document.createElement('a'); a.href = href; if (external) { a.target = '_blank'; a.rel = sendReferrer ? 'noopener' : 'noopener noreferrer'; } a.textContent = text; return a; };
         footerEl.append(
           `v${version}`,
           sep(),
@@ -122,7 +122,7 @@
           sep(),
           lnk('./privacy.html', 'Privacy'),
           sep(),
-          lnk('https://www.timdixon.net/contact/', 'Contact / feedback', true)
+          lnk('https://www.timdixon.net/contact/', 'Contact / feedback', true, true)
         );
       }
 

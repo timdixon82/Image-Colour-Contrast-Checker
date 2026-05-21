@@ -252,7 +252,9 @@ function stamp() {
 const footerEl  = document.getElementById('app-footer');
 const repoBase  = 'https://github.com/timdixon82/Image-Colour-Contrast-Checker';
 const sep = () => { const s = document.createElement('span'); s.className = 'sep'; s.setAttribute('aria-hidden', 'true'); s.textContent = '·'; return s; };
-const lnk = (href, text) => Object.assign(document.createElement('a'), { href, target: '_blank', rel: 'noopener noreferrer', textContent: text });
+// sendReferrer drops `noreferrer` (keeping `noopener`) so the destination
+// sees this site as the referrer — used for the timdixon.net links.
+const lnk = (href, text, sendReferrer) => Object.assign(document.createElement('a'), { href, target: '_blank', rel: sendReferrer ? 'noopener' : 'noopener noreferrer', textContent: text });
 const lnkInternal = (href, text) => Object.assign(document.createElement('a'), { href, textContent: text });
 if (footerEl) {
   footerEl.append(
@@ -261,8 +263,8 @@ if (footerEl) {
     sep(), lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence'),
     sep(), lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences'),
     sep(), lnkInternal('./privacy.html', 'Privacy'),
-    sep(), lnk('https://www.timdixon.net/contact/', 'Contact / feedback'),
-    sep(), lnk('https://timdixon.net', '© Tim Dixon')
+    sep(), lnk('https://www.timdixon.net/contact/', 'Contact / feedback', true),
+    sep(), lnk('https://timdixon.net', '© Tim Dixon', true)
   );
 }
 
