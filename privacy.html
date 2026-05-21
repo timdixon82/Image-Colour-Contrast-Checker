@@ -55,8 +55,8 @@
         </section>
 
         <section>
-          <h3>No accounts, no tracking, no analytics</h3>
-          <p>There are no user accounts, no login, and no registration. No analytics scripts, tracking pixels, or telemetry are included. Your usage of this tool is not monitored or recorded.</p>
+          <h3>No accounts, and privacy-friendly analytics only</h3>
+          <p>There are no user accounts, no login, and no registration. This tool uses <a href="https://www.goatcounter.com" rel="noopener noreferrer">GoatCounter</a>, an open-source, privacy-friendly analytics service, to count page views. GoatCounter sets no cookies, collects no personal data, and does not track you across other websites. It records only aggregate, anonymous information &mdash; such as the page visited, the referring site, and a rough browser and screen-size profile. Your IP address is used briefly to derive an approximate country and is never stored.</p>
         </section>
 
         <section>
@@ -71,7 +71,7 @@
 
         <section>
           <h3>Network requests</h3>
-          <p>The only network requests this tool makes are a one-time download of the AI model files and the WebAssembly runtime it needs to analyse your images. These files are served from the same origin as the tool itself (<code>image-colour-contrast-checker.timdixon.net</code>) and are cached by your browser after the first download. No third-party servers or content delivery networks are involved.</p>
+          <p>Aside from the GoatCounter analytics request described above, the only network requests this tool makes are a one-time download of the AI model files and the WebAssembly runtime it needs to analyse your images. These model and runtime files are served from the same origin as the tool itself (<code>image-colour-contrast-checker.timdixon.net</code>) and are cached by your browser after the first download.</p>
           <p>The files downloaded on first use are:</p>
           <ul>
             <li>PaddleOCR PP-OCRv4 text detection model (<code>ch_PP-OCRv4_det_infer.onnx</code>)</li>
@@ -83,8 +83,8 @@
         </section>
 
         <section>
-          <h3>No third-party scripts</h3>
-          <p>All JavaScript code is bundled and served from <code>image-colour-contrast-checker.timdixon.net</code>. No external scripts, fonts, or stylesheets are loaded from third-party origins.</p>
+          <h3>Third-party scripts</h3>
+          <p>All application JavaScript is bundled and served from <code>image-colour-contrast-checker.timdixon.net</code>. The only third-party script is the GoatCounter analytics snippet (<code>count.js</code>), loaded from <code>gc.zgo.at</code>. No external fonts or stylesheets are loaded from third-party origins.</p>
         </section>
 
         <section>
@@ -148,5 +148,8 @@
         if (!localStorage.getItem(STORAGE_KEY)) setTheme(e.matches ? 'dark' : 'light', false);
       });
     </script>
+
+    <script data-goatcounter="https://iccc.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
   </body>
 </html>
