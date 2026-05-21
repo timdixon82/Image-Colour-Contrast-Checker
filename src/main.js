@@ -11,6 +11,7 @@ import {
   renderSummary,
   renderImageCard,
   renderThresholdsFooter,
+  renderCheckGlossary,
   summaryItemFromEntry
 } from './ui/report-view.js';
 import { decodeAndResize, bitmapToImageData } from './core/image.js';
@@ -44,6 +45,7 @@ const results        = document.getElementById('results');
 const headerEl       = document.getElementById('results-header');
 const summaryEl      = document.getElementById('summary');
 const cardsEl        = document.getElementById('cards');
+const glossaryEl     = document.getElementById('check-glossary');
 const thresholdsEl   = document.getElementById('thresholds');
 const actionBar      = document.getElementById('action-bar');
 const downloadPdfBtn = document.getElementById('download-pdf');
@@ -152,6 +154,7 @@ async function processOne(entry) {
     if (results.hidden) {
       results.hidden = false;
       renderResultsHeader(headerEl, state.batchTimestamp);
+      renderCheckGlossary(glossaryEl);
       renderThresholdsFooter(thresholdsEl);
     }
     renderImageCard(cardsEl, entry);
@@ -235,6 +238,7 @@ resetBtn.addEventListener('click', () => {
   state.batchTimestamp = null;
   cardsEl.innerHTML    = '';
   summaryEl.innerHTML  = '';
+  glossaryEl.innerHTML = '';
   thresholdsEl.innerHTML = '';
   headerEl.innerHTML   = '';
   queueEl.innerHTML    = '';
@@ -255,15 +259,16 @@ const sep = () => { const s = document.createElement('span'); s.className = 'sep
 // sendReferrer drops `noreferrer` (keeping `noopener`) so the destination
 // sees this site as the referrer — used for the timdixon.net links.
 const lnk = (href, text, sendReferrer) => Object.assign(document.createElement('a'), { href, target: '_blank', rel: sendReferrer ? 'noopener' : 'noopener noreferrer', textContent: text });
-const lnkInternal = (href, text) => Object.assign(document.createElement('a'), { href, textContent: text });
 if (footerEl) {
+  // Methodology and Privacy open in a new tab: they are separate pages, so a
+  // same-tab navigation would discard the current batch of results.
   footerEl.append(
     `v${version}`,
     sep(), lnk(repoBase, 'Open source on GitHub'),
     sep(), lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence'),
     sep(), lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences'),
-    sep(), lnkInternal('./methodology.html', 'Methodology'),
-    sep(), lnkInternal('./privacy.html', 'Privacy'),
+    sep(), lnk('./methodology.html', 'Methodology'),
+    sep(), lnk('./privacy.html', 'Privacy'),
     sep(), lnk('https://www.timdixon.net/contact/', 'Contact / feedback', true),
     sep(), lnk('https://timdixon.net', '© Tim Dixon', true)
   );

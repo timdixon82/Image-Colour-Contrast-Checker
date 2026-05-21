@@ -7,7 +7,7 @@
  */
 
 import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, METHODOLOGY_URL } from './strings.js';
-import { pairChecks, overallLine } from './checks.js';
+import { pairChecks, overallLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
 let pdfMakePromise = null;
 
@@ -59,6 +59,11 @@ function pairBlock(p, asset) {
   const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
   const out = [];
 
+  const badgeText = pairBadges(p).flatMap((b) => [
+    { text: `${b.short} ${statusWord(b.status)}`, style: statusStyle(b.status), bold: true },
+    { text: '    ' }
+  ]);
+
   out.push({
     columns: [
       asset?.swatchDataUrl
@@ -67,7 +72,7 @@ function pairBlock(p, asset) {
       {
         width: '*',
         text: [
-          { text: `${p.overall}  `, style: statusStyle(p.overall), bold: true },
+          ...badgeText,
           { text: `Background ${p.bgHex}  ·  Foreground ${p.fgHex}`, bold: true }
         ]
       }
@@ -90,13 +95,17 @@ function pairBlock(p, asset) {
     { text: 'Status',        style: 'th' },
     { text: 'What it means', style: 'th' }
   ]];
-  for (const c of pairChecks(p)) {
-    body.push([
-      { text: c.label, link: `${METHODOLOGY_URL}#${c.id}`, style: 'link' },
-      c.value || '—',
-      { text: c.status, style: statusStyle(c.status) },
-      { text: c.detail, style: 'examples' }
-    ]);
+  const checks = pairChecks(p);
+  for (const grp of CHECK_GROUPS) {
+    body.push([{ text: grp.label, colSpan: 4, style: 'checkGroup' }, {}, {}, {}]);
+    for (const c of checks.filter((check) => check.group === grp.id)) {
+      body.push([
+        { text: c.label, link: `${METHODOLOGY_URL}#${c.id}`, style: 'link' },
+        c.value || '—',
+        { text: c.status, style: statusStyle(c.status) },
+        { text: c.detail, style: 'examples' }
+      ]);
+    }
   }
   out.push({
     table: { headerRows: 1, widths: ['auto', 'auto', 'auto', '*'], body },
@@ -243,6 +252,7 @@ function buildDocDefinition(entries, timestamp) {
       h2:          { fontSize: 14, bold: true, margin: [0, 12, 0, 6] },
       h3:          { fontSize: 12, bold: true },
       th:          { bold: true, fillColor: '#f3f4f6' },
+      checkGroup:  { bold: true, fillColor: '#e5e7eb', fontSize: 8, color: '#374151' },
       pass:        { color: '#14532d', bold: true },
       fail:        { color: '#7f1d1d', bold: true },
       warn:        { color: '#854d0e', bold: true },

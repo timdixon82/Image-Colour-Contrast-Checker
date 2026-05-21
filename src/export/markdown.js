@@ -6,7 +6,7 @@
  */
 
 import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, METHODOLOGY_URL } from './strings.js';
-import { pairChecks, overallLine } from './checks.js';
+import { pairChecks, overallLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
 function anchor(filename) {
   return filename.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -88,12 +88,12 @@ export function buildMarkdown(entries, timestamp) {
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
       for (const p of report.colourPairs) {
         const asset  = assetByPair.get(p);
-        const open   = p.overall === 'FAIL' ? ' open' : '';
         const words  = p.examples.map((e) => `"${e}"`).join(', ');
         const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
+        const badges = pairBadges(p).map((b) => `${b.short} ${statusWord(b.status)}`).join(' · ');
 
-        lines.push(`<details${open}>`);
-        lines.push(`<summary><strong>${p.overall}</strong> — \`${p.bgHex}\` background / \`${p.fgHex}\` foreground${words ? ` — ${words}` : ''}</summary>`);
+        lines.push('<details>');
+        lines.push(`<summary><strong>${badges}</strong> — \`${p.bgHex}\` background / \`${p.fgHex}\` foreground${words ? ` — ${words}` : ''}</summary>`);
         lines.push('');
         if (asset?.swatchDataUrl) {
           lines.push(`![Background / foreground swatch](${asset.swatchDataUrl})`);
@@ -103,8 +103,12 @@ export function buildMarkdown(entries, timestamp) {
         lines.push('');
         lines.push('| Check | Value | Status | What it means |');
         lines.push('|-------|-------|--------|---------------|');
-        for (const c of pairChecks(p)) {
-          lines.push(`| [${c.label}](${METHODOLOGY_URL}#${c.id}) | ${c.value || '—'} | ${c.status} | ${c.detail} |`);
+        const checks = pairChecks(p);
+        for (const grp of CHECK_GROUPS) {
+          lines.push(`| **${grp.label}** | | | |`);
+          for (const c of checks.filter((check) => check.group === grp.id)) {
+            lines.push(`| [${c.label}](${METHODOLOGY_URL}#${c.id}) | ${c.value || '—'} | ${c.status} | ${c.detail} |`);
+          }
         }
         lines.push('');
         if (asset?.clipDataUrl) {

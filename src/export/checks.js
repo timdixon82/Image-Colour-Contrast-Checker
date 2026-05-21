@@ -1,7 +1,10 @@
 /**
- * Shapes one ColourPair into the six checks shown in the expandable detail
- * panel. Shared by the web report, PDF and Markdown so all three stay in sync.
- * Each `id` is also the anchor of that check's section in methodology.html.
+ * Shapes one ColourPair into the checks shown in the expandable detail panel,
+ * grouped into WCAG compliance and Advanced checks. Shared by the web report,
+ * PDF and Markdown so all three stay in sync.
+ *
+ * Each check `id` is also the anchor of that check's entry in the on-page
+ * "What the checks mean" glossary (see CHECK_INFO) and in methodology.html.
  *
  * @module export/checks
  */
@@ -25,41 +28,144 @@ export function cvdStatus(p) {
   return p.cvdRisk ? 'WARN' : 'FAIL';
 }
 
+/** Severity ordering so a group can roll up to its worst check. */
+function severity(status) {
+  if (status === 'FAIL' || status === 'HIGH') return 2;
+  if (status === 'WARN' || status === 'HARSH') return 1;
+  return 0; // PASS, SAFE
+}
+
+/**
+ * Worst-of verdict across the four advanced checks (APCA, CVD contrast,
+ * Vestibular, Cognitive). Uses the same per-check statuses the detail panel
+ * shows, so the rolled-up badge never disagrees with the rows beneath it.
+ *
+ * @param {import('../core/schema.js').ColourPair} p
+ * @returns {'PASS'|'WARN'|'FAIL'}
+ */
+export function advancedStatus(p) {
+  const worst = Math.max(
+    severity(p.apca.status),
+    severity(cvdStatus(p)),
+    severity(p.vestibular.status),
+    severity(p.cognitive.status)
+  );
+  return worst === 2 ? 'FAIL' : worst === 1 ? 'WARN' : 'PASS';
+}
+
+/** Plain-language label for a check status. */
+export function statusWord(status) {
+  if (status === 'PASS' || status === 'SAFE') return 'Pass';
+  if (status === 'FAIL' || status === 'HIGH') return 'Fail';
+  if (status === 'HARSH') return 'Harsh';
+  return 'Review'; // WARN
+}
+
+/**
+ * The two check groups, in display order. `id` matches the `group` field on
+ * each check returned by pairChecks().
+ */
+export const CHECK_GROUPS = [
+  { id: 'wcag',     label: 'WCAG compliance' },
+  { id: 'advanced', label: 'Advanced checks' }
+];
+
+/**
+ * The three roll-up badges shown on a collapsed result row: the two formal
+ * WCAG levels plus the combined Advanced-checks verdict.
+ *
+ * @param {import('../core/schema.js').ColourPair} p
+ * @returns {Array<{ id:string, label:string, short:string, status:string }>}
+ */
+export function pairBadges(p) {
+  return [
+    { id: 'wcag-aa',  label: 'WCAG AA',        short: 'AA',       status: p.pass ? 'PASS' : 'FAIL' },
+    { id: 'wcag-aaa', label: 'WCAG AAA',       short: 'AAA',      status: p.passAaa ? 'PASS' : 'FAIL' },
+    { id: 'advanced', label: 'Advanced Checks', short: 'Advanced', status: advancedStatus(p) }
+  ];
+}
+
 /**
  * @param {import('../core/schema.js').ColourPair} p
- * @returns {Array<{ id:string, label:string, value:string, status:string, detail:string }>}
+ * @returns {Array<{ id:string, group:string, label:string, value:string, status:string, detail:string }>}
  */
 export function pairChecks(p) {
   return [
     {
-      id: 'wcag-aa', label: 'WCAG AA',
+      id: 'wcag-aa', group: 'wcag', label: 'WCAG AA',
       value: `${p.contrast.toFixed(2)}:1`, status: p.pass ? 'PASS' : 'FAIL',
       detail: `needs ${p.required}:1 for this text size`
     },
     {
-      id: 'wcag-aaa', label: 'WCAG AAA',
+      id: 'wcag-aaa', group: 'wcag', label: 'WCAG AAA',
       value: `${p.contrast.toFixed(2)}:1`, status: p.passAaa ? 'PASS' : 'FAIL',
       detail: `needs ${p.requiredAaa}:1 for this text size`
     },
     {
-      id: 'apca', label: 'APCA',
+      id: 'apca', group: 'advanced', label: 'APCA',
       value: `Lc ${p.apca.lc}`, status: p.apca.status, detail: p.apca.message
     },
     {
-      id: 'cvd', label: 'CVD contrast',
+      id: 'cvd', group: 'advanced', label: 'CVD contrast',
       value: '', status: cvdStatus(p),
       detail: `Deuteranopia ${p.cvd.deuteranopia.contrast.toFixed(2)}:1 · `
             + `Protanopia ${p.cvd.protanopia.contrast.toFixed(2)}:1 · `
             + `Tritanopia ${p.cvd.tritanopia.contrast.toFixed(2)}:1`
     },
     {
-      id: 'vestibular', label: 'Vestibular',
+      id: 'vestibular', group: 'advanced', label: 'Vestibular',
       value: `${p.vestibular.maxSat}% saturation`, status: p.vestibular.status,
       detail: p.vestibular.message
     },
     {
-      id: 'cognitive', label: 'Cognitive',
+      id: 'cognitive', group: 'advanced', label: 'Cognitive',
       value: '', status: p.cognitive.status, detail: p.cognitive.message
     }
   ];
 }
+
+/**
+ * Plain-language explanation of every check, for the on-page glossary.
+ * Each `id` matches a check id from pairChecks() and is used as the in-page
+ * anchor (`#check-info-<id>`) the detail-panel info links jump to.
+ */
+export const CHECK_INFO = [
+  {
+    id: 'wcag-aa', group: 'wcag', label: 'WCAG AA',
+    summary: 'The minimum contrast WCAG 2.2 requires (Success Criterion 1.4.3): '
+      + '4.5:1 for normal text, or 3:1 for large text — here an OCR box 24 px or '
+      + 'taller. This is the formal pass/fail line for most compliance work.'
+  },
+  {
+    id: 'wcag-aaa', group: 'wcag', label: 'WCAG AAA',
+    summary: "WCAG 2.2's enhanced target (Success Criterion 1.4.6): 7:1 for normal "
+      + 'text, or 4.5:1 for large text. Stricter than AA — it is the level this '
+      + 'tool targets for its own interface.'
+  },
+  {
+    id: 'apca', group: 'advanced', label: 'APCA',
+    summary: 'The Advanced Perceptual Contrast Algorithm models how the eye '
+      + 'actually perceives lightness, accounting for light- versus dark-mode '
+      + 'text. It reports a value Lc: below 45 fails, 45–59 is borderline, 60 or '
+      + 'above passes. APCA is in public beta and is not yet a WCAG requirement.'
+  },
+  {
+    id: 'cvd', group: 'advanced', label: 'CVD contrast',
+    summary: 'The WCAG contrast ratio recomputed as the colours appear to viewers '
+      + 'with deuteranopia, protanopia or tritanopia. It flags pairs that pass for '
+      + 'normal vision but drop below the threshold for a colour-vision deficiency.'
+  },
+  {
+    id: 'vestibular', group: 'advanced', label: 'Vestibular',
+    summary: 'Highly saturated colours can appear to shimmer, which can trigger '
+      + 'discomfort for people with vestibular disorders. This grades the higher '
+      + 'saturation of the text and background: under 60% is safe, 60–79% a '
+      + 'warning, 80% or above high risk.'
+  },
+  {
+    id: 'cognitive', group: 'advanced', label: 'Cognitive',
+    summary: 'A derived, plain-language read on cognitive load that combines the '
+      + 'other checks: text too small, failing contrast, high saturation, extreme '
+      + 'brightness or shimmer, and very high contrast that can feel "too sharp".'
+  }
+];

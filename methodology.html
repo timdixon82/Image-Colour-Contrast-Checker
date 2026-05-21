@@ -85,8 +85,9 @@
         </section>
 
         <section>
-          <h3>Overall verdict</h3>
-          <p>Each combination's checks roll up into one verdict. <strong>FAIL</strong> if WCAG AA fails, APCA fails, saturation is high, or the cognitive check fails. <strong>Review</strong> if any check warns or a colour-vision-deficiency risk is present. <strong>Pass</strong> only when every check is clear. Rows that fail are expanded automatically in the on-screen report.</p>
+          <h3>How the checks are grouped</h3>
+          <p>Every colour combination is graded in two groups. <strong>WCAG compliance</strong> covers the formal contrast levels &mdash; WCAG AA and AAA &mdash; that accessibility standards require. <strong>Advanced checks</strong> cover the perceptual and inclusive-design signals &mdash; APCA, CVD contrast, vestibular saturation and the cognitive verdict &mdash; which go beyond the formal WCAG ratio.</p>
+          <p>The on-screen report shows each combination with two WCAG badges (AA and AAA) and one rolled-up Advanced-checks badge. The Advanced badge <strong>passes</strong> when every advanced check is clear, needs <strong>review</strong> if any warns, and <strong>fails</strong> if any fails. Every row starts collapsed &mdash; open one to see the full per-check breakdown.</p>
         </section>
 
         <p class="privacy-back"><a href="./">&larr; Back to the tool</a></p>
@@ -112,9 +113,9 @@
           sep(),
           lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences', true),
           sep(),
-          lnk('./methodology.html', 'Methodology'),
+          lnk('./methodology.html', 'Methodology', true),
           sep(),
-          lnk('./privacy.html', 'Privacy'),
+          lnk('./privacy.html', 'Privacy', true),
           sep(),
           lnk('https://www.timdixon.net/contact/', 'Contact / feedback', true, true)
         );

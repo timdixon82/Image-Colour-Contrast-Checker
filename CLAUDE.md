@@ -225,7 +225,7 @@ No other files need to change.
 
 Every commit that changes behaviour must bump `package.json` → `version`. `package-lock.json` updates automatically on the next `npm install`. Commit both files together.
 
-Current version: **0.2.16** — bump `package.json` on every behavioural change.
+Current version: **0.2.17** — bump `package.json` on every behavioural change.
 
 ---
 

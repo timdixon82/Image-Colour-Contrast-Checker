@@ -446,23 +446,58 @@ body {
 .result-detail > td { padding: 0; background: var(--neutral-bg); }
 .detail-panel { padding: 16px 18px; }
 
-.check-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px 20px;
+/* Per-check breakdown table inside the expanded detail panel */
+.check-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border-radius: 8px;
+  overflow: hidden;
 }
-.check-item { font-size: 0.88rem; }
-.check-label {
-  font-size: 0.72rem;
+.check-table th, .check-table td {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+.check-table thead th {
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-weight: 700;
   color: var(--fg-muted);
-  margin-bottom: 3px;
+  background: var(--neutral-bg);
 }
-.check-value { margin-bottom: 2px; }
-.check-sub { color: var(--fg-muted); font-size: 0.82rem; line-height: 1.4; }
+.check-table tbody tr:last-child th,
+.check-table tbody tr:last-child td { border-bottom: none; }
+.check-group-row th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--neutral-bg);
+}
+.check-name { font-weight: 700; white-space: nowrap; }
+.check-value { font-variant-numeric: tabular-nums; }
+.check-meaning { color: var(--fg-muted); line-height: 1.45; }
 .check-info { text-decoration: none; }
+
+/* Roll-up badges — result cell (stacked) and card result line (inline) */
+.row-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.card-verdict {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  vertical-align: middle;
+}
+.card-verdict-detail { color: var(--fg-muted); }
+.pill.badge { letter-spacing: 0.02em; }
 
 .pill {
   display: inline-block;
@@ -486,6 +521,59 @@ body {
   border-radius: 6px;
   border: 1px solid var(--border);
 }
+
+/* ── Check glossary (on-page "what the checks mean") ─────────────────────── */
+.check-glossary { margin: 4px 0 28px; }
+.check-glossary h2 { font-size: 1.1rem; margin: 0 0 6px; }
+.glossary-intro { color: var(--fg-muted); font-size: 0.9rem; margin: 0 0 14px; }
+.glossary-group {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin: 16px 0 6px;
+}
+.glossary-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+.glossary-item > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.glossary-item > summary::-webkit-details-marker { display: none; }
+.glossary-item > summary::before {
+  content: '▸';
+  margin-right: 10px;
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+.glossary-item[open] > summary::before { content: '▾'; }
+.glossary-item > summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+  border-radius: 8px;
+}
+.glossary-item > p {
+  margin: 0;
+  padding: 0 14px 14px 38px;
+  color: var(--fg-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+.glossary-item:target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+.glossary-more { margin: 14px 0 0; font-size: 0.9rem; }
 
 /* ── Colour-blindness simulation ─────────────────────────────────────────── */
 .cb-sim-note { margin: 0 0 10px; font-size: 0.9rem; color: var(--fg-muted); }
@@ -682,7 +770,6 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 @media (max-width: 768px) {
   .results-table { font-size: 0.82rem; }
   .results-table .examples { max-width: 140px; }
-  .check-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ── Privacy page ──────────────────────────────────────────────────────── */
@@ -708,7 +795,6 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
   .app-header h1 { font-size: 1.2rem; }
   .results-table { font-size: 0.78rem; }
   .results-table .examples { max-width: 100px; }
-  .check-grid { grid-template-columns: 1fr; }
   /* Hide less critical columns on very small screens */
   .summary-table th:nth-child(4),
   .summary-table td:nth-child(4),

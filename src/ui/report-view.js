@@ -7,7 +7,10 @@
 
 import { makeSwatch, makeClip, makePreview, makeThumb, makeCbSim } from '../render/canvas.js';
 import { THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES }            from '../export/strings.js';
-import { pairChecks, overallLine }                                 from '../export/checks.js';
+import {
+  pairChecks, overallLine, advancedStatus, pairBadges,
+  statusWord, CHECK_GROUPS, CHECK_INFO
+}                                                                   from '../export/checks.js';
 
 export function renderResultsHeader(headerEl, timestamp) {
   headerEl.innerHTML = '';
@@ -37,6 +40,62 @@ export function renderThresholdsFooter(footerEl) {
   p.className   = 'thresholds-line';
   p.textContent = THRESHOLDS_FOOTER;
   footerEl.append(p);
+}
+
+/**
+ * Render the on-page "What the checks mean" glossary. Each check is a native
+ * <details> element with a stable id, so the info links inside the report can
+ * jump to it and open it — no new tab, no leaving the page (WCAG 3.2.5).
+ *
+ * @param {HTMLElement} glossaryEl
+ */
+export function renderCheckGlossary(glossaryEl) {
+  ensureGlossaryNav();
+  glossaryEl.innerHTML = '';
+
+  const h2 = document.createElement('h2');
+  h2.id = 'glossary-heading';
+  h2.textContent = 'What the checks mean';
+
+  const intro = document.createElement('p');
+  intro.className = 'glossary-intro';
+  intro.textContent =
+    'Every colour combination is graded against these checks. Use the ⓘ link '
+    + 'beside any check in the report to jump straight to its explanation here.';
+
+  glossaryEl.append(h2, intro);
+
+  for (const grp of CHECK_GROUPS) {
+    const h3 = document.createElement('h3');
+    h3.className   = 'glossary-group';
+    h3.textContent = grp.label;
+    glossaryEl.append(h3);
+
+    for (const info of CHECK_INFO.filter((c) => c.group === grp.id)) {
+      const det = document.createElement('details');
+      det.className = 'glossary-item';
+      det.id = `check-info-${info.id}`;
+
+      const sum = document.createElement('summary');
+      sum.textContent = info.label;
+
+      const body = document.createElement('p');
+      body.textContent = info.summary;
+
+      det.append(sum, body);
+      glossaryEl.append(det);
+    }
+  }
+
+  const more = document.createElement('p');
+  more.className = 'glossary-more';
+  const link = document.createElement('a');
+  link.href        = 'methodology.html';
+  link.target      = '_blank';
+  link.rel         = 'noopener';
+  link.textContent = 'Full methodology ↗';
+  more.append(link);
+  glossaryEl.append(more);
 }
 
 /**
@@ -128,10 +187,7 @@ export function renderImageCard(cardsEl, entry) {
   entry.previewDataUrl = preview.dataUrl;
 
   // Result line
-  const resultLine = document.createElement('p');
-  resultLine.className = 'image-card-result';
-  resultLine.innerHTML = `<strong>Result:</strong> ${verdictBadge(report.verdict)} — ${escapeHtml(report.detail)}`;
-  card.append(resultLine);
+  card.append(buildResultLine(report));
 
   // Colour-blindness simulation — applies to the whole image, text or not
   renderCbSim(card, entry);
@@ -146,6 +202,54 @@ export function renderImageCard(cardsEl, entry) {
 }
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
+
+/**
+ * The card's "Result" line. For images with text it shows the two formal WCAG
+ * levels and the rolled-up Advanced-checks verdict as separate badges, so a
+ * pass on WCAG AA is never confused with passing the perceptual checks.
+ *
+ * @param {import('../core/schema.js').ReportData} report
+ * @returns {HTMLElement}
+ */
+function buildResultLine(report) {
+  const line = document.createElement('p');
+  line.className = 'image-card-result';
+
+  const strong = document.createElement('strong');
+  strong.textContent = 'Result:';
+  line.append(strong, document.createTextNode(' '));
+
+  if (report.hasText && report.colourPairs.length) {
+    const badges = document.createElement('span');
+    badges.className = 'card-verdict';
+    for (const b of imageBadges(report)) badges.append(badge(b.label, b.status));
+    line.append(badges);
+
+    const detail = document.createElement('span');
+    detail.className   = 'card-verdict-detail';
+    detail.textContent = ` — ${report.detail}`;
+    line.append(detail);
+  } else {
+    line.append(
+      document.createTextNode(`${verdictBadge(report.verdict)} — ${report.detail}`)
+    );
+  }
+  return line;
+}
+
+/** Image-level roll-up: every pair must pass for the badge to pass. */
+function imageBadges(report) {
+  const pairs = report.colourPairs;
+  const adv   = pairs.map(advancedStatus);
+  return [
+    { label: 'WCAG AA',        status: pairs.every((p) => p.pass) ? 'PASS' : 'FAIL' },
+    { label: 'WCAG AAA',       status: pairs.every((p) => p.passAaa) ? 'PASS' : 'FAIL' },
+    {
+      label: 'Advanced Checks',
+      status: adv.includes('FAIL') ? 'FAIL' : adv.includes('WARN') ? 'WARN' : 'PASS'
+    }
+  ];
+}
 
 /**
  * Append a colour-blindness simulation grid: the source image transformed for
@@ -196,9 +300,10 @@ function renderCbSim(card, entry) {
 
 /**
  * Append the unified contrast-results table: one expandable row per colour
- * combination. The collapsed row shows swatch, overall verdict, colours,
- * WebAIM link and detected text; the expanded panel shows every check plus
- * the cropped image region. Rows that fail any check start expanded.
+ * combination. The collapsed row shows the swatch, the two WCAG badges and the
+ * Advanced-checks badge, colours, WebAIM link and detected text; the expanded
+ * panel groups every check into WCAG and Advanced sections. Rows stay
+ * collapsed until the reader chooses to open them.
  *
  * @param {HTMLElement} card
  * @param {Object} entry
@@ -244,7 +349,6 @@ function renderContrastResults(card, entry) {
     entry.pairAssets.push({ pair: p, swatchDataUrl: swatch.dataUrl, clipDataUrl: clip.dataUrl });
 
     const detailId = `detail-${id}-${i}`;
-    const open     = p.overall === 'FAIL';
 
     // ── Collapsed header row ──
     const hdr = document.createElement('tr');
@@ -254,9 +358,9 @@ function renderContrastResults(card, entry) {
     const toggle = document.createElement('button');
     toggle.type      = 'button';
     toggle.className = 'row-toggle';
-    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-expanded', 'false');
     toggle.setAttribute('aria-controls', detailId);
-    toggle.innerHTML = `<span class="caret" aria-hidden="true">${open ? '▾' : '▸'}</span>`
+    toggle.innerHTML = '<span class="caret" aria-hidden="true">▸</span>'
       + `<span class="sr-only">Toggle checks for background ${p.bgHex}, foreground ${p.fgHex}</span>`;
     toggleCell.append(toggle);
 
@@ -265,7 +369,10 @@ function renderContrastResults(card, entry) {
     swatchCell.append(swatch.canvas);
 
     const resultCell = document.createElement('td');
-    resultCell.append(pill(p.overall, p.overall));
+    const badges = document.createElement('div');
+    badges.className = 'row-badges';
+    for (const b of pairBadges(p)) badges.append(badge(b.short, b.status, b.label));
+    resultCell.append(badges);
 
     const bgCell = document.createElement('td');
     bgCell.innerHTML = `<code>${p.bgHex}</code>`;
@@ -285,7 +392,7 @@ function renderContrastResults(card, entry) {
     const det = document.createElement('tr');
     det.className = 'result-detail';
     det.id = detailId;
-    if (!open) det.hidden = true;
+    det.hidden = true;
     const detCell = document.createElement('td');
     detCell.colSpan = 7;
     detCell.append(buildDetailPanel(p, clip.canvas));
@@ -306,8 +413,9 @@ function renderContrastResults(card, entry) {
 }
 
 /**
- * Build the expanded detail panel for one colour pair: the six-check grid
- * followed by the cropped image region.
+ * Build the expanded detail panel for one colour pair: a table of every check,
+ * split into WCAG-compliance and Advanced-check groups, followed by the
+ * cropped image region.
  *
  * @param {Object} p             ColourPair (see core/schema.js)
  * @param {HTMLCanvasElement} clipCanvas
@@ -317,12 +425,42 @@ function buildDetailPanel(p, clipCanvas) {
   const panel = document.createElement('div');
   panel.className = 'detail-panel';
 
-  const grid = document.createElement('div');
-  grid.className = 'check-grid';
-  for (const c of pairChecks(p)) {
-    grid.append(checkItem(c.id, c.label, c.value, c.status, c.detail));
+  const scroll = document.createElement('div');
+  scroll.className = 'table-scroll';
+
+  const table = document.createElement('table');
+  table.className = 'check-table';
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th scope="col">Check</th>
+        <th scope="col">Value</th>
+        <th scope="col">Status</th>
+        <th scope="col">What it means</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector('tbody');
+  const checks = pairChecks(p);
+
+  for (const grp of CHECK_GROUPS) {
+    const groupRow = document.createElement('tr');
+    groupRow.className = 'check-group-row';
+    const gh = document.createElement('th');
+    gh.colSpan     = 4;
+    gh.scope       = 'colgroup';
+    gh.textContent = grp.label;
+    groupRow.append(gh);
+    tbody.append(groupRow);
+
+    for (const c of checks.filter((check) => check.group === grp.id)) {
+      tbody.append(checkRow(c));
+    }
   }
-  panel.append(grid);
+
+  scroll.append(table);
+  panel.append(scroll);
 
   const fig = document.createElement('figure');
   fig.className = 'detail-clip';
@@ -335,32 +473,51 @@ function buildDetailPanel(p, clipCanvas) {
   return panel;
 }
 
-/** One label/value/status item in the expanded check grid. */
-function checkItem(checkId, label, value, status, sub) {
-  const item = document.createElement('div');
-  item.className = 'check-item';
+/** One check as a table row in the expanded detail panel. */
+function checkRow(c) {
+  const tr = document.createElement('tr');
+  tr.className = 'check-row';
 
-  const lbl = document.createElement('div');
-  lbl.className = 'check-label';
-  lbl.append(document.createTextNode(label + ' '), infoLink(checkId, label));
+  const nameCell = document.createElement('th');
+  nameCell.scope     = 'row';
+  nameCell.className = 'check-name';
+  nameCell.append(document.createTextNode(c.label + ' '), infoLink(c.id, c.label));
 
-  const val = document.createElement('div');
-  val.className = 'check-value';
-  if (value) val.append(document.createTextNode(value + ' '));
-  val.append(pill(status, status));
+  const valueCell = document.createElement('td');
+  valueCell.className   = 'check-value';
+  valueCell.textContent = c.value || '—';
 
-  const subEl = document.createElement('div');
-  subEl.className = 'check-sub';
-  subEl.textContent = sub;
+  const statusCell = document.createElement('td');
+  statusCell.append(pill(c.status, c.status));
 
-  item.append(lbl, val, subEl);
-  return item;
+  const meaningCell = document.createElement('td');
+  meaningCell.className   = 'check-meaning';
+  meaningCell.textContent = c.detail;
+
+  tr.append(nameCell, valueCell, statusCell, meaningCell);
+  return tr;
 }
 
 function pill(text, status) {
   const span = document.createElement('span');
   span.className   = `pill pill-${pillClass(status)}`;
   span.textContent = text;
+  return span;
+}
+
+/**
+ * A roll-up badge: a pill carrying both a label and its pass/fail word, so the
+ * verdict is conveyed by text and not by colour alone (WCAG 1.4.1).
+ *
+ * @param {string} label       Short visible label, e.g. "AA"
+ * @param {string} status      PASS | WARN | FAIL
+ * @param {string} [fullLabel] Longer label for the accessible name
+ */
+function badge(label, status, fullLabel) {
+  const word = statusWord(status);
+  const span = pill(`${label} ${word}`, status);
+  span.classList.add('badge');
+  span.setAttribute('aria-label', `${fullLabel || label}: ${word}`);
   return span;
 }
 
@@ -372,13 +529,29 @@ function pillClass(status) {
 
 function infoLink(checkId, label) {
   const a = document.createElement('a');
-  a.className = 'check-info';
-  a.href      = `methodology.html#${checkId}`;
-  a.target    = '_blank';
-  a.rel       = 'noopener';
+  a.className   = 'check-info';
+  a.href        = `#check-info-${checkId}`;
   a.textContent = 'ⓘ';
-  a.setAttribute('aria-label', `What does the ${label} check mean? Opens the methodology page.`);
+  a.setAttribute('aria-label', `What does the ${label} check mean?`);
   return a;
+}
+
+// Register one delegated handler so an info link opens — and moves focus to —
+// the matching glossary <details> without navigating away from the report.
+let glossaryNavReady = false;
+function ensureGlossaryNav() {
+  if (glossaryNavReady) return;
+  glossaryNavReady = true;
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest?.('a.check-info');
+    if (!link) return;
+    const target = document.getElementById(link.getAttribute('href').slice(1));
+    if (!target) return; // glossary not present — fall back to default anchor
+    e.preventDefault();
+    if (target.tagName === 'DETAILS') target.open = true;
+    target.scrollIntoView({ block: 'start' });
+    (target.querySelector('summary') || target).focus({ preventScroll: true });
+  });
 }
 
 function webaimLink(fgHex, bgHex) {
