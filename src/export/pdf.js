@@ -7,7 +7,9 @@
  */
 
 import { sourceDataUrl }                            from '../render/canvas.js';
-import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT } from './strings.js';
+import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES } from './strings.js';
+
+const CVD_DICHROMACIES = CVD_TYPES.filter((t) => t.key !== 'achromatopsia');
 
 let pdfMakePromise = null;
 
@@ -26,6 +28,56 @@ function verdictLabel(verdict) {
   if (verdict === 'PASS') return '✓ PASS';
   if (verdict === 'FAIL') return '✗ FAIL';
   return '— NO TEXT';
+}
+
+function cvdRatioCell(contrast, pass) {
+  return { text: `${pass ? '✓' : '✗'} ${contrast.toFixed(2)}:1`, style: pass ? 'pass' : 'fail' };
+}
+
+/** Whole-image colour-blindness simulations, two per row. */
+function cbSimBlock(cbSimAssets) {
+  if (!cbSimAssets.length) return [];
+  const cell = (a) => a
+    ? { stack: [
+        { image: a.dataUrl, width: 232 },
+        { text: `${a.label} — ${a.note}`, fontSize: 8, color: '#4b5563', margin: [0, 3, 0, 6] }
+      ] }
+    : {};
+  const rows = [];
+  for (let i = 0; i < cbSimAssets.length; i += 2) {
+    rows.push([cell(cbSimAssets[i]), cell(cbSimAssets[i + 1])]);
+  }
+  return [
+    { text: 'Colour-blindness simulation', style: 'h3', margin: [0, 8, 0, 4] },
+    { table: { widths: ['*', '*'], body: rows }, layout: 'noBorders', margin: [0, 0, 0, 10] }
+  ];
+}
+
+/** Per-pair WCAG contrast recomputed under each dichromacy. */
+function cvdContrastBlock(report) {
+  const head = [
+    { text: 'Background', style: 'th' },
+    { text: 'Foreground', style: 'th' },
+    { text: 'Normal',     style: 'th' },
+    ...CVD_DICHROMACIES.map((t) => ({ text: t.label, style: 'th' }))
+  ];
+  const body = [head];
+  for (const p of report.colourPairs) {
+    body.push([
+      p.bgHex,
+      p.fgHex,
+      cvdRatioCell(p.contrast, p.pass),
+      ...CVD_DICHROMACIES.map((t) => cvdRatioCell(p.cvd[t.key].contrast, p.cvd[t.key].pass))
+    ]);
+  }
+  return [
+    { text: 'Contrast under colour-vision deficiency', style: 'h3', margin: [0, 8, 0, 4] },
+    {
+      table: { headerRows: 1, widths: ['auto', 'auto', 'auto', '*', '*', '*'], body },
+      layout: 'lightHorizontalLines',
+      margin: [0, 0, 0, 10]
+    }
+  ];
 }
 
 /**
@@ -111,7 +163,7 @@ function buildDocDefinition(entries, timestamp) {
 
   // ── Per-image detail ─────────────────────────────────────────────────────
   for (const entry of entries) {
-    const { filename, report, previewDataUrl, pairAssets = [] } = entry;
+    const { filename, report, previewDataUrl, pairAssets = [], cbSimAssets = [] } = entry;
     content.push({ text: filename, style: 'h2', pageBreak: 'before' });
 
     if (previewDataUrl) {
@@ -126,6 +178,8 @@ function buildDocDefinition(entries, timestamp) {
       ],
       margin: [0, 0, 0, 12]
     });
+
+    content.push(...cbSimBlock(cbSimAssets));
 
     if (report.hasText && report.colourPairs.length) {
       content.push({ text: 'Colour combinations detected', style: 'h3', margin: [0, 8, 0, 4] });
@@ -164,6 +218,8 @@ function buildDocDefinition(entries, timestamp) {
         layout: 'lightHorizontalLines',
         margin: [0, 0, 0, 10]
       });
+
+      content.push(...cvdContrastBlock(report));
 
       const failing = report.colourPairs.filter((p) => !p.pass);
       if (failing.length) {

@@ -6,15 +6,7 @@
  */
 
 import { makeSwatch, makeClip, makePreview, makeThumb, makeCbSim } from '../render/canvas.js';
-import { THRESHOLDS_FOOTER, DISCLAIMER_TEXT }                      from '../export/strings.js';
-
-// Colour-vision deficiencies simulated for each image, worst-prevalence first.
-const CB_TYPES = [
-  { key: 'deuteranopia',  label: 'Deuteranopia',  note: 'green-blind' },
-  { key: 'protanopia',    label: 'Protanopia',    note: 'red-blind' },
-  { key: 'tritanopia',    label: 'Tritanopia',    note: 'blue-blind' },
-  { key: 'achromatopsia', label: 'Achromatopsia', note: 'no colour' }
-];
+import { THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES }            from '../export/strings.js';
 
 export function renderResultsHeader(headerEl, timestamp) {
   headerEl.innerHTML = '';
@@ -141,7 +133,7 @@ export function renderImageCard(cardsEl, entry) {
   card.append(resultLine);
 
   // Colour-blindness simulation — applies to the whole image, text or not
-  renderCbSim(card, sourceCanvas, filename);
+  renderCbSim(card, entry);
 
   if (report.hasText && report.colourPairs.length) {
     const h4 = document.createElement('h4');
@@ -217,6 +209,8 @@ export function renderImageCard(cardsEl, entry) {
     scroll.append(table);
     card.append(scroll);
 
+    renderCvdContrast(card, report);
+
     // Failing-region clips
     const failing = report.colourPairs.filter((p) => !p.pass);
     if (failing.length) {
@@ -249,13 +243,15 @@ export function renderImageCard(cardsEl, entry) {
 /**
  * Append a colour-blindness simulation grid: the source image transformed for
  * each common colour-vision deficiency, so the user can see how colour pairs
- * shift (or collapse) for those viewers.
+ * shift (or collapse) for those viewers. Also populates entry.cbSimAssets so
+ * the export modules can embed the same images without redrawing.
  *
  * @param {HTMLElement} card
- * @param {HTMLCanvasElement} sourceCanvas
- * @param {string} filename
+ * @param {Object} entry  Augmented entry with sourceCanvas + filename
  */
-function renderCbSim(card, sourceCanvas, filename) {
+function renderCbSim(card, entry) {
+  const { sourceCanvas, filename } = entry;
+
   const heading = document.createElement('h4');
   heading.textContent = 'Colour-blindness simulation';
   card.append(heading);
@@ -267,8 +263,9 @@ function renderCbSim(card, sourceCanvas, filename) {
 
   const grid = document.createElement('div');
   grid.className = 'cb-sim-grid';
+  entry.cbSimAssets = [];
 
-  for (const t of CB_TYPES) {
+  for (const t of CVD_TYPES) {
     const sim = makeCbSim(sourceCanvas, t.key, 600);
 
     const figure = document.createElement('figure');
@@ -284,9 +281,77 @@ function renderCbSim(card, sourceCanvas, filename) {
 
     figure.append(sim.canvas, caption);
     grid.append(figure);
+
+    entry.cbSimAssets.push({ key: t.key, label: t.label, note: t.note, dataUrl: sim.dataUrl });
   }
 
   card.append(grid);
+}
+
+/**
+ * Append the per-pair contrast table recomputed under each dichromacy.
+ * Rows where a pair passes WCAG AA for normal vision but fails a simulation
+ * are flagged with the `cvd-risk` class.
+ *
+ * @param {HTMLElement} card
+ * @param {Object} report  ReportData (see core/schema.js)
+ */
+function renderCvdContrast(card, report) {
+  const dichromacies = CVD_TYPES.filter((t) => t.key !== 'achromatopsia');
+  const riskCount    = report.colourPairs.filter((p) => p.cvdRisk).length;
+
+  const heading = document.createElement('h4');
+  heading.textContent = 'Contrast under colour-vision deficiency';
+  card.append(heading);
+
+  const note = document.createElement('p');
+  note.className   = 'cvd-note';
+  note.textContent = riskCount
+    ? `${riskCount} colour combination(s) pass WCAG AA for normal vision but fall below `
+      + 'the threshold under a simulated deficiency.'
+    : 'WCAG contrast recomputed for each pair as the colours appear to dichromatic viewers.';
+  card.append(note);
+
+  const scroll = document.createElement('div');
+  scroll.className = 'table-scroll';
+
+  const table = document.createElement('table');
+  table.className = 'cvd-table';
+  const headCells = ['Background', 'Foreground', 'Normal', ...dichromacies.map((t) => t.label)];
+  table.innerHTML = `
+    <thead>
+      <tr>${headCells.map((h) => `<th scope="col">${h}</th>`).join('')}</tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector('tbody');
+
+  for (const p of report.colourPairs) {
+    const tr = document.createElement('tr');
+    if (p.cvdRisk) tr.className = 'cvd-risk';
+
+    const bgCell = document.createElement('td');
+    bgCell.innerHTML = `<code>${p.bgHex}</code>`;
+    const fgCell = document.createElement('td');
+    fgCell.innerHTML = `<code>${p.fgHex}</code>`;
+
+    tr.append(bgCell, fgCell, ratioCell(p.contrast, p.pass));
+    for (const t of dichromacies) {
+      const c = p.cvd[t.key];
+      tr.append(ratioCell(c.contrast, c.pass));
+    }
+    tbody.append(tr);
+  }
+
+  scroll.append(table);
+  card.append(scroll);
+}
+
+function ratioCell(contrast, pass) {
+  const td = document.createElement('td');
+  td.className   = pass ? 'pass' : 'fail';
+  td.textContent = `${pass ? '✓' : '✗'} ${contrast.toFixed(2)}:1`;
+  return td;
 }
 
 function verdictBadge(verdict) {

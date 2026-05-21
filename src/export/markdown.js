@@ -6,7 +6,9 @@
  */
 
 import { sourceDataUrl }                                          from '../render/canvas.js';
-import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT } from './strings.js';
+import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES } from './strings.js';
+
+const CVD_DICHROMACIES = CVD_TYPES.filter((t) => t.key !== 'achromatopsia');
 
 function anchor(filename) {
   return filename.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -16,6 +18,10 @@ function verdictLabel(verdict) {
   if (verdict === 'PASS') return '✓ PASS';
   if (verdict === 'FAIL') return '✗ FAIL';
   return '— NO TEXT';
+}
+
+function cvdRatio(contrast, pass) {
+  return `${pass ? '✓' : '✗'} ${contrast.toFixed(2)}:1`;
 }
 
 /**
@@ -56,7 +62,7 @@ export function buildMarkdown(entries, timestamp) {
 
   // ── Per-image detail ──────────────────────────────────────────────────────
   entries.forEach((entry, idx) => {
-    const { filename, report, previewDataUrl, pairAssets = [] } = entry;
+    const { filename, report, previewDataUrl, pairAssets = [], cbSimAssets = [] } = entry;
 
     lines.push(`### ${idx + 1}. ${filename}`);
     lines.push('');
@@ -66,6 +72,17 @@ export function buildMarkdown(entries, timestamp) {
     if (previewDataUrl) {
       lines.push(`![${filename}](${previewDataUrl})`);
       lines.push('');
+    }
+
+    if (cbSimAssets.length) {
+      lines.push('**Colour-blindness simulation:**');
+      lines.push('');
+      for (const a of cbSimAssets) {
+        lines.push(`![${a.label} — ${a.note}](${a.dataUrl})`);
+        lines.push('');
+        lines.push(`_${a.label} — ${a.note}_`);
+        lines.push('');
+      }
     }
 
     if (report.hasText && report.colourPairs.length) {
@@ -83,6 +100,22 @@ export function buildMarkdown(entries, timestamp) {
         const webaim  = `[WebAIM ↗](https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)})`;
         const examples = p.examples.map((e) => `"${e}"`).join(', ');
         lines.push(`| ${swatch} | \`${p.bgHex}\` | \`${p.fgHex}\` | ${p.contrast.toFixed(2)}:1 | ${p.pass ? '✓ Pass' : '✗ Fail'} | ${p.passAaa ? '✓ Pass' : '✗ Fail'} | ${webaim} | ${examples} |`);
+      }
+      lines.push('');
+
+      lines.push('**Contrast under colour-vision deficiency:**');
+      lines.push('');
+      const cvdHead = ['Background', 'Foreground', 'Normal', ...CVD_DICHROMACIES.map((t) => t.label)];
+      lines.push(`| ${cvdHead.join(' | ')} |`);
+      lines.push(`|${cvdHead.map(() => '---').join('|')}|`);
+      for (const p of report.colourPairs) {
+        const cells = [
+          `\`${p.bgHex}\``,
+          `\`${p.fgHex}\``,
+          cvdRatio(p.contrast, p.pass),
+          ...CVD_DICHROMACIES.map((t) => cvdRatio(p.cvd[t.key].contrast, p.cvd[t.key].pass))
+        ];
+        lines.push(`| ${cells.join(' | ')} |`);
       }
       lines.push('');
 

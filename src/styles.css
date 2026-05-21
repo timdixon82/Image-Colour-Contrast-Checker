@@ -348,7 +348,7 @@ body {
 /* Wrapper for responsive horizontal scroll on narrow screens */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-.summary-table, .pair-table {
+.summary-table, .pair-table, .cvd-table {
   width: 100%;
   border-collapse: collapse;
   background: var(--bg-card);
@@ -357,18 +357,21 @@ body {
   box-shadow: var(--shadow);
 }
 .summary-table th, .summary-table td,
-.pair-table th, .pair-table td {
+.pair-table th, .pair-table td,
+.cvd-table th, .cvd-table td {
   text-align: left;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
   vertical-align: middle;
 }
-.summary-table th, .pair-table th {
+.summary-table th, .pair-table th, .cvd-table th {
   background: var(--neutral-bg);
   font-weight: 700;
 }
-.summary-table tr:last-child td, .pair-table tr:last-child td { border-bottom: none; }
+.summary-table tr:last-child td,
+.pair-table tr:last-child td,
+.cvd-table tr:last-child td { border-bottom: none; }
 
 .verdict { font-weight: 700; }
 .verdict-pass { color: var(--pass); }
@@ -436,6 +439,14 @@ body {
 .cb-sim-caption { margin-top: 6px; font-size: 0.85rem; line-height: 1.4; }
 .cb-sim-caption strong { display: block; }
 .cb-sim-caption span { color: var(--fg-muted); }
+
+/* ── Contrast under colour-vision deficiency ─────────────────────────────── */
+.cvd-note { margin: 0 0 8px; font-size: 0.9rem; color: var(--fg-muted); }
+.cvd-table code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
+.cvd-table td.pass { color: var(--pass); font-weight: 700; }
+.cvd-table td.fail { color: var(--fail); font-weight: 700; }
+.cvd-table tr.cvd-risk td { background: var(--code-bg); }
+.cvd-table tr.cvd-risk td:first-child { border-left: 3px solid var(--fail); }
 
 /* ── Thresholds footer ───────────────────────────────────────────────────── */
 .thresholds { margin-top: 24px; }

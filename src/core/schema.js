@@ -24,6 +24,15 @@
  */
 
 /**
+ * Simulated contrast for one colour-vision deficiency.
+ * @typedef {Object} CvdContrast
+ * @property {string}  fgHex     Foreground as it appears with this deficiency
+ * @property {string}  bgHex     Background as it appears with this deficiency
+ * @property {number}  contrast  Recomputed WCAG contrast ratio
+ * @property {boolean} pass      Meets the pair's AA threshold under simulation
+ */
+
+/**
  * A unique foreground/background colour combination found in the image.
  * @typedef {Object} ColourPair
  * @property {string}   fgHex       Foreground hex e.g. "#FFFFFF"
@@ -35,6 +44,9 @@
  * @property {number}   requiredAaa AAA threshold used (4.5 or 7)
  * @property {string[]} examples    Sample words from this pair
  * @property {BBox[]}   bboxes      All bboxes that belong to this pair
+ * @property {{deuteranopia:CvdContrast,protanopia:CvdContrast,tritanopia:CvdContrast}} cvd
+ *                                  Simulated contrast per dichromacy
+ * @property {boolean}  cvdRisk     Passes AA normally but fails under a deficiency
  */
 
 /**
@@ -60,12 +72,22 @@
  */
 
 /**
+ * One colour-blindness simulation of the whole image.
+ * @typedef {Object} CbSimAsset
+ * @property {string} key      CVD identifier (e.g. "deuteranopia")
+ * @property {string} label    Display name
+ * @property {string} note     Short plain-language description
+ * @property {string} dataUrl  PNG data URL of the simulated image
+ */
+
+/**
  * Fully analysed entry ready for export.  The export modules (pdf, markdown)
  * accept an array of these and nothing else from the app internals.
  * @typedef {Object} AnalysedEntry
- * @property {string}      id
- * @property {string}      filename
- * @property {ReportData}  report
- * @property {string}      previewDataUrl  PNG data URL of the resized preview
- * @property {PairAsset[]} pairAssets
+ * @property {string}       id
+ * @property {string}       filename
+ * @property {ReportData}   report
+ * @property {string}       previewDataUrl  PNG data URL of the resized preview
+ * @property {PairAsset[]}  pairAssets
+ * @property {CbSimAsset[]} cbSimAssets     Colour-blindness simulations of the image
  */

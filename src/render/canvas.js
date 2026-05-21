@@ -6,6 +6,8 @@
  * @module render/canvas
  */
 
+import { CVD_MATRICES, SRGB_TO_LINEAR, linearToSrgb8 } from '../core/colour-vision.js';
+
 const SWATCH_W    = 80;
 const SWATCH_H    = 20;
 const CLIP_PADDING = 32;
@@ -90,32 +92,17 @@ export function makePreview(sourceCanvas, maxWidth = 600) {
 }
 
 /**
- * Colour-vision-deficiency transform matrices, applied per pixel in sRGB
- * space (the convention used by browser CVD emulators and web simulators).
- * Protan/deutan/tritan values are the widely-used dichromat approximations;
- * achromatopsia is a luminance-weighted greyscale.
- */
-const CB_MATRICES = {
-  protanopia:    [0.567, 0.433, 0.000,  0.558, 0.442, 0.000,  0.000, 0.242, 0.758],
-  deuteranopia:  [0.625, 0.375, 0.000,  0.700, 0.300, 0.000,  0.000, 0.300, 0.700],
-  tritanopia:    [0.950, 0.050, 0.000,  0.000, 0.433, 0.567,  0.000, 0.475, 0.525],
-  achromatopsia: [0.299, 0.587, 0.114,  0.299, 0.587, 0.114,  0.299, 0.587, 0.114]
-};
-
-/** @typedef {'protanopia'|'deuteranopia'|'tritanopia'|'achromatopsia'} CbType */
-
-/**
  * Simulate how the source image appears to a viewer with the given
- * colour-vision deficiency. Downscales to `maxWidth` first, then applies the
- * transform to every pixel.
+ * colour-vision deficiency. Downscales to `maxWidth` first, then transforms
+ * every pixel in linear-RGB space (see core/colour-vision.js).
  *
  * @param {HTMLCanvasElement} sourceCanvas
- * @param {CbType} type
+ * @param {string} type  Key of CVD_MATRICES
  * @param {number} [maxWidth=600]
  * @returns {{ canvas: HTMLCanvasElement, dataUrl: string }}
  */
 export function makeCbSim(sourceCanvas, type, maxWidth = 600) {
-  const m = CB_MATRICES[type];
+  const m = CVD_MATRICES[type];
   if (!m) throw new Error(`Unknown colour-blindness type: ${type}`);
 
   const scale = Math.min(1, maxWidth / sourceCanvas.width);
@@ -128,17 +115,15 @@ export function makeCbSim(sourceCanvas, type, maxWidth = 600) {
   const img = ctx.getImageData(0, 0, w, h);
   const d   = img.data;
   for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], g = d[i + 1], b = d[i + 2];
-    d[i]     = clampByte(m[0] * r + m[1] * g + m[2] * b);
-    d[i + 1] = clampByte(m[3] * r + m[4] * g + m[5] * b);
-    d[i + 2] = clampByte(m[6] * r + m[7] * g + m[8] * b);
+    const lr = SRGB_TO_LINEAR[d[i]];
+    const lg = SRGB_TO_LINEAR[d[i + 1]];
+    const lb = SRGB_TO_LINEAR[d[i + 2]];
+    d[i]     = linearToSrgb8(m[0] * lr + m[1] * lg + m[2] * lb);
+    d[i + 1] = linearToSrgb8(m[3] * lr + m[4] * lg + m[5] * lb);
+    d[i + 2] = linearToSrgb8(m[6] * lr + m[7] * lg + m[8] * lb);
   }
   ctx.putImageData(img, 0, 0);
   return { canvas, dataUrl: canvas.toDataURL('image/png') };
-}
-
-function clampByte(v) {
-  return v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
 }
 
 /**

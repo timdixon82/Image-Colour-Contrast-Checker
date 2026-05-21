@@ -12,6 +12,34 @@ import {
   thresholdsFor,
   colourDistance
 } from './contrast.js';
+import { cvdPairContrast } from './colour-vision.js';
+
+// Dichromacies whose contrast is recomputed per pair. Achromatopsia is
+// omitted: it preserves luminance, so its WCAG ratio always equals the
+// unmodified one.
+const CVD_DICHROMACIES = ['deuteranopia', 'protanopia', 'tritanopia'];
+
+/**
+ * Attach simulated colour-vision-deficiency contrast to each colour pair.
+ * `cvdRisk` is set when a pair passes WCAG AA for normal vision but drops
+ * below the same threshold for at least one simulated deficiency.
+ *
+ * @param {import('./schema.js').ColourPair[]} pairs
+ */
+function annotateCvd(pairs) {
+  for (const p of pairs) {
+    const cvd = {};
+    let risk = false;
+    for (const type of CVD_DICHROMACIES) {
+      const sim  = cvdPairContrast(p.fgHex, p.bgHex, type);
+      const pass = sim.contrast >= p.required;
+      cvd[type]  = { fgHex: sim.fgHex, bgHex: sim.bgHex, contrast: sim.contrast, pass };
+      if (p.pass && !pass) risk = true;
+    }
+    p.cvd     = cvd;
+    p.cvdRisk = risk;
+  }
+}
 
 // ── OCR filter ───────────────────────────────────────────────────────────────
 
@@ -161,6 +189,7 @@ export function analyseImage(imageData, ocrDetections) {
   }
 
   const colourPairs = buildColourPairs(findings);
+  annotateCvd(colourPairs);
   const failures    = colourPairs.filter((p) => !p.pass);
   const verdict     = failures.length ? 'FAIL' : 'PASS';
   const minCr       = colourPairs[0].contrast;

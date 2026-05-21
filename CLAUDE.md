@@ -19,6 +19,7 @@ src/
   core/            Pure logic — no DOM, no browser APIs (safe in Node/workers)
     schema.js      JSDoc type definitions only — no runtime code
     contrast.js    WCAG math primitives
+    colour-vision.js Colour-vision-deficiency simulation (Machado 2009 matrices)
     analyse.js     Analysis pipeline: ImageData + OcrWord[] → ReportData
     image.js       Image decode and resize
 
@@ -26,7 +27,7 @@ src/
     paddle-ocr.js  PaddleOCR PP-OCRv4 via ONNX Runtime Web
 
   render/          Browser canvas utilities — pure drawing, no strings
-    canvas.js      makeSwatch, makeClip, makePreview, makeThumb, sourceDataUrl
+    canvas.js      makeSwatch, makeClip, makePreview, makeThumb, makeCbSim, sourceDataUrl
 
   export/          Report generators — accept AnalysedEntry[], produce files
     strings.js     All user-facing copy: footers, disclaimers, URLs
@@ -54,8 +55,12 @@ BBox            { x, y, w, h }  — pixel coordinates in the resized image
 
 OcrWord         { text, score, bbox }  — one word from an OCR adapter
 
+CvdContrast     { fgHex, bgHex, contrast, pass }
+                — one pair's contrast recomputed for one dichromacy
+
 ColourPair      { fgHex, bgHex, contrast, pass, required,
-                  passAaa, requiredAaa, examples[], bboxes[] }
+                  passAaa, requiredAaa, examples[], bboxes[],
+                  cvd{deuteranopia,protanopia,tritanopia}, cvdRisk }
                 — a unique fg/bg combination merged across the whole image
 
 ReportData      { hasText, colourPairs[], verdict, flag, detail }
@@ -64,7 +69,11 @@ ReportData      { hasText, colourPairs[], verdict, flag, detail }
 PairAsset       { pair, swatchDataUrl, clipDataUrl? }
                 — canvas assets built during DOM rendering
 
-AnalysedEntry   { id, filename, report, previewDataUrl, pairAssets[] }
+CbSimAsset      { key, label, note, dataUrl }
+                — one whole-image colour-blindness simulation
+
+AnalysedEntry   { id, filename, report, previewDataUrl,
+                  pairAssets[], cbSimAssets[] }
                 — everything the export modules need; no DOM or app state
 ```
 
@@ -86,8 +95,8 @@ ImageData + OcrWord[]
   └─ core/analyse.js       analyseImage()           → ReportData
 
 ReportData + sourceCanvas
-  └─ ui/report-view.js     renderImageCard()        → DOM + populates entry.pairAssets
-                                                        and entry.previewDataUrl
+  └─ ui/report-view.js     renderImageCard()        → DOM + populates entry.pairAssets,
+                                                        entry.previewDataUrl, entry.cbSimAssets
 
 AnalysedEntry[]
   └─ export/pdf.js         downloadPdf()            → .pdf file
@@ -127,7 +136,7 @@ The orchestrator is `main.js`. It runs this pipeline for each file and calls the
 
 ### ui/report-view.js
 - Imports from `render/canvas.js` and `export/strings.js` only (within the project).
-- `renderImageCard()` has a side-effect: it populates `entry.previewDataUrl` and `entry.pairAssets` on the entry object it is passed. This is intentional — it means the export modules can run after rendering without re-drawing anything.
+- `renderImageCard()` has a side-effect: it populates `entry.previewDataUrl`, `entry.pairAssets` and `entry.cbSimAssets` on the entry object it is passed. This is intentional — it means the export modules can run after rendering without re-drawing anything.
 - `summaryItemFromEntry()` extracts the data `renderSummary()` needs. Use it in `main.js` rather than building summary items manually.
 
 ### main.js
@@ -189,7 +198,7 @@ No other files need to change.
 
 Every commit that changes behaviour must bump `package.json` → `version`. `package-lock.json` updates automatically on the next `npm install`. Commit both files together.
 
-Current version: **0.2.13** — bump `package.json` on every behavioural change.
+Current version: **0.2.14** — bump `package.json` on every behavioural change.
 
 ---
 
