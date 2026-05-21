@@ -189,9 +189,23 @@ No other files need to change.
 
 Every commit that changes behaviour must bump `package.json` → `version`. `package-lock.json` updates automatically on the next `npm install`. Commit both files together.
 
-Current version: **0.2.8** — bump `package.json` on every behavioural change.
+Current version: **0.2.9** — bump `package.json` on every behavioural change.
 
 ---
+
+## Service worker (`public/sw.js`)
+
+A single hand-written service worker, registered by `<script src="/sw.js">` in
+`index.html`, does two things:
+
+1. **Cross-origin isolation** — injects COOP/COEP headers (the `coi-serviceworker`
+   logic) so `crossOriginIsolated` is true and multi-threaded WASM works.
+2. **Model caching** — cache-first for any `/models/` or `/ort/` request, stored
+   in Cache Storage (`icc-model-cache-v*`). iOS Safari evicts large files from
+   its HTTP cache between visits; Cache Storage is durable, so the ~30 MB of
+   models download once. Bump `MODEL_CACHE` when the runtime/model files change.
+
+There can only be one service worker per scope, so both jobs live in this file.
 
 ## Deployment
 

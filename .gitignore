@@ -9,4 +9,3 @@ dist
 # Auto-copied at install / build time by scripts/copy-models.mjs
 public/models/
 public/ort/
-public/coi-serviceworker.js
