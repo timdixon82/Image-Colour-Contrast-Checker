@@ -523,9 +523,13 @@ body {
 }
 
 /* ── Check glossary (on-page "what the checks mean") ─────────────────────── */
-.check-glossary { margin: 4px 0 28px; }
-.check-glossary h2 { font-size: 1.1rem; margin: 0 0 6px; }
-.glossary-intro { color: var(--fg-muted); font-size: 0.9rem; margin: 0 0 14px; }
+.check-glossary {
+  margin: 28px 0 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.check-glossary h2 { font-size: 1.3rem; margin: 0 0 6px; }
+.glossary-intro { color: var(--fg-muted); font-size: 0.92rem; margin: 0 0 16px; line-height: 1.6; }
 .glossary-group {
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -563,17 +567,23 @@ body {
   border-radius: 8px;
 }
 .glossary-item > p {
-  margin: 0;
-  padding: 0 14px 14px 38px;
+  margin: 10px 0 0;
+  padding: 0 16px 0 38px;
   color: var(--fg-muted);
-  font-size: 0.88rem;
-  line-height: 1.6;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+.glossary-item > p:last-of-type { padding-bottom: 14px; }
+.glossary-item code {
+  background: var(--code-bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
 }
 .glossary-item:target {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-subtle);
 }
-.glossary-more { margin: 14px 0 0; font-size: 0.9rem; }
 
 /* ── Colour-blindness simulation ─────────────────────────────────────────── */
 .cb-sim-note { margin: 0 0 10px; font-size: 0.9rem; color: var(--fg-muted); }
@@ -795,9 +805,4 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
   .app-header h1 { font-size: 1.2rem; }
   .results-table { font-size: 0.78rem; }
   .results-table .examples { max-width: 100px; }
-  /* Hide less critical columns on very small screens */
-  .summary-table th:nth-child(4),
-  .summary-table td:nth-child(4),
-  .summary-table th:nth-child(5),
-  .summary-table td:nth-child(5) { display: none; }
 }

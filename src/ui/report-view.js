@@ -9,7 +9,7 @@ import { makeSwatch, makeClip, makePreview, makeThumb, makeCbSim } from '../rend
 import { THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES }            from '../export/strings.js';
 import {
   pairChecks, overallLine, advancedStatus, pairBadges,
-  statusWord, CHECK_GROUPS, CHECK_INFO
+  statusWord, CHECK_GROUPS
 }                                                                   from '../export/checks.js';
 
 export function renderResultsHeader(headerEl, timestamp) {
@@ -43,64 +43,8 @@ export function renderThresholdsFooter(footerEl) {
 }
 
 /**
- * Render the on-page "What the checks mean" glossary. Each check is a native
- * <details> element with a stable id, so the info links inside the report can
- * jump to it and open it — no new tab, no leaving the page (WCAG 3.2.5).
- *
- * @param {HTMLElement} glossaryEl
- */
-export function renderCheckGlossary(glossaryEl) {
-  ensureGlossaryNav();
-  glossaryEl.innerHTML = '';
-
-  const h2 = document.createElement('h2');
-  h2.id = 'glossary-heading';
-  h2.textContent = 'What the checks mean';
-
-  const intro = document.createElement('p');
-  intro.className = 'glossary-intro';
-  intro.textContent =
-    'Every colour combination is graded against these checks. Use the ⓘ link '
-    + 'beside any check in the report to jump straight to its explanation here.';
-
-  glossaryEl.append(h2, intro);
-
-  for (const grp of CHECK_GROUPS) {
-    const h3 = document.createElement('h3');
-    h3.className   = 'glossary-group';
-    h3.textContent = grp.label;
-    glossaryEl.append(h3);
-
-    for (const info of CHECK_INFO.filter((c) => c.group === grp.id)) {
-      const det = document.createElement('details');
-      det.className = 'glossary-item';
-      det.id = `check-info-${info.id}`;
-
-      const sum = document.createElement('summary');
-      sum.textContent = info.label;
-
-      const body = document.createElement('p');
-      body.textContent = info.summary;
-
-      det.append(sum, body);
-      glossaryEl.append(det);
-    }
-  }
-
-  const more = document.createElement('p');
-  more.className = 'glossary-more';
-  const link = document.createElement('a');
-  link.href        = 'methodology.html';
-  link.target      = '_blank';
-  link.rel         = 'noopener';
-  link.textContent = 'Full methodology ↗';
-  more.append(link);
-  glossaryEl.append(more);
-}
-
-/**
  * @param {HTMLElement} summaryEl
- * @param {Array<{ id:string, filename:string, thumb:HTMLCanvasElement|null, verdict:string, worstRatio:number|null, failCount:number|null }>} items
+ * @param {Array<{ id:string, filename:string, thumb:HTMLCanvasElement|null, hasText:boolean, badges:Array }>} items
  */
 export function renderSummary(summaryEl, items) {
   summaryEl.innerHTML = '';
@@ -118,11 +62,10 @@ export function renderSummary(summaryEl, items) {
   table.innerHTML = `
     <thead>
       <tr>
-        <th scope="col"></th>
+        <th scope="col"><span class="sr-only">Thumbnail</span></th>
         <th scope="col">Image</th>
-        <th scope="col">Result</th>
-        <th scope="col">Worst ratio</th>
-        <th scope="col">Failing pairs</th>
+        <th scope="col">WCAG</th>
+        <th scope="col">Advanced checks</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -141,17 +84,17 @@ export function renderSummary(summaryEl, items) {
     anchor.textContent = item.filename;
     nameCell.append(anchor);
 
-    const resultCell = document.createElement('td');
-    resultCell.className   = `verdict verdict-${item.verdict.toLowerCase()}`;
-    resultCell.textContent = verdictBadge(item.verdict);
+    const wcagCell = document.createElement('td');
+    const advCell  = document.createElement('td');
+    if (item.hasText && item.badges) {
+      wcagCell.append(wcagBadges(item.badges));
+      advCell.append(badge('', item.badges[2].status, 'Advanced checks'));
+    } else {
+      wcagCell.textContent = '—';
+      advCell.textContent  = '—';
+    }
 
-    const ratioCell = document.createElement('td');
-    ratioCell.textContent = item.worstRatio != null ? `${item.worstRatio.toFixed(2)}:1` : '—';
-
-    const failCell = document.createElement('td');
-    failCell.textContent = item.failCount != null ? String(item.failCount) : '—';
-
-    tr.append(thumbCell, nameCell, resultCell, ratioCell, failCell);
+    tr.append(thumbCell, nameCell, wcagCell, advCell);
     tbody.append(tr);
   }
 
@@ -204,9 +147,8 @@ export function renderImageCard(cardsEl, entry) {
 // ── Internal helpers ─────────────────────────────────────────────────────────
 
 /**
- * The card's "Result" line. For images with text it shows the two formal WCAG
- * levels and the rolled-up Advanced-checks verdict as separate badges, so a
- * pass on WCAG AA is never confused with passing the perceptual checks.
+ * The card's "Result" line: the two formal WCAG levels and the rolled-up
+ * Advanced-checks verdict as separate badges.
  *
  * @param {import('../core/schema.js').ReportData} report
  * @returns {HTMLElement}
@@ -224,15 +166,8 @@ function buildResultLine(report) {
     badges.className = 'card-verdict';
     for (const b of imageBadges(report)) badges.append(badge(b.label, b.status));
     line.append(badges);
-
-    const detail = document.createElement('span');
-    detail.className   = 'card-verdict-detail';
-    detail.textContent = ` — ${report.detail}`;
-    line.append(detail);
   } else {
-    line.append(
-      document.createTextNode(`${verdictBadge(report.verdict)} — ${report.detail}`)
-    );
+    line.append(document.createTextNode(`${verdictBadge(report.verdict)} — ${report.detail}`));
   }
   return line;
 }
@@ -242,13 +177,24 @@ function imageBadges(report) {
   const pairs = report.colourPairs;
   const adv   = pairs.map(advancedStatus);
   return [
-    { label: 'WCAG AA',        status: pairs.every((p) => p.pass) ? 'PASS' : 'FAIL' },
-    { label: 'WCAG AAA',       status: pairs.every((p) => p.passAaa) ? 'PASS' : 'FAIL' },
+    { label: 'WCAG AA',  short: 'AA',  status: pairs.every((p) => p.pass) ? 'PASS' : 'FAIL' },
+    { label: 'WCAG AAA', short: 'AAA', status: pairs.every((p) => p.passAaa) ? 'PASS' : 'FAIL' },
     {
-      label: 'Advanced Checks',
+      label: 'Advanced Checks', short: 'Advanced',
       status: adv.includes('FAIL') ? 'FAIL' : adv.includes('WARN') ? 'WARN' : 'PASS'
     }
   ];
+}
+
+/** Stacked AA + AAA badges for a WCAG table cell. */
+function wcagBadges(badges) {
+  const wrap = document.createElement('div');
+  wrap.className = 'row-badges';
+  wrap.append(
+    badge(badges[0].short, badges[0].status, badges[0].label),
+    badge(badges[1].short, badges[1].status, badges[1].label)
+  );
+  return wrap;
 }
 
 /**
@@ -300,10 +246,10 @@ function renderCbSim(card, entry) {
 
 /**
  * Append the unified contrast-results table: one expandable row per colour
- * combination. The collapsed row shows the swatch, the two WCAG badges and the
- * Advanced-checks badge, colours, WebAIM link and detected text; the expanded
- * panel groups every check into WCAG and Advanced sections. Rows stay
- * collapsed until the reader chooses to open them.
+ * combination. The collapsed row shows the swatch, separate WCAG and Advanced
+ * columns, colours, WebAIM link and detected text; the expanded panel groups
+ * every check into WCAG and Advanced sections. Rows stay collapsed until the
+ * reader chooses to open them.
  *
  * @param {HTMLElement} card
  * @param {Object} entry
@@ -332,7 +278,8 @@ function renderContrastResults(card, entry) {
       <tr>
         <th scope="col"><span class="sr-only">Expand</span></th>
         <th scope="col">Swatch</th>
-        <th scope="col">Result</th>
+        <th scope="col">WCAG</th>
+        <th scope="col">Advanced</th>
         <th scope="col">Background</th>
         <th scope="col">Foreground</th>
         <th scope="col">Check</th>
@@ -349,6 +296,7 @@ function renderContrastResults(card, entry) {
     entry.pairAssets.push({ pair: p, swatchDataUrl: swatch.dataUrl, clipDataUrl: clip.dataUrl });
 
     const detailId = `detail-${id}-${i}`;
+    const badges   = pairBadges(p);
 
     // ── Collapsed header row ──
     const hdr = document.createElement('tr');
@@ -368,11 +316,11 @@ function renderContrastResults(card, entry) {
     const swatchCell = document.createElement('td');
     swatchCell.append(swatch.canvas);
 
-    const resultCell = document.createElement('td');
-    const badges = document.createElement('div');
-    badges.className = 'row-badges';
-    for (const b of pairBadges(p)) badges.append(badge(b.short, b.status, b.label));
-    resultCell.append(badges);
+    const wcagCell = document.createElement('td');
+    wcagCell.append(wcagBadges(badges));
+
+    const advCell = document.createElement('td');
+    advCell.append(badge('', badges[2].status, 'Advanced checks'));
 
     const bgCell = document.createElement('td');
     bgCell.innerHTML = `<code>${p.bgHex}</code>`;
@@ -386,7 +334,7 @@ function renderContrastResults(card, entry) {
     textCell.className   = 'examples';
     textCell.textContent = p.examples.map((e) => `"${e}"`).join(', ');
 
-    hdr.append(toggleCell, swatchCell, resultCell, bgCell, fgCell, checkCell, textCell);
+    hdr.append(toggleCell, swatchCell, wcagCell, advCell, bgCell, fgCell, checkCell, textCell);
 
     // ── Expandable detail row ──
     const det = document.createElement('tr');
@@ -394,7 +342,7 @@ function renderContrastResults(card, entry) {
     det.id = detailId;
     det.hidden = true;
     const detCell = document.createElement('td');
-    detCell.colSpan = 7;
+    detCell.colSpan = 8;
     detCell.append(buildDetailPanel(p, clip.canvas));
     det.append(detCell);
 
@@ -506,16 +454,16 @@ function pill(text, status) {
 }
 
 /**
- * A roll-up badge: a pill carrying both a label and its pass/fail word, so the
- * verdict is conveyed by text and not by colour alone (WCAG 1.4.1).
+ * A roll-up badge: a pill carrying a pass/fail word (and an optional label),
+ * so the verdict is conveyed by text and not by colour alone (WCAG 1.4.1).
  *
- * @param {string} label       Short visible label, e.g. "AA"
+ * @param {string} label       Short visible label, e.g. "AA" — may be empty
  * @param {string} status      PASS | WARN | FAIL
  * @param {string} [fullLabel] Longer label for the accessible name
  */
 function badge(label, status, fullLabel) {
   const word = statusWord(status);
-  const span = pill(`${label} ${word}`, status);
+  const span = pill(label ? `${label} ${word}` : word, status);
   span.classList.add('badge');
   span.setAttribute('aria-label', `${fullLabel || label}: ${word}`);
   return span;
@@ -534,24 +482,6 @@ function infoLink(checkId, label) {
   a.textContent = 'ⓘ';
   a.setAttribute('aria-label', `What does the ${label} check mean?`);
   return a;
-}
-
-// Register one delegated handler so an info link opens — and moves focus to —
-// the matching glossary <details> without navigating away from the report.
-let glossaryNavReady = false;
-function ensureGlossaryNav() {
-  if (glossaryNavReady) return;
-  glossaryNavReady = true;
-  document.addEventListener('click', (e) => {
-    const link = e.target.closest?.('a.check-info');
-    if (!link) return;
-    const target = document.getElementById(link.getAttribute('href').slice(1));
-    if (!target) return; // glossary not present — fall back to default anchor
-    e.preventDefault();
-    if (target.tagName === 'DETAILS') target.open = true;
-    target.scrollIntoView({ block: 'start' });
-    (target.querySelector('summary') || target).focus({ preventScroll: true });
-  });
 }
 
 function webaimLink(fgHex, bgHex) {
@@ -577,6 +507,37 @@ function escapeHtml(s) {
 
 export { verdictBadge };
 
+// ── "What the checks mean" navigation ────────────────────────────────────────
+// The check explanations live as static <details> in index.html. An info link
+// or an incoming deep link (#check-info-<id>) opens the matching entry and
+// moves focus there, without ever leaving the page (WCAG 3.2.5).
+
+function openCheckDetails(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (el.tagName === 'DETAILS') el.open = true;
+  el.scrollIntoView({ block: 'start' });
+  (el.querySelector('summary') || el).focus({ preventScroll: true });
+}
+
+function initChecksNav() {
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest?.('a.check-info');
+    if (!link) return;
+    const id = link.getAttribute('href').slice(1);
+    if (document.getElementById(id)) {
+      e.preventDefault();
+      openCheckDetails(id);
+    }
+  });
+  const fromHash = () => {
+    if (location.hash.startsWith('#check-info-')) openCheckDetails(location.hash.slice(1));
+  };
+  window.addEventListener('hashchange', fromHash);
+  fromHash();
+}
+initChecksNav();
+
 /**
  * Build summary row data for a processed entry. Called by main.js after
  * each image completes so the summary table can be refreshed incrementally.
@@ -586,14 +547,13 @@ export { verdictBadge };
  * @returns {Object}
  */
 export function summaryItemFromEntry(entry, sourceCanvas) {
-  const failing    = (entry.report.colourPairs || []).filter((p) => !p.pass);
-  const worstRatio = entry.report.colourPairs?.[0]?.contrast ?? null;
+  const report  = entry.report;
+  const hasText = report.hasText && report.colourPairs.length > 0;
   return {
-    id:         entry.id,
-    filename:   entry.filename,
-    thumb:      sourceCanvas ? makeThumb(sourceCanvas, 40).canvas : null,
-    verdict:    entry.report.verdict,
-    worstRatio,
-    failCount:  failing.length
+    id:       entry.id,
+    filename: entry.filename,
+    thumb:    sourceCanvas ? makeThumb(sourceCanvas, 40).canvas : null,
+    hasText,
+    badges:   hasText ? imageBadges(report) : null
   };
 }

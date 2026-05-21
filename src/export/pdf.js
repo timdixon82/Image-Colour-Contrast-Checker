@@ -6,7 +6,7 @@
  * @module export/pdf
  */
 
-import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, METHODOLOGY_URL } from './strings.js';
+import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl } from './strings.js';
 import { pairChecks, overallLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
 let pdfMakePromise = null;
@@ -100,7 +100,7 @@ function pairBlock(p, asset) {
     body.push([{ text: grp.label, colSpan: 4, style: 'checkGroup' }, {}, {}, {}]);
     for (const c of checks.filter((check) => check.group === grp.id)) {
       body.push([
-        { text: c.label, link: `${METHODOLOGY_URL}#${c.id}`, style: 'link' },
+        { text: c.label, link: checkInfoUrl(c.id), style: 'link' },
         c.value || '—',
         { text: c.status, style: statusStyle(c.status) },
         { text: c.detail, style: 'examples' }

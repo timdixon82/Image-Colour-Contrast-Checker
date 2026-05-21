@@ -32,5 +32,8 @@ export const CVD_TYPES = [
   { key: 'achromatopsia', label: 'Achromatopsia', note: 'total colour-blindness' }
 ];
 
-/** The in-app page explaining what every check means. */
-export const METHODOLOGY_URL = `${SITE_URL}/methodology.html`;
+/**
+ * Builds the deep link to one check's entry in the on-page "What the checks
+ * mean" section. The `id` matches a check id from export/checks.js.
+ */
+export const checkInfoUrl = (id) => `${SITE_URL}/#check-info-${id}`;

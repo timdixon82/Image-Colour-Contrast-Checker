@@ -46,9 +46,9 @@ src/
   main.js          Orchestration only — wires modules together, no logic
   styles.css       All CSS (CSS custom properties for theming)
 
-index.html         The tool itself
+index.html         The tool itself — includes the static "What the checks
+                   mean" section (`#check-glossary`)
 privacy.html       Privacy statement (Vite multi-page entry)
-methodology.html   What every check means (Vite multi-page entry)
 ```
 
 ---
@@ -138,15 +138,16 @@ The orchestrator is `main.js`. It runs this pipeline for each file and calls the
 
 ### export/strings.js
 - **This is the single source of truth for all user-facing copy.**
-- `THRESHOLDS_FOOTER`, `DISCLAIMER_TEXT`, `SITE_URL`, `APP_NAME`, `METHODOLOGY_URL`
-  and `CVD_TYPES` are defined here.
+- `THRESHOLDS_FOOTER`, `DISCLAIMER_TEXT`, `SITE_URL`, `APP_NAME`, `CVD_TYPES`
+  and `checkInfoUrl()` are defined here.
 - Edit here once; PDF and Markdown are always in sync because both import from this file.
 - Do not hardcode any of these strings in `pdf.js`, `markdown.js`, or `report-view.js`.
 
 ### export/checks.js
 - `pairChecks(pair)` shapes one `ColourPair` into the six display checks
   (WCAG AA, WCAG AAA, APCA, CVD contrast, Vestibular, Cognitive). Each check's
-  `id` is also its anchor in `methodology.html`.
+  `id` is also its anchor (`#check-info-<id>`) in the static "What the checks
+  mean" section of `index.html`.
 - `overallLine(report)` builds the one-line "N combinations · X fail …" summary.
 - The web report, PDF and Markdown all consume these — never rebuild the
   check list in a renderer.
@@ -225,7 +226,7 @@ No other files need to change.
 
 Every commit that changes behaviour must bump `package.json` → `version`. `package-lock.json` updates automatically on the next `npm install`. Commit both files together.
 
-Current version: **0.2.17** — bump `package.json` on every behavioural change.
+Current version: **0.2.18** — bump `package.json` on every behavioural change.
 
 ---
 

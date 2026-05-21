@@ -3,8 +3,8 @@
  * grouped into WCAG compliance and Advanced checks. Shared by the web report,
  * PDF and Markdown so all three stay in sync.
  *
- * Each check `id` is also the anchor of that check's entry in the on-page
- * "What the checks mean" glossary (see CHECK_INFO) and in methodology.html.
+ * Each check `id` is also the anchor (`#check-info-<id>`) of that check's
+ * entry in the on-page "What the checks mean" section.
  *
  * @module export/checks
  */
@@ -123,49 +123,3 @@ export function pairChecks(p) {
     }
   ];
 }
-
-/**
- * Plain-language explanation of every check, for the on-page glossary.
- * Each `id` matches a check id from pairChecks() and is used as the in-page
- * anchor (`#check-info-<id>`) the detail-panel info links jump to.
- */
-export const CHECK_INFO = [
-  {
-    id: 'wcag-aa', group: 'wcag', label: 'WCAG AA',
-    summary: 'The minimum contrast WCAG 2.2 requires (Success Criterion 1.4.3): '
-      + '4.5:1 for normal text, or 3:1 for large text — here an OCR box 24 px or '
-      + 'taller. This is the formal pass/fail line for most compliance work.'
-  },
-  {
-    id: 'wcag-aaa', group: 'wcag', label: 'WCAG AAA',
-    summary: "WCAG 2.2's enhanced target (Success Criterion 1.4.6): 7:1 for normal "
-      + 'text, or 4.5:1 for large text. Stricter than AA — it is the level this '
-      + 'tool targets for its own interface.'
-  },
-  {
-    id: 'apca', group: 'advanced', label: 'APCA',
-    summary: 'The Advanced Perceptual Contrast Algorithm models how the eye '
-      + 'actually perceives lightness, accounting for light- versus dark-mode '
-      + 'text. It reports a value Lc: below 45 fails, 45–59 is borderline, 60 or '
-      + 'above passes. APCA is in public beta and is not yet a WCAG requirement.'
-  },
-  {
-    id: 'cvd', group: 'advanced', label: 'CVD contrast',
-    summary: 'The WCAG contrast ratio recomputed as the colours appear to viewers '
-      + 'with deuteranopia, protanopia or tritanopia. It flags pairs that pass for '
-      + 'normal vision but drop below the threshold for a colour-vision deficiency.'
-  },
-  {
-    id: 'vestibular', group: 'advanced', label: 'Vestibular',
-    summary: 'Highly saturated colours can appear to shimmer, which can trigger '
-      + 'discomfort for people with vestibular disorders. This grades the higher '
-      + 'saturation of the text and background: under 60% is safe, 60–79% a '
-      + 'warning, 80% or above high risk.'
-  },
-  {
-    id: 'cognitive', group: 'advanced', label: 'Cognitive',
-    summary: 'A derived, plain-language read on cognitive load that combines the '
-      + 'other checks: text too small, failing contrast, high saturation, extreme '
-      + 'brightness or shimmer, and very high contrast that can feel "too sharp".'
-  }
-];

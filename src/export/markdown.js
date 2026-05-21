@@ -5,7 +5,7 @@
  * @module export/markdown
  */
 
-import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, METHODOLOGY_URL } from './strings.js';
+import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl } from './strings.js';
 import { pairChecks, overallLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
 function anchor(filename) {
@@ -107,7 +107,7 @@ export function buildMarkdown(entries, timestamp) {
         for (const grp of CHECK_GROUPS) {
           lines.push(`| **${grp.label}** | | | |`);
           for (const c of checks.filter((check) => check.group === grp.id)) {
-            lines.push(`| [${c.label}](${METHODOLOGY_URL}#${c.id}) | ${c.value || '—'} | ${c.status} | ${c.detail} |`);
+            lines.push(`| [${c.label}](${checkInfoUrl(c.id)}) | ${c.value || '—'} | ${c.status} | ${c.detail} |`);
           }
         }
         lines.push('');
