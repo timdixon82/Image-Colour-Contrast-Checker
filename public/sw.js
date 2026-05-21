@@ -122,21 +122,27 @@ if (typeof window === 'undefined') {
     };
 
     const n = navigator;
+    const controller = n.serviceWorker && n.serviceWorker.controller;
+    const controlledByUs = !!controller &&
+      controller.scriptURL === window.document.currentScript.src;
 
-    if (n.serviceWorker && n.serviceWorker.controller) {
-      n.serviceWorker.controller.postMessage({
+    if (controller) {
+      controller.postMessage({
         type: 'coepCredentialless',
         value: coi.coepCredentialless(),
       });
 
       if (coi.shouldDeregister()) {
-        n.serviceWorker.controller.postMessage({ type: 'deregister' });
+        controller.postMessage({ type: 'deregister' });
       }
     }
 
-    // If we're already isolated: do nothing. Also bail if the browser has no
-    // notion of crossOriginIsolated.
-    if (window.crossOriginIsolated !== false || !coi.shouldRegister()) return;
+    // Register when the page is not yet cross-origin isolated, or to take over
+    // from a stale worker controlling the page under a different script URL
+    // (i.e. migrating an existing visitor off the old coi-serviceworker.js).
+    const needsRegister = window.crossOriginIsolated === false ||
+      (!!controller && !controlledByUs);
+    if (!needsRegister || !coi.shouldRegister()) return;
 
     if (!window.isSecureContext) {
       !coi.quiet && console.log('COOP/COEP Service Worker not registered, a secure context is required.');
