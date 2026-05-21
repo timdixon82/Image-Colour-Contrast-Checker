@@ -27,16 +27,13 @@ function loadOcrModule() {
 }
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
-const preloaderEl     = document.getElementById('preloader');
-const preloaderBar    = document.getElementById('preloader-bar');
-const preloaderPct    = document.getElementById('preloader-pct');
-const preloaderStatus = document.getElementById('preloader-status');
-const appEl           = document.getElementById('app');
+const dlBar    = document.getElementById('dl-bar');
+const dlPct    = document.getElementById('dl-pct');
+const dlStatus = document.getElementById('dl-status');
 
 const dropzoneEl     = document.getElementById('dropzone');
 const inputEl        = document.getElementById('file-input');
 const chooseBtn      = document.getElementById('choose-files');
-const modelBanner    = document.getElementById('model-banner');
 const landing        = document.getElementById('landing');
 const processing     = document.getElementById('processing');
 const queueEl        = document.getElementById('queue');
@@ -52,8 +49,7 @@ const resetBtn       = document.getElementById('reset');
 
 // ── App state ─────────────────────────────────────────────────────────────────
 const state = {
-  ocrReady:       false,
-  ocrLoading:     false,
+  ocrPromise:     null,
   queue:          [],
   entries:        new Map(),
   busy:           false,
@@ -61,22 +57,17 @@ const state = {
 };
 
 // ── OCR warm-up ───────────────────────────────────────────────────────────────
+// Loads the OCR module and initialises its model session. Idempotent: the
+// first call starts the work and every later call awaits the same promise.
+// The promise always resolves — a load failure is logged and surfaces later
+// as a per-image error in the processing queue.
 function warmOcr() {
-  if (state.ocrLoading || state.ocrReady) return;
-  state.ocrLoading = true;
-  modelBanner.hidden = false;
-  loadOcrModule()
-    .then((mod) => mod.getOcr())
-    .then(() => {
-      state.ocrReady  = true;
-      state.ocrLoading = false;
-      modelBanner.hidden = true;
-    })
-    .catch((err) => {
-      state.ocrLoading = false;
-      const text = modelBanner.querySelector('.model-banner-text');
-      if (text) text.textContent = `OCR failed to load: ${err.message}`;
-    });
+  if (!state.ocrPromise) {
+    state.ocrPromise = loadOcrModule()
+      .then((mod) => mod.getOcr())
+      .catch((err) => { console.error('OCR engine failed to load:', err); });
+  }
+  return state.ocrPromise;
 }
 
 // ── File handling ─────────────────────────────────────────────────────────────
@@ -86,7 +77,6 @@ function uuid() {
 }
 
 async function handleFiles(files) {
-  warmOcr();
   state.busy           = true;
   state.batchTimestamp = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
 
@@ -302,23 +292,30 @@ if (footerEl) {
   });
 }());
 
-// ── Preloader ─────────────────────────────────────────────────────────────────
+// ── Model download ────────────────────────────────────────────────────────────
+// The page is usable and scrollable while the models download — only the
+// dropzone is held in a loading state. When the download finishes the dropzone
+// switches to its interactive state in place, without moving the viewport, so
+// a reader part-way down the page is not pulled back to the top.
+function activateDropzone() {
+  dropzoneEl.classList.remove('is-loading');
+  dropzoneEl.removeAttribute('aria-disabled');
+  dropzoneEl.setAttribute('tabindex', '0');
+}
+
 preloadModels(({ pct, label, fileIndex, fileCount, done }) => {
-  preloaderBar.style.width    = pct + '%';
-  preloaderPct.textContent    = Math.round(pct) + '%';
+  dlBar.style.width = pct + '%';
+  dlPct.textContent = Math.round(pct) + '%';
   if (!done) {
-    preloaderStatus.textContent = label
+    dlStatus.textContent = label
       ? `Downloading ${label} (${fileIndex + 1} of ${fileCount})`
       : 'Starting download…';
   } else {
-    preloaderStatus.textContent = 'Ready.';
-    appEl.removeAttribute('inert');
-    preloaderEl.classList.add('preloader-done');
-    setTimeout(() => preloaderEl.remove(), 400);
-    // Warm the OCR engine as soon as the model files are downloaded, so it is
-    // ready (or nearly so) before the user selects an image. handleFiles()
-    // also calls warmOcr() as a fallback; it is idempotent.
-    warmOcr();
+    // Files are cached — warm the OCR engine, then enable the dropzone. The
+    // dropzone stays in its loading state through warm-up so there is a
+    // single, in-place transition once everything is ready.
+    dlStatus.textContent = 'Preparing the OCR engine…';
+    warmOcr().finally(activateDropzone);
   }
 });
 

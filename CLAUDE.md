@@ -203,7 +203,7 @@ Other requirements already in place:
 - Minimum 44 px touch targets on interactive elements (`min-height: 44px`)
 - `scope="col"` on all `<th>` elements
 - `table-scroll` wrapper on all tables (horizontal scroll on narrow viewports)
-- `aria-live` on the preloader status and the processing queue
+- `aria-live` on the model-download status and the processing queue
 
 Do not remove or weaken any of these.
 
@@ -226,7 +226,7 @@ No other files need to change.
 
 Every commit that changes behaviour must bump `package.json` → `version`. `package-lock.json` updates automatically on the next `npm install`. Commit both files together.
 
-Current version: **0.2.18** — bump `package.json` on every behavioural change.
+Current version: **0.2.19** — bump `package.json` on every behavioural change.
 
 ---
 
