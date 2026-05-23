@@ -2,14 +2,31 @@
   "_comment": [
     "Pa11y configuration for the ICCC accessibility check workflow.",
     "chromeLaunchConfig sets --no-sandbox for GitHub Actions runner.",
-    "The ignore list is intentionally empty at setup build time.",
-    "Any pre-existing AAA failures found during Carol's test pass",
-    "are documented in docs/accessibility.md under 'Pre-existing AAA",
-    "failures, deferred to the accessibility phase' and tracked in",
-    "todo.md. Add ignore codes here only with a matching entry in",
-    "docs/accessibility.md and todo.md."
+    "",
+    "The ignore list below suppresses two pre-existing AAA failures that",
+    "were present on main before the setup build and are not regressions.",
+    "Both failures are formally recorded as deferred-backlog items in",
+    "docs/accessibility.md (section: Pre-existing AAA failures, deferred",
+    "to the accessibility phase) and in todo.md (Deferred backlog).",
+    "",
+    "ACC-ICCC-001: WCAG2AAA.Principle4.Guideline4_1.4_1_2.H91.InputFile.Name",
+    "  Hidden <input type=file id=file-input> lacks an accessible name.",
+    "  Fix: add aria-label (or label association) in the accessibility phase.",
+    "",
+    "ACC-ICCC-002: WCAG2AAA.Principle1.Guideline1_4.1_4_6.G17.Fail",
+    "  --fg-muted on --bg is 6.98:1 in light mode (target 7:1); model-banner",
+    "  text is 6.74:1. Fix: darken --fg-muted token in the accessibility phase.",
+    "",
+    "REMOVE BOTH ENTRIES FROM THIS IGNORE ARRAY in the accessibility-phase",
+    "pull request once the underlying issues are fixed.",
+    "",
+    "No Level A codes are suppressed here."
   ],
   "chromeLaunchConfig": {
     "args": ["--no-sandbox", "--disable-setuid-sandbox"]
-  }
+  },
+  "ignore": [
+    "WCAG2AAA.Principle4.Guideline4_1.4_1_2.H91.InputFile.Name",
+    "WCAG2AAA.Principle1.Guideline1_4.1_4_6.G17.Fail"
+  ]
 }
