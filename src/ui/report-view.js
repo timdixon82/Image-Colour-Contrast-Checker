@@ -8,8 +8,8 @@
 import { makeSwatch, makeClip, makePreview, makeThumb, makeCbSim } from '../render/canvas.js';
 import { THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES }            from '../export/strings.js';
 import {
-  pairChecks, overallLine, advancedStatus, pairBadges,
-  statusWord, CHECK_GROUPS
+  pairChecks, wcagLine, advancedLine,
+  advancedStatus, pairBadges, statusWord, CHECK_GROUPS
 }                                                                   from '../export/checks.js';
 
 export function renderResultsHeader(headerEl, timestamp) {
@@ -262,11 +262,41 @@ function renderContrastResults(card, entry) {
   heading.textContent = 'Contrast results';
   card.append(heading);
 
-  // Overall summary line
-  const overall = document.createElement('p');
-  overall.className   = 'results-overall';
-  overall.textContent = overallLine(report);
-  card.append(overall);
+  // Split summary: one line for WCAG checks, one for Advanced checks
+  const summaryGroup = document.createElement('div');
+  summaryGroup.className   = 'results-summary-group';
+  summaryGroup.setAttribute('aria-live', 'polite');
+  summaryGroup.setAttribute('aria-atomic', 'true');
+
+  const wcagSummary = document.createElement('p');
+  wcagSummary.className   = 'results-overall';
+  wcagSummary.textContent = wcagLine(report);
+
+  const advSummary = document.createElement('p');
+  advSummary.className   = 'results-overall';
+  advSummary.textContent = advancedLine(report);
+
+  summaryGroup.append(wcagSummary, advSummary);
+  card.append(summaryGroup);
+
+  // Link to the vestibular-accessible design checker for single-pair checking
+  const pairCheckLink = document.createElement('p');
+  pairCheckLink.className = 'pair-check-prompt';
+  const pairAnchor = document.createElement('a');
+  pairAnchor.href    = 'https://tastheartist.com/vestibular-accessible-design-checker/';
+  pairAnchor.target  = '_blank';
+  pairAnchor.rel     = 'noopener noreferrer';
+  pairAnchor.textContent = 'Check a single foreground and background pair on the tas-the-artist Vestibular Accessible Design Checker';
+  const newTabHint = document.createElement('span');
+  newTabHint.className = 'sr-only';
+  newTabHint.textContent = ' (opens in new window)';
+  pairAnchor.append(newTabHint);
+  const visibleHint = document.createElement('span');
+  visibleHint.setAttribute('aria-hidden', 'true');
+  visibleHint.textContent = ' ↗'; // ↗ north-east arrow, visual new-tab convention
+  pairAnchor.append(visibleHint);
+  pairCheckLink.append(pairAnchor);
+  card.append(pairCheckLink);
 
   const scroll = document.createElement('div');
   scroll.className = 'table-scroll';

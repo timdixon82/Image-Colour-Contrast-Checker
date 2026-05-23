@@ -6,7 +6,7 @@
  */
 
 import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl } from './strings.js';
-import { pairChecks, overallLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
+import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
 function anchor(filename) {
   return filename.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -82,7 +82,8 @@ export function buildMarkdown(entries, timestamp) {
     if (report.hasText && report.colourPairs.length) {
       lines.push('**Contrast results:**');
       lines.push('');
-      lines.push(`_${overallLine(report)}_`);
+      lines.push(`_${wcagLine(report)}_`);
+      lines.push(`_${advancedLine(report)}_`);
       lines.push('');
 
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));

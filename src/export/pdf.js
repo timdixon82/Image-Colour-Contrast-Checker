@@ -7,7 +7,7 @@
  */
 
 import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl } from './strings.js';
-import { pairChecks, overallLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
+import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
 let pdfMakePromise = null;
 
@@ -223,7 +223,8 @@ function buildDocDefinition(entries, timestamp) {
 
     if (report.hasText && report.colourPairs.length) {
       content.push({ text: 'Contrast results', style: 'h3', margin: [0, 8, 0, 2] });
-      content.push({ text: overallLine(report), style: 'examples', margin: [0, 0, 0, 2] });
+      content.push({ text: wcagLine(report), style: 'examples', margin: [0, 0, 0, 1] });
+      content.push({ text: advancedLine(report), style: 'examples', margin: [0, 0, 0, 4] });
 
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
       for (const p of report.colourPairs) {

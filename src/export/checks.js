@@ -21,6 +21,45 @@ export function overallLine(report) {
   return bits.join(' · ');
 }
 
+/**
+ * One-line summary for the WCAG checks only (AA and AAA).
+ * A pair fails WCAG if it fails AA; it needs review if it passes AA but fails AAA.
+ *
+ * @param {import('../core/schema.js').ReportData} report
+ * @returns {string}
+ */
+export function wcagLine(report) {
+  const pairs = report.colourPairs;
+  const n     = pairs.length;
+  const fails = pairs.filter((p) => !p.pass).length;
+  const warns = pairs.filter((p) => p.pass && !p.passAaa).length;
+  const bits  = [`${n} colour combination${n === 1 ? '' : 's'}`];
+  if (fails) bits.push(`${fails} fail`);
+  if (warns) bits.push(`${warns} need review`);
+  if (!fails && !warns) bits.push('all pass');
+  return `WCAG contrast — ${bits.join(' · ')}`;
+}
+
+/**
+ * One-line summary for the Advanced checks only (APCA, CVD, vestibular, cognitive).
+ * Uses the rolled-up advancedStatus() for each pair.
+ *
+ * @param {import('../core/schema.js').ReportData} report
+ * @returns {string}
+ */
+export function advancedLine(report) {
+  const pairs = report.colourPairs;
+  const n     = pairs.length;
+  const statuses = pairs.map(advancedStatus);
+  const fails = statuses.filter((s) => s === 'FAIL').length;
+  const warns = statuses.filter((s) => s === 'WARN').length;
+  const bits  = [`${n} colour combination${n === 1 ? '' : 's'}`];
+  if (fails) bits.push(`${fails} fail`);
+  if (warns) bits.push(`${warns} need review`);
+  if (!fails && !warns) bits.push('all pass');
+  return `Advanced checks — ${bits.join(' · ')}`;
+}
+
 /** Worst-of colour-vision-deficiency verdict for one pair. */
 export function cvdStatus(p) {
   const allPass = ['deuteranopia', 'protanopia', 'tritanopia'].every((k) => p.cvd[k].pass);
