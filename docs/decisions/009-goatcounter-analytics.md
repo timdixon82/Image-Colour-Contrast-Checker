@@ -1,6 +1,6 @@
 # ADR 009: GoatCounter analytics on a per-project counter, self-hosted script
 
-Status: accepted; supply-chain work (self-hosting `count.js`) required in the setup build (backfilled 2026-05-23).
+Status: accepted; self-hosting of `count.js` completed in the setup build on 2026-05-23.
 
 ## Context
 

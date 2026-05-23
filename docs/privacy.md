@@ -46,7 +46,7 @@ No. GoatCounter does not use cookies or equivalent tracking mechanisms. The Priv
 
 ## Implementation note
 
-The GoatCounter `count.js` script is self-hosted from the project's own origin, not loaded from `gc.zgo.at`. This is a setup-build item tracked in `todo.md`. Once self-hosted, the Content Security Policy `script-src` does not need to allow-list `gc.zgo.at`; only `iccc.goatcounter.com` in `connect-src` is needed for the analytics ping. See ADR 009 for the full analytics decision record.
+The GoatCounter `count.js` script is self-hosted at `public/analytics/count.js` and served from the project's own origin. It is not loaded from `gc.zgo.at`. The Content Security Policy `script-src` does not allow-list `gc.zgo.at`; only `iccc.goatcounter.com` in `connect-src` is needed for the analytics ping. Update `public/analytics/count.js` on a quarterly cadence by fetching the upstream `https://gc.zgo.at/count.js` and committing any changed version. See ADR 009 for the full analytics decision record.
 
 ## References
 

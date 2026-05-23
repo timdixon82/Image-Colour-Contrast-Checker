@@ -2,6 +2,8 @@
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://iccc.goatcounter.com; img-src 'self' blob: data:; worker-src 'self' blob:; child-src blob:; frame-ancestors 'none';">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <script>
       (function () {
         var t = localStorage.getItem('td-theme');
@@ -84,7 +86,7 @@
 
         <section>
           <h3>Third-party scripts</h3>
-          <p>All application JavaScript is bundled and served from <code>image-colour-contrast-checker.timdixon.net</code>. The only third-party script is the GoatCounter analytics snippet (<code>count.js</code>), loaded from <code>gc.zgo.at</code>. No external fonts or stylesheets are loaded from third-party origins.</p>
+          <p>All application JavaScript, including the GoatCounter analytics snippet (<code>count.js</code>), is bundled and served from <code>image-colour-contrast-checker.timdixon.net</code>. No third-party scripts, external fonts, or stylesheets are loaded from third-party origins.</p>
         </section>
 
         <section>
@@ -154,6 +156,6 @@
     </script>
 
     <script data-goatcounter="https://iccc.goatcounter.com/count"
-            async src="//gc.zgo.at/count.js"></script>
+            async src="/analytics/count.js"></script>
   </body>
 </html>
