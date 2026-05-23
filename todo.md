@@ -66,6 +66,3 @@ Selectors: `#app-footer` and child links and separators; `#model-banner > span:n
 
 Selectors: `.privacy-notice` (index.html); `.privacy-page-intro`, `#app-footer`, and several link elements (privacy.html). Axe-core rule: `color-contrast-enhanced` (WCAG 2 AAA, 7:1 threshold). Same root cause as D5: `--fg-muted` on `--bg` below 7:1 in light mode. Pre-existing on `main`; not a regression from the setup build. The fix for D5 will also close these instances. No Pa11y ignore needed; axe-core CLI exits 0 on violations by default. Fix in the accessibility phase alongside D5.
 
-### D7: ACC-ICCC-004 — Preloader tagline contrast shortfall (WCAG 1.4.3, Level AA)
-
-Selector: `.preloader-header > .app-header-inner > .app-header-text > .tagline`. Axe-core rule: `color-contrast` (WCAG 2 AA minimum contrast, 4.5:1 threshold). This is a Level AA failure, higher priority than the AAA shortfalls above. Pre-existing on `main`; not a regression from the setup build. Fix in the accessibility phase: identify the colour token for `.tagline` in the preloader header and adjust it to reach at least 4.5:1 (AA), targeting 7:1 (AAA). No Pa11y ignore needed. Fix before D4, D5, D6 as it affects the Level AA baseline.

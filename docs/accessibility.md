@@ -81,21 +81,9 @@ These are the same root cause as ACC-ICCC-002: `--fg-muted` on `--bg` falls belo
 
 Proposed fix for the accessibility phase: same as ACC-ICCC-002. Darken `--fg-muted` until all affected elements reach 7:1 or better on `--bg` in light mode.
 
-### ACC-ICCC-004: Preloader tagline contrast shortfall (WCAG 1.4.3, Level AA)
-
-Tool: axe-core 4.11.4.
-
-Selector: `.preloader-header > .app-header-inner > .app-header-text > .tagline`.
-
-Rule: `color-contrast` (WCAG 2 AA minimum contrast, axe tag `wcag2aa`). This is a Level AA failure, more serious than the AAA contrast shortfalls above.
-
-The tagline text uses a colour combination that falls below the 4.5:1 AA minimum contrast ratio during the preloader display. Pre-existing on `main`; not a regression from the setup build.
-
-Proposed fix for the accessibility phase: identify the token applied to `.tagline` in the preloader header and darken it (or lighten its background) until the contrast reaches at least 4.5:1 (AA) and ideally 7:1 (AAA). This fix is higher priority than the AAA-only shortfalls because it affects the Level AA compliance baseline.
-
 ## Known baseline audit status
 
-Carol's baseline audit was completed on 2026-05-23 (HEAD 6fe48ab). Pa11y found two pre-existing AAA codes (ACC-ICCC-001, ACC-ICCC-002). After the rework Pa11y scoped ignore list was applied (commit 713766b), axe-core ran and found two further pre-existing groups of contrast shortfalls (ACC-ICCC-003, ACC-ICCC-004). All four groups are pre-existing on `main` and are not regressions. The Pa11y and axe-core CI job passes (axe-core CLI exits 0 on violations). All four groups are deferred to the accessibility phase.
+Carol's baseline audit was completed on 2026-05-23 (HEAD 6fe48ab). Pa11y found two pre-existing AAA codes (ACC-ICCC-001, ACC-ICCC-002). After the rework Pa11y scoped ignore list was applied (commit 713766b), axe-core ran and found two further pre-existing groups of contrast shortfalls (ACC-ICCC-003, ACC-ICCC-004). All four groups are pre-existing on `main` and are not regressions. The Pa11y and axe-core CI job passes (axe-core CLI exits 0 on violations). ACC-ICCC-001, ACC-ICCC-002, and ACC-ICCC-003 are deferred to the accessibility phase. ACC-ICCC-004 was closed in the setup-build pull request (chore/project-setup): the `.preloader-header .tagline` selector was added to the existing `.app-header .tagline` rule in `src/styles.css`, setting `color: #63D2FF` (sky blue) and reaching 10.64:1 AAA on the always-navy preloader header in both light and dark themes.
 
 ## Exceptions
 
