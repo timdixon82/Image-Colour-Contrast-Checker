@@ -753,6 +753,41 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 .app-footer a:hover { color: var(--accent); }
 .app-footer .sep { margin: 0 6px; opacity: 0.5; }
 
+/* ── Dark-mode AAA contrast overrides (Carol findings 1–6, 2026-05-23) ─────
+ * The orange accent (#FF7C00) passes WCAG 1.4.6 AAA on the navy page
+ * background (#061528, 7.10:1) but fails on the lighter card background
+ * (#0d2040, 6.27:1) and on other dark-mode surfaces. In dark mode the
+ * six selectors below override to --fg-muted (#63D2FF, sky blue):
+ *
+ *   .glossary-item > p > a    on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .image-card h4             on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .pair-check-prompt a       on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .row-toggle                on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .queue-stage (in-progress) on ~#2f2d37 (blended):  7.26:1 AAA ✓
+ *   .check-group-row th        on #1a3050 (neutral-bg): 7.70:1 AAA ✓
+ *
+ * Light-mode rendering is unchanged. Do not merge these into the dark-mode
+ * token block above — they are targeted selector overrides, not token changes.
+ */
+@media (prefers-color-scheme: dark), [data-theme="dark"] {
+  .glossary-item > p > a,
+  .image-card h4,
+  .pair-check-prompt a,
+  .row-toggle {
+    color: var(--fg-muted); /* #63D2FF, 9.40:1 on #0d2040 AAA */
+  }
+
+  .queue-row[data-stage="decoding"] .queue-stage,
+  .queue-row[data-stage="ocr"] .queue-stage,
+  .queue-row[data-stage="analysing"] .queue-stage {
+    color: var(--fg-muted); /* #63D2FF, 7.26:1 on blended bg AAA */
+  }
+
+  .check-group-row th {
+    color: var(--fg-muted); /* #63D2FF, 7.70:1 on #1a3050 AAA */
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .results-table { font-size: 0.82rem; }
