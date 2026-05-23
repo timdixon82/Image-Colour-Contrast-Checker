@@ -247,14 +247,11 @@ const sep = () => { const s = document.createElement('span'); s.className = 'sep
 const lnk = (href, text, sendReferrer) => Object.assign(document.createElement('a'), { href, target: '_blank', rel: sendReferrer ? 'noopener' : 'noopener noreferrer', textContent: text });
 const lnkSelf = (href, text) => Object.assign(document.createElement('a'), { href, textContent: text });
 if (footerEl) {
-  // External links and the separate Privacy page open in a new tab; the
-  // "What the checks mean" link stays in-page so results are not discarded.
   footerEl.append(
     `v${version}`,
     sep(), lnk(repoBase, 'Open source on GitHub'),
     sep(), lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence'),
     sep(), lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences'),
-    sep(), lnkSelf('#check-glossary', 'What the checks mean'),
     sep(), lnk('./privacy.html', 'Privacy'),
     sep(), lnk('https://www.timdixon.net/contact/', 'Contact / feedback', true),
     sep(), lnk('https://timdixon.net', '© Tim Dixon', true)
