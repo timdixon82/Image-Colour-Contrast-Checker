@@ -252,7 +252,7 @@ if (footerEl) {
     sep(), lnk(repoBase, 'Open source on GitHub'),
     sep(), lnk(`${repoBase}/blob/main/LICENSE`, 'MIT Licence'),
     sep(), lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences'),
-    sep(), lnk('./privacy.html', 'Privacy'),
+    sep(), lnkSelf('./privacy.html', 'Privacy'), /* same-site: no new tab (finding 10) */
     sep(), lnk('https://www.timdixon.net/contact/', 'Contact / feedback', true),
     sep(), lnk('https://timdixon.net', '© Tim Dixon', true)
   );

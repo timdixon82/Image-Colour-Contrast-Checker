@@ -523,11 +523,18 @@ function infoLink(checkId, label) {
 }
 
 function webaimLink(fgHex, bgHex) {
+  // The ↗ arrow is placed in an aria-hidden span so screen readers (VoiceOver,
+  // JAWS, NVDA) announce "Check this pair on WebAIM, link" rather than
+  // "WebAIM north-east arrow, link". The visible appearance is unchanged.
   const a = document.createElement('a');
-  a.href        = `https://webaim.org/resources/contrastchecker/?fcolor=${fgHex.slice(1)}&bcolor=${bgHex.slice(1)}`;
-  a.target      = '_blank';
-  a.rel         = 'noopener noreferrer';
-  a.textContent = 'WebAIM ↗';
+  a.href   = `https://webaim.org/resources/contrastchecker/?fcolor=${fgHex.slice(1)}&bcolor=${bgHex.slice(1)}`;
+  a.target = '_blank';
+  a.rel    = 'noopener noreferrer';
+  a.textContent = 'Check this pair on WebAIM';
+  const arrow = document.createElement('span');
+  arrow.setAttribute('aria-hidden', 'true');
+  arrow.textContent = ' ↗';
+  a.append(arrow);
   return a;
 }
 
