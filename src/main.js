@@ -14,7 +14,7 @@ import {
   summaryItemFromEntry
 } from './ui/report-view.js';
 import { decodeAndResize, bitmapToImageData } from './core/image.js';
-import { makeThumb }                  from './render/canvas.js';
+// render/canvas.js is used via report-view.js; no direct imports needed here.
 import { analyseImage }               from './core/analyse.js';
 import { buildMarkdown, downloadMarkdown } from './export/markdown.js';
 import { downloadPdf }                from './export/pdf.js';
