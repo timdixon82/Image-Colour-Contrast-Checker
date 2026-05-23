@@ -9,6 +9,16 @@
  *           not just saturated backgrounds).
  * - Cognitive  — a derived verdict cascading from the other checks.
  *
+ * Vestibular saturation thresholds (WARN at 60 %, HIGH at 80 %):
+ * These are the project's in-house heuristic for flagging shimmer risk on
+ * still images. The Web Content Accessibility Guidelines (WCAG) do not define
+ * a saturation threshold — Success Criteria 2.3.1 and 2.3.3 address motion
+ * and flicker, not still-image saturation. The wider accessibility literature
+ * treats vestibular trigger thresholds qualitatively rather than numerically.
+ * No peer-reviewed publication pins a specific HSL saturation cut-off.
+ * Reviewers should treat these bands as a reasonable starting heuristic and
+ * adjust them as evidence improves.
+ *
  * Pure logic — no DOM. Safe to run in Node, workers, or the browser.
  *
  * @module core/perceptual
@@ -81,7 +91,7 @@ export function cognitiveResult({ contrast, passAA, heightPx, apcaLc, maxSat }) 
   if (!passAA)
     return { status: 'FAIL', message: 'Fails WCAG — contrast is insufficient for comfortable reading.' };
   if (maxSat >= 80)
-    return { status: 'FAIL', message: 'High saturation can cause sensory overload.' };
+    return { status: 'FAIL', message: 'High saturation can feel uncomfortable for sensitive viewers.' };
   if (absLc > 105)
     return { status: 'WARN', message: 'Extremely bright against its background — can cause eye fatigue.' };
   if (maxSat > 65 && contrast > 10)

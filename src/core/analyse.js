@@ -24,7 +24,10 @@ const CVD_DICHROMACIES = ['deuteranopia', 'protanopia', 'tritanopia'];
 function overallVerdict(p) {
   if (!p.pass || p.apca.status === 'FAIL' || p.vestibular.status === 'HIGH' || p.cognitive.status === 'FAIL')
     return 'FAIL';
-  if (p.apca.status === 'WARN' || p.vestibular.status === 'WARN' || p.cognitive.status === 'WARN' || p.cvdRisk)
+  // 'HARSH' is not a FAIL but it is worth a review, so it raises the verdict
+  // to WARN here to match the warning severity assigned by advancedStatus in
+  // checks.js, keeping the top-level overall field consistent with the detail panel.
+  if (p.apca.status === 'WARN' || p.vestibular.status === 'WARN' || p.cognitive.status === 'WARN' || p.cognitive.status === 'HARSH' || p.cvdRisk)
     return 'WARN';
   return 'PASS';
 }
