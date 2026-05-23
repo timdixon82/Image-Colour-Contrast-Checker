@@ -22,6 +22,19 @@ function verdictLabel(verdict) {
 }
 
 /**
+ * Markdown pill: bold-bracketed label per Simon's design spec.
+ * Screen readers on VS Code / Obsidian / GitHub announce "bold PASS" etc.,
+ * which is unambiguous. Raw-text fallback reads as **[PASS]**, which still
+ * carries the verdict clearly.
+ */
+function mdPill(status) {
+  if (status === 'PASS' || status === 'SAFE') return '**[PASS]**';
+  if (status === 'FAIL' || status === 'HIGH') return '**[FAIL]**';
+  if (status === 'WARN' || status === 'HARSH') return '**[REVIEW]**';
+  return '[NO TEXT]';
+}
+
+/**
  * Build the full Markdown string for a batch of analysed entries.
  *
  * @param {import('../core/schema.js').AnalysedEntry[]} entries
@@ -49,7 +62,8 @@ export function buildMarkdown(entries, timestamp) {
   lines.push('| Image | Result |');
   lines.push('|-------|--------|');
   for (const e of entries) {
-    lines.push(`| [${e.filename}](#${anchor(e.filename)}) | ${verdictLabel(e.report.verdict)} |`);
+    const resultPill = e.report.flag ? '**[FAIL]**' : (e.report.verdict === 'PASS' ? '**[PASS]**' : '[NO TEXT]');
+    lines.push(`| [${e.filename}](#${anchor(e.filename)}) | ${resultPill} |`);
   }
   lines.push('');
   lines.push('---');
@@ -63,11 +77,12 @@ export function buildMarkdown(entries, timestamp) {
 
     lines.push(`### ${idx + 1}. ${filename}`);
     lines.push('');
-    lines.push(`- **Result:** ${verdictLabel(report.verdict)} — ${report.detail}`);
+    const resultPill = report.flag ? '**[FAIL]**' : (report.verdict === 'PASS' ? '**[PASS]**' : '[NO TEXT]');
+    lines.push(`- **Result:** ${resultPill} — ${report.detail}`);
     lines.push('');
 
     if (previewDataUrl) {
-      lines.push(`![${filename}](${previewDataUrl})`);
+      lines.push(`![Preview of ${filename}](${previewDataUrl})`);
       lines.push('');
     }
 
@@ -96,7 +111,7 @@ export function buildMarkdown(entries, timestamp) {
         const asset  = assetByPair.get(p);
         const words  = p.examples.map((e) => `"${e}"`).join(', ');
         const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
-        const badges = pairBadges(p).map((b) => `${b.short} ${statusWord(b.status)}`).join(' · ');
+        const badges = pairBadges(p).map((b) => `**[${b.short} ${statusWord(b.status).toUpperCase()}]**`).join(' · ');
 
         lines.push('<details>');
         lines.push(`<summary><strong>${badges}</strong> — \`${p.bgHex}\` background / \`${p.fgHex}\` foreground${words ? ` — ${words}` : ''}</summary>`);
@@ -105,7 +120,7 @@ export function buildMarkdown(entries, timestamp) {
           lines.push(`![Background / foreground swatch](${asset.swatchDataUrl})`);
           lines.push('');
         }
-        lines.push(`[Check this pair on WebAIM ↗](${webaim})`);
+        lines.push(`[Check this pair on WebAIM](${webaim})`);
         lines.push('');
         lines.push('| Check | Value | Status | What it means |');
         lines.push('|-------|-------|--------|---------------|');
@@ -113,7 +128,7 @@ export function buildMarkdown(entries, timestamp) {
         for (const grp of CHECK_GROUPS) {
           lines.push(`| **${grp.label}** | | | |`);
           for (const c of checks.filter((check) => check.group === grp.id)) {
-            lines.push(`| [${c.label}](${checkInfoUrl(c.id)}) | ${c.value || '—'} | ${c.status} | ${c.detail} |`);
+            lines.push(`| [${c.label}](${checkInfoUrl(c.id)}) | ${c.value || '—'} | ${mdPill(c.status)} | ${c.detail} |`);
           }
         }
         lines.push('');
