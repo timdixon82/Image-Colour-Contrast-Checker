@@ -388,11 +388,57 @@ body {
 
 /* ── Results ─────────────────────────────────────────────────────────────── */
 .results { margin-top: 24px; }
-.results-header h2 { font-size: 1.4rem; margin: 0 0 4px; }
-.results-header .timestamp { color: var(--fg-muted); margin: 0 0 12px; font-size: 0.9rem; }
 
+/* Results header — branded treatment to match the page visual language */
+.results-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.results-header h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 2px;
+  letter-spacing: -0.2px;
+  color: var(--fg);
+}
+.results-header h2::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 3px;
+  background: var(--accent);
+  margin-top: 6px;
+  border-radius: 2px;
+}
+.results-header .timestamp { color: var(--fg-muted); margin: 10px 0 12px; font-size: 0.9rem; }
+
+/* Summary section */
 .summary { margin-bottom: 28px; }
-.summary h2 { font-size: 1.1rem; margin: 0 0 10px; }
+.summary h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--fg);
+}
+
+/* Image cards — h3 filename matches page heading scale */
+.image-card-title {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+}
+
+/* Sub-section headings inside cards — h4 */
+.image-card h4 {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin: 18px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
 
 /* Wrapper for responsive horizontal scroll on narrow screens */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -433,7 +479,6 @@ body {
   margin-bottom: 22px;
   box-shadow: var(--shadow);
 }
-.image-card-title { margin: 0 0 10px; font-size: 1.1rem; }
 .image-card-preview {
   display: block;
   max-width: 100%;
@@ -443,14 +488,21 @@ body {
   margin-bottom: 12px;
 }
 .image-card-result { margin: 0 0 14px; }
-.image-card h4 { font-size: 0.95rem; margin: 14px 0 8px; }
 
 .image-card-fail { border-left: 4px solid var(--fail); }
 .image-card-pass { border-left: 4px solid var(--pass); }
 .image-card-no-text { border-left: 4px solid var(--neutral); }
 
 /* ── Contrast results table ──────────────────────────────────────────────── */
-.results-overall { margin: 0 0 10px; font-size: 0.9rem; color: var(--fg-muted); }
+.results-summary-group { margin: 0 0 6px; }
+.results-overall { margin: 0 0 4px; font-size: 0.9rem; color: var(--fg-muted); }
+
+/* Link prompting single-pair checking */
+.pair-check-prompt {
+  margin: 6px 0 12px;
+  font-size: 0.85rem;
+}
+.pair-check-prompt a { color: var(--accent); }
 .results-table code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
 .results-table .examples { font-style: italic; color: var(--fg-muted); max-width: 240px; }
 .results-table td { border-bottom: none; }
