@@ -6,7 +6,10 @@
  * @module export/pdf
  */
 
-import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl } from './strings.js';
+import {
+  APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
+  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_FULL_LABEL
+} from './strings.js';
 import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
 let pdfMakePromise = null;
@@ -225,6 +228,23 @@ function buildDocDefinition(entries, timestamp) {
       content.push({ text: 'Contrast results', style: 'h3', margin: [0, 8, 0, 2] });
       content.push({ text: wcagLine(report), style: 'examples', margin: [0, 0, 0, 1] });
       content.push({ text: advancedLine(report), style: 'examples', margin: [0, 0, 0, 4] });
+      // Tas the Artist link — placed after the two summary lines, before per-pair blocks.
+      // Uses the full descriptive label as the visible link text. "(opens in new window)"
+      // is omitted from the surrounding sentence because PDF links do not open a browser
+      // tab in the same sense; the label text alone is sufficient for PDF readers.
+      content.push({
+        text: [
+          { text: 'Check and adjust individual colour pairs: ' },
+          {
+            text: VESTIBULAR_CHECKER_FULL_LABEL.replace(' (opens in new window)', ''),
+            link: VESTIBULAR_CHECKER_URL,
+            style: 'link'
+          },
+          { text: '.' }
+        ],
+        fontSize: 9,
+        margin: [0, 0, 0, 4]
+      });
 
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
       for (const p of report.colourPairs) {
@@ -260,7 +280,7 @@ function buildDocDefinition(entries, timestamp) {
       neutral:     { color: '#4b5563' },
       timestamp:   { fontSize: 9, color: '#4b5563' },
       examples:    { italics: true, color: '#374151' },
-      link:        { color: '#1d4ed8', decoration: 'underline' },
+      link:        { color: '#061528', decoration: 'underline' }, /* Navy on white 18.33:1 AAA */
       footer:      { fontSize: 9, color: '#4b5563' }
     }
   };

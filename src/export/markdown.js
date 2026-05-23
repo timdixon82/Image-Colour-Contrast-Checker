@@ -5,7 +5,10 @@
  * @module export/markdown
  */
 
-import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl } from './strings.js';
+import {
+  APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
+  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_FULL_LABEL
+} from './strings.js';
 import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
 function anchor(filename) {
@@ -84,6 +87,8 @@ export function buildMarkdown(entries, timestamp) {
       lines.push('');
       lines.push(`_${wcagLine(report)}_`);
       lines.push(`_${advancedLine(report)}_`);
+      lines.push('');
+      lines.push(`For single-pair vestibular checking, visit [${VESTIBULAR_CHECKER_FULL_LABEL}](${VESTIBULAR_CHECKER_URL}).`);
       lines.push('');
 
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));

@@ -37,3 +37,23 @@ export const CVD_TYPES = [
  * mean" section. The `id` matches a check id from export/checks.js.
  */
 export const checkInfoUrl = (id) => `${SITE_URL}/#check-info-${id}`;
+
+/** URL for the Tas the Artist Vestibular Accessible Design Checker. */
+export const VESTIBULAR_CHECKER_URL =
+  'https://tastheartist.com/vestibular-accessible-design-checker/';
+
+/**
+ * Short brand label used as the visible text in the web report link only.
+ * The arrow glyph that follows it is rendered separately with aria-hidden.
+ */
+export const VESTIBULAR_CHECKER_BRAND_LABEL = 'Tas the Artist';
+
+/**
+ * Full descriptive label used as the web aria-label, the PDF link text,
+ * and the Markdown link text.
+ * If the visible text "Tas the Artist" is ever removed from the web link
+ * and the aria-label is removed too, restore a sr-only "(opens in new window)"
+ * span to preserve the new-window announcement for screen reader users.
+ */
+export const VESTIBULAR_CHECKER_FULL_LABEL =
+  'Check and adjust colours with Tas the Artist: Vestibular Accessible Design Checker (opens in new window)';

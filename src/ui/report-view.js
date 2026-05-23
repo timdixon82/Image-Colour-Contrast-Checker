@@ -6,7 +6,10 @@
  */
 
 import { makeSwatch, makeClip, makePreview, makeThumb, makeCbSim } from '../render/canvas.js';
-import { THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES }            from '../export/strings.js';
+import {
+  THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES,
+  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_BRAND_LABEL, VESTIBULAR_CHECKER_FULL_LABEL
+}                                                                   from '../export/strings.js';
 import {
   pairChecks, wcagLine, advancedLine,
   advancedStatus, pairBadges, statusWord, CHECK_GROUPS
@@ -279,22 +282,25 @@ function renderContrastResults(card, entry) {
   summaryGroup.append(wcagSummary, advSummary);
   card.append(summaryGroup);
 
-  // Link to the vestibular-accessible design checker for single-pair checking
+  // Link to the vestibular-accessible design checker for single-pair checking.
+  // Visible text: VESTIBULAR_CHECKER_BRAND_LABEL ("Tas the Artist") followed by
+  // an aria-hidden arrow. The full aria-label carries the destination, the tool
+  // title, and the new-window notice for screen reader users. The sr-only
+  // "(opens in new window)" span is intentionally omitted here because the
+  // aria-label already contains that phrase. If the aria-label is ever removed,
+  // restore a sr-only span so the new-window announcement is not lost.
   const pairCheckLink = document.createElement('p');
   pairCheckLink.className = 'pair-check-prompt';
   const pairAnchor = document.createElement('a');
-  pairAnchor.href    = 'https://tastheartist.com/vestibular-accessible-design-checker/';
-  pairAnchor.target  = '_blank';
-  pairAnchor.rel     = 'noopener noreferrer';
-  pairAnchor.textContent = 'Check a single foreground and background pair on the tas-the-artist Vestibular Accessible Design Checker';
-  const newTabHint = document.createElement('span');
-  newTabHint.className = 'sr-only';
-  newTabHint.textContent = ' (opens in new window)';
-  pairAnchor.append(newTabHint);
-  const visibleHint = document.createElement('span');
-  visibleHint.setAttribute('aria-hidden', 'true');
-  visibleHint.textContent = ' ↗'; // ↗ north-east arrow, visual new-tab convention
-  pairAnchor.append(visibleHint);
+  pairAnchor.href             = VESTIBULAR_CHECKER_URL;
+  pairAnchor.target           = '_blank';
+  pairAnchor.rel              = 'noopener noreferrer';
+  pairAnchor.setAttribute('aria-label', VESTIBULAR_CHECKER_FULL_LABEL);
+  pairAnchor.textContent      = VESTIBULAR_CHECKER_BRAND_LABEL;
+  const arrowHint = document.createElement('span');
+  arrowHint.setAttribute('aria-hidden', 'true');
+  arrowHint.textContent = ' ↗';
+  pairAnchor.append(arrowHint);
   pairCheckLink.append(pairAnchor);
   card.append(pairCheckLink);
 
