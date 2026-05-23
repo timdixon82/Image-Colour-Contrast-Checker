@@ -125,10 +125,12 @@ export function renderImageCard(cardsEl, entry) {
   title.textContent = filename;
   card.append(title);
 
-  // Preview image
+  // Preview image — canvas does not support the alt attribute; role="img"
+  // plus aria-label is the correct pattern (matches the CBSim canvas below).
   const preview = makePreview(sourceCanvas, 600);
   preview.canvas.className = 'image-card-preview';
-  preview.canvas.setAttribute('alt', `Preview of ${filename}`);
+  preview.canvas.setAttribute('role', 'img');
+  preview.canvas.setAttribute('aria-label', `Preview of ${filename}`);
   card.append(preview.canvas);
   entry.previewDataUrl = preview.dataUrl;
 
