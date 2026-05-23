@@ -769,23 +769,42 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
  * Light-mode rendering is unchanged. Do not merge these into the dark-mode
  * token block above — they are targeted selector overrides, not token changes.
  */
-@media (prefers-color-scheme: dark), [data-theme="dark"] {
-  .glossary-item > p > a,
-  .image-card h4,
-  .pair-check-prompt a,
-  .row-toggle {
+/* OS-level dark preference path (NF-01 fix: split from invalid comma-list) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .glossary-item > p > a,
+  :root:not([data-theme="light"]) .image-card h4,
+  :root:not([data-theme="light"]) .pair-check-prompt a,
+  :root:not([data-theme="light"]) .row-toggle {
     color: var(--fg-muted); /* #63D2FF, 9.40:1 on #0d2040 AAA */
   }
 
-  .queue-row[data-stage="decoding"] .queue-stage,
-  .queue-row[data-stage="ocr"] .queue-stage,
-  .queue-row[data-stage="analysing"] .queue-stage {
+  :root:not([data-theme="light"]) .queue-row[data-stage="decoding"] .queue-stage,
+  :root:not([data-theme="light"]) .queue-row[data-stage="ocr"] .queue-stage,
+  :root:not([data-theme="light"]) .queue-row[data-stage="analysing"] .queue-stage {
     color: var(--fg-muted); /* #63D2FF, 7.26:1 on blended bg AAA */
   }
 
-  .check-group-row th {
+  :root:not([data-theme="light"]) .check-group-row th {
     color: var(--fg-muted); /* #63D2FF, 7.70:1 on #1a3050 AAA */
   }
+}
+
+/* Manual toggle dark path (NF-01 fix: mirrors block above for toggle-dark users) */
+:root[data-theme="dark"] .glossary-item > p > a,
+:root[data-theme="dark"] .image-card h4,
+:root[data-theme="dark"] .pair-check-prompt a,
+:root[data-theme="dark"] .row-toggle {
+  color: var(--fg-muted); /* #63D2FF, 9.40:1 on #0d2040 AAA */
+}
+
+:root[data-theme="dark"] .queue-row[data-stage="decoding"] .queue-stage,
+:root[data-theme="dark"] .queue-row[data-stage="ocr"] .queue-stage,
+:root[data-theme="dark"] .queue-row[data-stage="analysing"] .queue-stage {
+  color: var(--fg-muted); /* #63D2FF, 7.26:1 on blended bg AAA */
+}
+
+:root[data-theme="dark"] .check-group-row th {
+  color: var(--fg-muted); /* #63D2FF, 7.70:1 on #1a3050 AAA */
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
