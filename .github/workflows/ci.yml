@@ -1,29 +1,24 @@
-# Deploy to GitHub Pages.
+# Continuous integration for the ICCC Vite application.
 #
-# Runs on every push to main and on manual workflow dispatch. A lint step
-# runs before the build; the build uploads to GitHub Pages only when lint
-# passes. Linters are pinned in package.json and installed via npm ci.
+# Runs on every pull request and on pushes to main. Lints HTML
+# (HTMLHint), CSS (Stylelint), and JavaScript (ESLint). All three
+# linters are pinned in package.json; CI installs them with npm ci
+# from the committed package-lock.json. The build step runs after
+# lint passes, verifying that the Vite build completes cleanly.
 #
 # Security note: no untrusted GitHub context variables are interpolated
 # into any run step. All run commands are fixed strings.
 #
 # Action versions are pinned to commit SHAs verified on 2026-05-23.
 
-name: Deploy to GitHub Pages
-
+name: CI
 on:
+  pull_request:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
   lint:
@@ -52,6 +47,7 @@ jobs:
         run: npm run lint:js
 
   build:
+    name: Vite build
     needs: lint
     runs-on: ubuntu-latest
     steps:
@@ -69,19 +65,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745  # v5.0.0
-
-      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3.0.1
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03  # v4.0.5

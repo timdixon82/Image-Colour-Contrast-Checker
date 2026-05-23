@@ -1,0 +1,15 @@
+{
+  "_comment": [
+    "Pa11y configuration for the ICCC accessibility check workflow.",
+    "chromeLaunchConfig sets --no-sandbox for GitHub Actions runner.",
+    "The ignore list is intentionally empty at setup build time.",
+    "Any pre-existing AAA failures found during Carol's test pass",
+    "are documented in docs/accessibility.md under 'Pre-existing AAA",
+    "failures, deferred to the accessibility phase' and tracked in",
+    "todo.md. Add ignore codes here only with a matching entry in",
+    "docs/accessibility.md and todo.md."
+  ],
+  "chromeLaunchConfig": {
+    "args": ["--no-sandbox", "--disable-setuid-sandbox"]
+  }
+}
