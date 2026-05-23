@@ -43,9 +43,35 @@ Both HTML entry points carry `<html lang="en-GB">`.
 
 A skip link reading "Skip to main content" is the first focusable element in `<body>` and links to `#app`, meeting WCAG 2.4.1 (Bypass Blocks).
 
+## Pre-existing AAA failures, deferred to the accessibility phase
+
+Carol's baseline audit (2026-05-23) identified two WCAG 2.2 AAA failures that were present on `main` before the setup build. Neither is a regression from the setup build. Both are suppressed in `pa11y.json` with named ignore entries so CI passes while the fixes are deferred. Both must be fixed and the ignore entries removed in the accessibility-phase pull request.
+
+### ACC-ICCC-001: File-input accessible name gap
+
+WCAG 2.2 criterion: 4.1.2 (Name, Role, Value).
+
+Selector: `#file-input`.
+
+Element: `<input id="file-input" type="file" accept="image/*" multiple hidden>`.
+
+Failing value: no accessible name is present. Pa11y reports "This fileinput element does not have a name available to an accessibility API. Valid names are: label element, title, aria-label, aria-labelledby."
+
+Proposed fix for the accessibility phase: add `aria-label="Choose image files"` to the hidden `<input>` element, or associate it with a `<label>` element. Confirm that the visible trigger button and the input are correctly associated so screen readers announce the purpose of the control.
+
+### ACC-ICCC-002: Footer and model-banner text contrast shortfall
+
+WCAG 2.2 criterion: 1.4.6 (Contrast, Enhanced). AAA threshold: 7:1 for normal-weight body text.
+
+Affected selectors: `#app-footer` and all child links and separator spans; `#model-banner > span:nth-child(2)`.
+
+Failing values: `--fg-muted` on `--bg` in light mode produces 6.98:1 (14 instances in the footer). The model-banner text produces 6.74:1. Both fall short of the 7:1 AAA threshold.
+
+Proposed fix for the accessibility phase: adjust the light-mode `--fg-muted` custom property in `src/styles.css` to a value that achieves at least 7:1 on the light-mode `--bg` token, or replace the model-banner text colour token with a darker value. Verify both instances reach 7:1 or better after the change.
+
 ## Known baseline audit status
 
-Carol's baseline audit is held in `.claude/work/011-iccc-setup/` (file pending Carol's dispatch). Any findings from that audit are recorded in `docs/exceptions/` when they represent accepted gaps, or tracked in `todo.md` when they are setup-build items for Sean.
+Carol's baseline audit was completed on 2026-05-23 (HEAD 6fe48ab). The two pre-existing AAA findings above are the only failures identified. Both are deferred to the accessibility phase. All other Pa11y and linter checks pass. The axe-core steps will run and be confirmed once the Pa11y ignore list is in place.
 
 ## Exceptions
 
