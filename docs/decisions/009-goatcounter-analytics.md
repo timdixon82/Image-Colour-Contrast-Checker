@@ -24,6 +24,6 @@ Describe the analytics clearly in the privacy statement: GoatCounter is named, t
 
 ## Consequences
 
-The team has a small, accurate, anonymous page-view count for ICCC. Self-hosting removes the runtime dependency on `gc.zgo.at` and the associated supply-chain risk. The cost is a quarterly manual check and commit when upstream `count.js` changes. The Content Security Policy (once added by Sean in the setup build) does not need to allow-list `gc.zgo.at` in `script-src`; it does need to allow-list `iccc.goatcounter.com` in `connect-src` for the analytics ping.
+The team has a small, accurate, anonymous page-view count for ICCC. Self-hosting removes the runtime dependency on `gc.zgo.at` and the associated supply-chain risk. The cost is a quarterly manual check and commit when upstream `count.js` changes. The Content Security Policy (once added by Sean in the setup build) does not need to allow-list `gc.zgo.at` in `script-src`; it does need to allow-list `iccc.goatcounter.com` in `connect-src` for the analytics ping. The `script-src` directive also carries `'wasm-unsafe-eval'` and `'unsafe-eval'` tokens required by ONNX Runtime Web; see the accepted-with-risk exception at `docs/exceptions/csp-unsafe-eval-for-ort.md`.
 
 This ADR is the project-level instance of the global pattern at `docs/patterns/goatcounter-analytics.md`. The opt-out from the team default counter is the one point where ICCC diverges from the canonical pattern.

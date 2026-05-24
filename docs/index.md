@@ -30,6 +30,7 @@ ICCC is on the Browser AI Application stack (Vite, vanilla JavaScript, ONNX Runt
 ### Exceptions
 
 - [GitHub Pages security-header gap](exceptions/github-pages-headers.md): pointer to the global standing exception. ICCC is on GitHub Pages and meets all conditions of the standing exception approved on 2026-05-23.
+- [CSP unsafe-eval for ONNX Runtime Web](exceptions/csp-unsafe-eval-for-ort.md): accepted-with-risk exception allowing `'wasm-unsafe-eval'` and `'unsafe-eval'` in `script-src`. Required by ORT Web's WASM bootstrap; risk is bounded because no remote scripts are loaded. Approved by Tim Dixon on 2026-05-23 (Q67B).
 
 ### Patterns
 
