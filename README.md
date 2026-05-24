@@ -91,6 +91,16 @@ Full details: [Privacy Statement](https://image-colour-contrast-checker.timdixon
 - **[APCA](https://github.com/Myndex/apca-w3)** — perceptual-contrast math, vendored into `src/core/apca.js` (not an npm dependency)
 - **[pdfmake](https://github.com/bpampuch/pdfmake)** — PDF generation
 
+## Hosting
+
+The tool is hosted on [GitHub Pages](https://pages.github.com/) and deployed automatically from the `main` branch via `.github/workflows/deploy.yml`. The canonical live URL is:
+
+**[image-colour-contrast-checker.timdixon.net](https://image-colour-contrast-checker.timdixon.net)**
+
+The same build is also available at the underlying Pages URL: [timdixon82.github.io/Image-Colour-Contrast-Checker](https://timdixon82.github.io/Image-Colour-Contrast-Checker).
+
+GitHub Pages cannot send custom HTTP response headers. The COOP/COEP headers needed for multi-threaded WebAssembly are instead injected by the service worker at `public/sw.js`. See `docs/patterns/cross-origin-isolation-service-worker.md` for details.
+
 ## Dependencies and licensing
 
 Every runtime and build-time dependency uses a permissive licence (MIT / Apache-2.0 / BSD-3-Clause / ISC / Boost-1.0). The one piece of non-permissive code is the APCA contrast math, which is **vendored** into the source tree rather than installed as a dependency — see [A note on the APCA licence](#a-note-on-the-apca-licence) below.

@@ -1,0 +1,36 @@
+# CodeQL static analysis for JavaScript.
+#
+# Runs on every pull request, push to main, and weekly on Monday morning.
+# ICCC is a public repository, so CodeQL is free; the upload to the security
+# tab does not require GitHub Advanced Security.
+#
+# Security note: no untrusted GitHub context variables are used in any
+# run step. The action invocations use only fixed inputs.
+#
+# Action versions are pinned to commit SHAs verified on 2026-05-23.
+
+name: CodeQL
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # weekly, Monday morning
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyse JavaScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@9e0d7b8d25671d64c341c19c0152d693099fb5ba  # v4.35.5
+        with:
+          languages: javascript
+      - name: Analyse
+        uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba  # v4.35.5

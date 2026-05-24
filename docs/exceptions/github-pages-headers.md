@@ -1,0 +1,3 @@
+# Security Exception: GitHub Pages security-header gap
+
+ICCC is hosted on GitHub Pages and meets all the conditions of the team's standing exception for that host. The standing exception, approved by Tim Dixon on 2026-05-23, is held in the global wiki at `docs/exceptions/github-pages-security-headers.md` (team root). This file is the project-level pointer required to keep the ICCC exception ledger complete. Read the global exception for the full risk assessment, the list of affected headers (`X-Frame-Options` and `Permissions-Policy`), the compensating controls, and the conditions under which the standing exception no longer applies.
