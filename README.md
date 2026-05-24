@@ -82,6 +82,16 @@ Full details: [Privacy Statement](https://image-colour-contrast-checker.timdixon
 - **[onnxruntime-web](https://github.com/microsoft/onnxruntime)** — ONNX model inference
 - **[pdfmake](https://github.com/bpampuch/pdfmake)** — PDF generation
 
+## Hosting
+
+The tool is hosted on [GitHub Pages](https://pages.github.com/) and deployed automatically from the `main` branch via `.github/workflows/deploy.yml`. The canonical live URL is:
+
+**[image-colour-contrast-checker.timdixon.net](https://image-colour-contrast-checker.timdixon.net)**
+
+The same build is also available at the underlying Pages URL: [timdixon82.github.io/Image-Colour-Contrast-Checker](https://timdixon82.github.io/Image-Colour-Contrast-Checker).
+
+GitHub Pages cannot send custom HTTP response headers. The COOP/COEP headers needed for multi-threaded WebAssembly are instead injected by the service worker at `public/sw.js`. See `docs/patterns/cross-origin-isolation-service-worker.md` for details.
+
 ## Dependencies and licensing
 
 Every runtime and build-time dependency uses a permissive licence. There are no copyleft (GPL / LGPL / AGPL) packages in the tree.

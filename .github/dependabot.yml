@@ -1,0 +1,22 @@
+# Dependabot configuration.
+# Weekly grouped updates for GitHub Actions and npm.
+# Major npm updates open as individual pull requests; minor and patch
+# updates are grouped so they can be reviewed and merged together.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      javascript-minor-patch:
+        update-types: ["minor", "patch"]
+        patterns: ["*"]

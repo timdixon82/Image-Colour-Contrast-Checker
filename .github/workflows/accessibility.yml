@@ -1,0 +1,63 @@
+# Accessibility checks at WCAG 2.2 AAA using Pa11y and axe-core.
+#
+# Runs on every pull request. Builds the Vite application, serves dist/
+# locally on port 8080, installs Pa11y and axe-core CLI plus wait-on and
+# browser-driver-manager, and runs both tools against index.html and
+# privacy.html.
+#
+# Pa11y picks up pa11y.json in the repository root for no-sandbox config.
+# axe uses browser-driver-manager to install a matching ChromeDriver.
+#
+# Security note: no untrusted GitHub context variables are used in any
+# run step. All run commands are fixed strings.
+#
+# Action versions are pinned to commit SHAs verified on 2026-05-23.
+
+name: Accessibility
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  accessibility:
+    name: Pa11y and axe at WCAG 2.2 AAA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the Vite application
+        run: npm run build
+
+      - name: Install accessibility tools
+        run: npm install -g pa11y@9.1.1 @axe-core/cli@4.11.3 wait-on@8.0.1 browser-driver-manager@2.0.1
+
+      - name: Install matching Chrome and ChromeDriver
+        run: npx browser-driver-manager install chrome
+
+      - name: Serve the built dist directory in the background
+        run: python3 -m http.server 8080 --directory dist &
+
+      - name: Wait for the server to be ready
+        run: npx wait-on http://localhost:8080 --timeout 15000
+
+      - name: Pa11y on index.html at WCAG 2.2 AAA
+        run: pa11y --standard WCAG2AAA http://localhost:8080/index.html
+
+      - name: Pa11y on privacy.html at WCAG 2.2 AAA
+        run: pa11y --standard WCAG2AAA http://localhost:8080/privacy.html
+
+      - name: axe-core on index.html at WCAG 2.2 AAA
+        run: axe http://localhost:8080/index.html --tags wcag2a,wcag2aa,wcag2aaa,wcag22aa,wcag22aaa --chrome-options=no-sandbox
+
+      - name: axe-core on privacy.html at WCAG 2.2 AAA
+        run: axe http://localhost:8080/privacy.html --tags wcag2a,wcag2aa,wcag2aaa,wcag22aa,wcag22aaa --chrome-options=no-sandbox

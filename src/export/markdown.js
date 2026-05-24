@@ -5,7 +5,6 @@
  * @module export/markdown
  */
 
-import { sourceDataUrl }                                          from '../render/canvas.js';
 import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT } from './strings.js';
 
 function anchor(filename) {

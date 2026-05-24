@@ -86,10 +86,10 @@ export function renderSummary(summaryEl, items) {
     resultCell.textContent = verdictBadge(item.verdict);
 
     const ratioCell = document.createElement('td');
-    ratioCell.textContent = item.worstRatio != null ? `${item.worstRatio.toFixed(2)}:1` : '—';
+    ratioCell.textContent = item.worstRatio !== null && item.worstRatio !== undefined ? `${item.worstRatio.toFixed(2)}:1` : '—';
 
     const failCell = document.createElement('td');
-    failCell.textContent = item.failCount != null ? String(item.failCount) : '—';
+    failCell.textContent = item.failCount !== null && item.failCount !== undefined ? String(item.failCount) : '—';
 
     tr.append(thumbCell, nameCell, resultCell, ratioCell, failCell);
     tbody.append(tr);

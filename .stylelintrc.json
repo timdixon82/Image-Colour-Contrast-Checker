@@ -1,0 +1,16 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "color-function-notation": "modern",
+    "alpha-value-notation": "number",
+    "custom-property-empty-line-before": null,
+    "no-descending-specificity": null,
+    "color-hex-length": null,
+    "color-function-alias-notation": null,
+    "rule-empty-line-before": null,
+    "comment-empty-line-before": null,
+    "media-feature-range-notation": null,
+    "declaration-block-single-line-max-declarations": null,
+    "selector-class-pattern": null
+  }
+}
