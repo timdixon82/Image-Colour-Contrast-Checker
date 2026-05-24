@@ -85,6 +85,19 @@ Proposed fix for the accessibility phase: same as ACC-ICCC-002. Darken `--fg-mut
 
 Carol's baseline audit was completed on 2026-05-23 (HEAD 6fe48ab). Pa11y found two pre-existing AAA codes (ACC-ICCC-001, ACC-ICCC-002). After the rework Pa11y scoped ignore list was applied (commit 713766b), axe-core ran and found two further pre-existing groups of contrast shortfalls (ACC-ICCC-003, ACC-ICCC-004). All four groups are pre-existing on `main` and are not regressions. The Pa11y and axe-core CI job passes (axe-core CLI exits 0 on violations). ACC-ICCC-001, ACC-ICCC-002, and ACC-ICCC-003 are deferred to the accessibility phase. ACC-ICCC-004 was closed in the setup-build pull request (chore/project-setup): the `.preloader-header .tagline` selector was added to the existing `.app-header .tagline` rule in `src/styles.css`, setting `color: #63D2FF` (sky blue) and reaching 10.64:1 AAA on the always-navy preloader header in both light and dark themes.
 
+### ACC-ICCC-005 — pdfmake does not produce a tagged PDF; images have no structural alt text (WCAG 4.1.2 Level A, PDF/UA context)
+
+The PDF export uses the pdfmake library (version 0.2.x). pdfmake does not generate a tagged PDF conforming to ISO 14289 (PDF/UA). Screen readers that process the PDF will read content in reading order but will not announce images as image elements, because the PDF lacks a structural accessibility tree.
+
+Every image in the exported PDF (preview, swatch, colour-blindness simulations, cropped region) will be treated as an untagged artefact. Mitigating factors are in place: every image has a visible text caption or an adjacent descriptive sentence, so the semantic content is available to sighted readers. The PDF is a supplementary export format; the primary accessible experience is the interactive web report.
+
+This is a known limitation of the pdfmake library and is not a regression in this branch. The only complete fix is a migration to a different PDF library that supports PDF/UA tagging, or adopting a future version of pdfmake if tagging support is added upstream.
+
+- WCAG criterion: 4.1.2 Name, Role, Value, Level A (as applied to PDF/UA)
+- Library: pdfmake 0.2.x
+- Deferred backlog: D8 in todo.md
+- Resolution path: migrate to a PDF/UA-compliant library when available.
+
 ## Exceptions
 
 Exceptions for this project are held in `docs/exceptions/`. At the time of project wiki scaffolding:

@@ -12,7 +12,8 @@ Live tool: [image-colour-contrast-checker.timdixon.net](https://image-colour-con
 
 ```
 /
-├── index.html              Main app entry point
+├── index.html              Main app entry point — includes the static
+│                           "What the checks mean" section
 ├── privacy.html            Privacy statement page
 ├── vite.config.js          Build configuration
 ├── package.json            Scripts and dependencies
@@ -20,6 +21,7 @@ Live tool: [image-colour-contrast-checker.timdixon.net](https://image-colour-con
 │   └── copy-models.mjs     Copies model + WASM assets into public/ (install/build hook)
 ├── public/                 Static assets (served as-is)
 │   ├── favicon.svg
+│   ├── count.js            GoatCounter analytics client — self-hosted (vendored, ISC)
 │   ├── sw.js               Service worker — cross-origin isolation + model caching
 │   ├── models/             (generated, gitignored) PaddleOCR ONNX model files
 │   └── ort/                (generated, gitignored) ONNX Runtime Web WASM binaries
@@ -30,14 +32,18 @@ Live tool: [image-colour-contrast-checker.timdixon.net](https://image-colour-con
     ├── core/               Pure logic — no DOM, no browser-only APIs
     │   ├── schema.js       JSDoc type definitions (no runtime code)
     │   ├── contrast.js     WCAG contrast math primitives
+    │   ├── colour-vision.js Colour-vision-deficiency simulation (Machado 2009)
+    │   ├── apca.js         APCA contrast math (vendored verbatim from apca-w3)
+    │   ├── perceptual.js   APCA, vestibular saturation, cognitive verdict
     │   ├── analyse.js      Analysis pipeline: ImageData + OcrWord[] → ReportData
     │   └── image.js        Image decode + resize
     ├── adapters/           Swappable OCR engine integrations
     │   └── paddle-ocr.js   PaddleOCR PP-OCRv4 via @gutenye/ocr-browser + ONNX Runtime Web
     ├── render/             Browser canvas drawing utilities
-    │   └── canvas.js       Swatch / clip / preview / thumbnail canvases
+    │   └── canvas.js       Swatch / clip / preview / thumbnail / CVD-sim canvases
     ├── export/             Report generators
     │   ├── strings.js      Single source of truth for user-facing copy
+    │   ├── checks.js       Shapes a ColourPair into the six display checks
     │   ├── pdf.js          PDF export via pdfmake (lazy-loaded)
     │   └── markdown.js     Markdown export with base64-embedded images
     └── ui/                 App-specific DOM components
@@ -73,10 +79,15 @@ no runtime code):
 |---|---|
 | `BBox` | `{ x, y, w, h }` — pixel coordinates in the resized image |
 | `OcrWord` | `{ text, score, bbox }` — one word from an OCR adapter |
-| `ColourPair` | A unique foreground/background colour combination, merged across the image, with its WCAG contrast ratio and AA/AAA pass flags |
+| `CvdContrast` | `{ fgHex, bgHex, contrast, pass }` — one pair's contrast recomputed for one dichromacy |
+| `ApcaResult` | `{ lc, status, message }` — APCA perceptual contrast |
+| `VestibularResult` | `{ fgSat, bgSat, maxSat, status, message }` — HSL saturation / shimmer risk |
+| `CognitiveResult` | `{ status, message }` — derived cognitive-load verdict |
+| `ColourPair` | A unique foreground/background combination, merged across the image, carrying every check: WCAG contrast + AA/AAA, `cvd` + `cvdRisk`, `apca`, `vestibular`, `cognitive`, and a rolled-up `overall` (`PASS`/`WARN`/`FAIL`) |
 | `ReportData` | `{ hasText, colourPairs[], verdict, flag, detail }` — the full analysis of one image |
 | `PairAsset` | A `ColourPair` plus its rendered swatch / clip canvases |
-| `AnalysedEntry` | `{ id, filename, report, previewDataUrl, pairAssets[] }` — the contract handed to the export modules |
+| `CbSimAsset` | `{ key, label, note, dataUrl }` — one whole-image colour-blindness simulation |
+| `AnalysedEntry` | `{ id, filename, report, previewDataUrl, pairAssets[], cbSimAssets[] }` — the contract handed to the export modules |
 
 `AnalysedEntry` is the boundary between the UI layer and the export layer:
 `pdf.js` and `markdown.js` accept an array of `AnalysedEntry` and nothing else
@@ -116,13 +127,21 @@ src/core/analyse.js — analyseImage()
     Merge findings with similar FG+BG colours
     Keep worst contrast; accumulate example words + bboxes
     Sort pairs worst-contrast-first
+  annotatePairs() — attaches every extra check to each pair:
+    CVD contrast (core/colour-vision.js) for deutan/protan/tritan
+    APCA, vestibular saturation, cognitive verdict (core/perceptual.js)
+    rolled-up overall PASS/WARN/FAIL
   Returns ReportData — { hasText, colourPairs, verdict, flag, detail }
         │
         ▼
 src/ui/report-view.js — renderImageCard()
-  Builds the DOM card; draws swatch / clip / preview canvases
-  via src/render/canvas.js
-  Side effect: populates entry.previewDataUrl and entry.pairAssets
+  Builds the DOM card; draws preview, swatch, clip, and four
+  colour-blindness simulation canvases via src/render/canvas.js.
+  One expandable row per colour combination; every row starts
+  collapsed. Detail panel = the six checks (built by
+  export/checks.js) + the cropped image region.
+  Side effect: populates entry.previewDataUrl, entry.pairAssets,
+  entry.cbSimAssets
         │
         ▼
   (optional) Export — accepts AnalysedEntry[]
@@ -149,22 +168,25 @@ Application orchestrator and Vite entry point. No exports.
 
 - Wires DOM events (drag-drop, file picker, PDF/Markdown download, reset)
 - Runs the per-file pipeline (decode → OCR → analyse → render)
-- Holds the `state` object: `{ ocrReady, ocrLoading, queue, entries, busy, batchTimestamp }`
+- Holds the `state` object: `{ ocrPromise, queue, entries, busy, batchTimestamp }`
 - Builds the footer and initialises the theme toggle (`localStorage['td-theme']`)
 - Calls `preloadModels()` on startup, then warms the OCR engine
 
 OCR is loaded through a dynamic `import()` of `adapters/paddle-ocr.js`, keeping
-the ~10 MB OCR + runtime code out of the initial bundle. Warm-up (`getOcr()`) is
-triggered as soon as the preloader finishes downloading the model files, so the
-engine is ready before the user selects an image; `handleFiles()` also calls it
-as an idempotent fallback.
+the ~10 MB OCR + runtime code out of the initial bundle. Once `preloadModels()`
+has cached the model files, `warmOcr()` initialises the engine (`getOcr()`); the
+dropzone stays in its loading state until that resolves, so it becomes
+interactive only when the tool is fully ready. `warmOcr()` is idempotent — it
+memoises a single shared promise. The rest of the page (header, the "What the
+checks mean" section, footer) is usable and scrollable throughout the download.
 
 ### `src/preloader.js`
 
 Exported: `preloadModels(onProgress)`
 
-Downloads the OCR models and the ONNX runtime before the user can interact.
-WebGPU availability (and platform) decides which WASM variant is fetched:
+Downloads the OCR models and the ONNX runtime up front, before the dropzone is
+enabled (the rest of the page stays usable meanwhile). WebGPU availability (and
+platform) decides which WASM variant is fetched:
 
 | File | Size (approx) | When |
 |------|--------------|------|
@@ -199,6 +221,32 @@ Pure WCAG math and the per-region colour-separation primitives.
   character-width vertical strips and reports the worst strip, catching gradient
   backgrounds where contrast degrades across a single word.
 
+### `src/core/colour-vision.js`
+
+Exported: `CVD_MATRICES`, `SRGB_TO_LINEAR`, `linearToSrgb8`, `simulateHex`,
+`cvdPairContrast`
+
+Colour-vision-deficiency (CVD) simulation using the Machado, Oliveira &
+Fernandes (2009) transform matrices at full severity, applied in **linear
+RGB** (the physically correct space). `simulateHex()` transforms a colour;
+`cvdPairContrast()` recomputes a pair's WCAG contrast as it appears to a
+viewer with that deficiency. Achromatopsia is a luminance-preserving greyscale.
+
+### `src/core/perceptual.js`
+
+Exported: `apcaResult`, `vestibularResult`, `cognitiveResult`
+
+Checks beyond WCAG contrast:
+
+- **APCA** — the Advanced Perceptual Contrast Algorithm, computed by the
+  `core/apca.js` math vendored verbatim from `apca-w3` 0.1.9. Returns the `Lc`
+  value and a PASS/WARN/FAIL band. APCA is in beta and is **not** a WCAG
+  requirement; it is reported as an extra signal.
+- **Vestibular** — HSL saturation of *both* the text and background colours;
+  high saturation can shimmer and cause sensory overload.
+- **Cognitive** — a derived verdict that cascades through the other checks
+  (too small → fails WCAG → high saturation → eye-fatigue → shimmer → harsh).
+
 ### `src/core/analyse.js`
 
 Exported: `filterOcrDetections`, `buildColourPairs`, `analyseImage`
@@ -206,8 +254,9 @@ Exported: `filterOcrDetections`, `buildColourPairs`, `analyseImage`
 `analyseImage(imageData, ocrDetections)` is the entry point. It filters
 detections, derives a `ColourPair` per detection (text = minority luminance
 cluster, background = majority), merges visually-similar pairs (Euclidean RGB
-distance < 25, keeping the worst contrast and up to 6 example words), and
-produces `ReportData`.
+distance < 25, keeping the worst contrast and up to 6 example words), then
+`annotatePairs()` attaches the CVD, APCA, vestibular and cognitive results
+plus the rolled-up `overall` verdict to each pair, and produces `ReportData`.
 
 ### `src/core/image.js`
 
@@ -246,37 +295,59 @@ To swap OCR engines, add a sibling file in `adapters/` exporting `getOcr()` and
 
 ### `src/render/canvas.js`
 
-Exported: `makeSwatch`, `makeClip`, `makePreview`, `makeThumb`, `sourceDataUrl`
+Exported: `makeSwatch`, `makeClip`, `makePreview`, `makeThumb`, `makeCbSim`,
+`sourceDataUrl`
 
 Pure canvas drawing. Every function returns `{ canvas, dataUrl }` so the same
 artefact can be inserted into the DOM and reused for PDF/Markdown export without
-redrawing. No strings, no app state.
+redrawing. `makeCbSim()` transforms a whole image for one colour-vision
+deficiency, applying the matrices from `core/colour-vision.js` per pixel. No
+strings, no app state.
 
 ### `src/export/strings.js`
 
-Exported: `APP_NAME`, `SITE_URL`, `THRESHOLDS_FOOTER`, `DISCLAIMER_TEXT`
+Exported: `APP_NAME`, `SITE_URL`, `THRESHOLDS_FOOTER`, `DISCLAIMER_TEXT`,
+`CVD_TYPES`, `checkInfoUrl`
 
 The single source of truth for user-facing copy shared by the export modules —
-edit once, and PDF and Markdown stay in sync.
+edit once, and PDF and Markdown stay in sync. `checkInfoUrl(id)` builds the deep
+link to a check's entry in the on-page "What the checks mean" section.
+
+### `src/export/checks.js`
+
+Exported: `pairChecks`, `overallLine`, `cvdStatus`, `advancedStatus`,
+`statusWord`, `pairBadges`, `CHECK_GROUPS`
+
+`pairChecks(pair)` shapes one `ColourPair` into the six display checks (WCAG AA,
+WCAG AAA, APCA, CVD contrast, Vestibular, Cognitive), each with a label, value,
+status and an `id` that doubles as its `#check-info-<id>` anchor in the on-page
+"What the checks mean" section. `CHECK_GROUPS` splits the six into the two
+display groups — WCAG compliance and Advanced checks. `pairBadges()` produces a
+pair's AA / AAA / Advanced badges, `advancedStatus()` rolls the four advanced
+checks into one verdict, and `statusWord()` maps a status to its display word.
+The web report, PDF and Markdown all consume these — the check list is never
+rebuilt in a renderer. `overallLine()` builds the "N combinations · X fail …"
+summary line.
 
 ### `src/export/markdown.js`
 
 Exported: `buildMarkdown(entries, timestamp)`, `downloadMarkdown(markdown, filename)`
 
 Builds a Markdown report with a summary table and per-image sections; every
-image (preview, swatches, clips) is embedded as a base64 data URI. GitHub strips
-embedded images from Markdown renders — the output is best viewed in VS Code,
-Obsidian, or Typora.
+image (preview, colour-blindness simulations, swatches, clips) is embedded as a
+base64 data URI. Each colour combination is a collapsed `<details>` element.
+GitHub strips embedded images from Markdown renders — the output is best viewed
+in VS Code, Obsidian, or Typora.
 
 ### `src/export/pdf.js`
 
 Exported: `downloadPdf(entries, timestamp, filename)`
 
 Lazy-loads `pdfmake` (and its bundled Roboto fonts) on first call and builds a
-multi-page document with embedded images.
+multi-page document with embedded images. Each colour combination becomes a
+block: header line, the six-check table, and the cropped image region.
 
-Both export modules accept `AnalysedEntry[]`. Column order in the reports is
-**Background → Foreground** (the background is the reading context).
+Both export modules accept `AnalysedEntry[]`.
 
 ### `src/ui/dropzone.js`
 
@@ -296,13 +367,17 @@ drive the badge colour.
 ### `src/ui/report-view.js`
 
 Exported: `renderResultsHeader`, `renderThresholdsFooter`, `renderSummary`,
-`renderImageCard`, `summaryItemFromEntry`
+`renderImageCard`, `summaryItemFromEntry`, `verdictBadge`
 
-Renders the DOM report. DOM nodes are created with `document.createElement` (no
-`innerHTML` for user-derived content). `renderImageCard()` has a deliberate side
-effect: it populates `entry.previewDataUrl` and `entry.pairAssets`, so the
-export modules can run afterwards without redrawing. `summaryItemFromEntry()`
-extracts the data `renderSummary()` needs.
+Renders the DOM report. `renderImageCard()` draws the preview, the four
+colour-blindness simulations, and one expandable row per colour combination.
+The collapsed row shows the swatch, the WCAG (AA / AAA) and Advanced-check
+badges, the colours, a WebAIM link and the detected text; the expanded panel
+shows the six checks and the cropped image region. Every row starts collapsed.
+It has a deliberate side effect: it populates `entry.previewDataUrl`,
+`entry.pairAssets` and `entry.cbSimAssets`, so the export modules can run
+afterwards without redrawing. `summaryItemFromEntry()` extracts the data
+`renderSummary()` needs.
 
 ---
 
@@ -429,7 +504,7 @@ would add bundle size and complexity with no benefit at this scale.
    `downloadYourFormat(entries, timestamp, filename)`.
 2. Import types from `../core/schema.js` and copy from `./strings.js`.
 3. Each `entry` is an `AnalysedEntry`:
-   `{ id, filename, report, previewDataUrl, pairAssets[] }`.
+   `{ id, filename, report, previewDataUrl, pairAssets[], cbSimAssets[] }`.
 4. Wire a button in `index.html` and a handler in `src/main.js`.
 
 ### Changing WCAG thresholds
