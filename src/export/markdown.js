@@ -15,12 +15,6 @@ function anchor(filename) {
   return filename.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-function verdictLabel(verdict) {
-  if (verdict === 'PASS') return '✓ PASS';
-  if (verdict === 'FAIL') return '✗ FAIL';
-  return '— NO TEXT';
-}
-
 /**
  * Markdown pill: bold-bracketed label per Simon's design spec.
  * Screen readers on VS Code / Obsidian / GitHub announce "bold PASS" etc.,

@@ -295,6 +295,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 @media (prefers-reduced-motion: reduce) {
   .dz-bar-fill { transition: none; }
 }
@@ -509,7 +510,6 @@ body {
   margin-bottom: 22px;
   box-shadow: var(--shadow);
 }
-.image-card-title { margin: 0 0 10px; font-size: 1.1rem; }
 
 .image-card-preview {
   display: block;

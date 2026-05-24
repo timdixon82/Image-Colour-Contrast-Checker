@@ -25,12 +25,6 @@ async function loadPdfMake() {
   return pdfMakePromise;
 }
 
-function verdictLabel(verdict) {
-  if (verdict === 'PASS') return '✓ PASS';
-  if (verdict === 'FAIL') return '✗ FAIL';
-  return '— NO TEXT';
-}
-
 /** Map a check status to a pdfmake style name. */
 function statusStyle(status) {
   if (status === 'PASS' || status === 'SAFE') return 'pass';

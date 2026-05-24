@@ -7,6 +7,10 @@ import globals from 'globals';
 
 export default [
   {
+    // Vendored file: apca-w3 0.1.9. Do not edit or lint.
+    ignores: ['src/core/apca.js'],
+  },
+  {
     files: ['src/**/*.js', 'scripts/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
