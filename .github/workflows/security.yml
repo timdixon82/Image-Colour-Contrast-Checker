@@ -6,7 +6,7 @@
 #
 # Security note: no untrusted GitHub context variables are used in any run step.
 #
-# Action versions are pinned to commit SHAs verified on 2026-05-23.
+# Action versions are pinned to commit SHAs verified on 2026-05-30.
 
 name: Security
 on:
@@ -22,17 +22,20 @@ jobs:
     name: Semgrep
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Semgrep
+        # semgrep scan runs locally with the default ruleset and exits non-zero
+        # on any finding. semgrep ci requires a SEMGREP_APP_TOKEN and uses
+        # cloud-based CI mode; it is not used here to avoid token dependency.
         run: |
           pip install semgrep
-          semgrep ci
+          semgrep scan --config p/default --error
 
   trivy:
     name: Trivy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Trivy filesystem scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
@@ -45,5 +48,5 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
