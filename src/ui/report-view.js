@@ -559,7 +559,15 @@ export { verdictBadge };
 function openCheckDetails(id) {
   const el = document.getElementById(id);
   if (!el) return;
+  // Open the target <details> element itself
   if (el.tagName === 'DETAILS') el.open = true;
+  // Open every ancestor <details> so the target is not hidden inside a
+  // closed wrapper (e.g. the outer glossary-outer that wraps the whole section)
+  let ancestor = el.parentElement;
+  while (ancestor) {
+    if (ancestor.tagName === 'DETAILS') ancestor.open = true;
+    ancestor = ancestor.parentElement;
+  }
   el.scrollIntoView({ block: 'start' });
   (el.querySelector('summary') || el).focus({ preventScroll: true });
 }
