@@ -62,6 +62,54 @@
     </header>
 
     <main id="app">
+      <section id="check-glossary" class="check-glossary" aria-labelledby="glossary-heading">
+        <details class="glossary-outer">
+          <summary class="glossary-outer-summary">
+            <h2 id="glossary-heading">What the checks mean</h2>
+          </summary>
+          <p class="glossary-intro">For every colour combination found in an image, the tool runs six checks, grouped into formal WCAG compliance and advanced perceptual checks. Open any check below to see what it measures, the thresholds used, and where to read more. All checks are automated and indicative &mdash; manual verification is still required before citing for formal WCAG compliance.</p>
+
+          <h3 class="glossary-group">WCAG compliance</h3>
+          <details id="check-info-wcag-aa" class="glossary-item">
+            <summary>WCAG AA</summary>
+            <p>The minimum contrast ratio required by <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html" target="_blank" rel="noopener noreferrer">WCAG 2.2 Success Criterion 1.4.3 Contrast (Minimum)</a>. Text must reach <strong>4.5:1</strong>, or <strong>3:1</strong> for large text (here, an OCR box height of 24&nbsp;px or more). The ratio is computed from the sRGB relative luminance of the sampled foreground and background colours.</p>
+          </details>
+          <details id="check-info-wcag-aaa" class="glossary-item">
+            <summary>WCAG AAA</summary>
+            <p>The enhanced contrast target from <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html" target="_blank" rel="noopener noreferrer">WCAG 2.2 Success Criterion 1.4.6 Contrast (Enhanced)</a>. Text must reach <strong>7:1</strong>, or <strong>4.5:1</strong> for large text. AAA is the standard this tool targets for its own interface.</p>
+          </details>
+
+          <h3 class="glossary-group">Advanced checks</h3>
+          <details id="check-info-apca" class="glossary-item">
+            <summary>APCA</summary>
+            <p>The <a href="https://apcacontrast.com" target="_blank" rel="noopener noreferrer">Advanced Perceptual Contrast Algorithm</a> models how the human eye actually perceives lightness, accounting for text polarity (light-on-dark vs dark-on-light) in a way the WCAG ratio does not. It reports a lightness-contrast value, <code>Lc</code>, from 0 to roughly &plusmn;108.</p>
+            <p>This tool reads the absolute <code>Lc</code>: below 45 fails, 45&ndash;59 is borderline (large text only), 60 or above passes. <strong>APCA is in public beta and is not yet a WCAG requirement</strong> &mdash; it is shown as an extra perceptual signal, computed with the official <code>apca-w3</code> implementation.</p>
+          </details>
+          <details id="check-info-cvd" class="glossary-item">
+            <summary>CVD contrast</summary>
+            <p>The same WCAG contrast ratio, recalculated as the two colours appear to viewers with a colour-vision deficiency (CVD): deuteranopia (green-blind), protanopia (red-blind) and tritanopia (blue-blind). Colours are transformed with the Machado, Oliveira &amp; Fernandes (2009) matrices in linear-RGB space, then the contrast is recomputed.</p>
+            <p>A combination is flagged when it passes WCAG AA for normal vision but drops below the threshold for one of these deficiencies &mdash; a difference standard contrast checks miss. Achromatopsia is shown in the whole-image simulation but omitted here, because it preserves luminance and so never changes the ratio.</p>
+          </details>
+          <details id="check-info-vestibular" class="glossary-item">
+            <summary>Vestibular</summary>
+            <p>Highly saturated colours can appear to shimmer or vibrate, which can trigger discomfort, nausea or disorientation for people with <a href="https://vestibular.org" target="_blank" rel="noopener noreferrer">vestibular disorders</a>. This check measures the HSL saturation of <strong>both</strong> the text and the background &mdash; saturated text shimmers just as a saturated background does.</p>
+            <p>The higher of the two saturations is graded: under 60% is safe, 60&ndash;79% is a warning, and 80% or above is high risk.</p>
+            <p>The 60% and 80% cut-offs are this project&rsquo;s in-house heuristic. The Web Content Accessibility Guidelines (WCAG) do not define a saturation threshold, and the wider accessibility literature treats vestibular trigger thresholds qualitatively rather than numerically. These bands are a team-set rule, not a WCAG requirement.</p>
+          </details>
+          <details id="check-info-cognitive" class="glossary-item">
+            <summary>Cognitive</summary>
+            <p>A derived verdict that combines the other checks into a single plain-language read on cognitive load. It cascades through, in order: text physically too small, failing WCAG contrast, high saturation, an extremely bright pairing (APCA above 105) that causes eye fatigue, a bright saturated pairing that appears to shimmer, and finally very high contrast that can feel &ldquo;too sharp&rdquo;.</p>
+            <p>A <strong>HARSH</strong> result is not a failure &mdash; it flags that contrast above roughly 18:1 can be uncomfortably sharp for some readers, and is worth a manual look.</p>
+          </details>
+
+          <details id="check-info-overall" class="glossary-item">
+            <summary>How the results combine</summary>
+            <p>Every colour combination is graded in two groups. <strong>WCAG compliance</strong> covers the formal contrast levels &mdash; WCAG AA and AAA &mdash; that accessibility standards require. <strong>Advanced checks</strong> cover the perceptual and inclusive-design signals &mdash; APCA, CVD contrast, vestibular saturation and the cognitive verdict &mdash; which go beyond the formal WCAG ratio.</p>
+            <p>The report shows each combination with two WCAG badges (AA and AAA) and one rolled-up Advanced-checks badge. The Advanced badge <strong>passes</strong> when every advanced check is clear, needs <strong>review</strong> if any warns, and <strong>fails</strong> if any fails. Every row starts collapsed &mdash; open one to see the full per-check breakdown.</p>
+          </details>
+        </details>
+      </section>
+
       <section id="landing" class="landing">
         <div id="dropzone" class="dropzone is-loading" role="button" aria-disabled="true"
              aria-label="Drop images here or click to choose files">
@@ -70,7 +118,7 @@
             <p class="dz-loading-desc">
               This tool uses AI to detect text in your images. The models &mdash; around
               30&nbsp;MB &mdash; download to your browser once, then load instantly on every
-              visit after. You can read what the checks mean further down the page while
+              visit after. You can open <strong>What the checks mean</strong> above while
               this finishes.
             </p>
             <div class="dz-progress" aria-hidden="true">
@@ -115,50 +163,6 @@
         <div id="summary" class="summary"></div>
         <div id="cards" class="cards"></div>
         <footer id="thresholds" class="thresholds"></footer>
-      </section>
-
-      <section id="check-glossary" class="check-glossary" aria-labelledby="glossary-heading">
-        <h2 id="glossary-heading">What the checks mean</h2>
-        <p class="glossary-intro">For every colour combination found in an image, the tool runs six checks, grouped into formal WCAG compliance and advanced perceptual checks. Open any check below to see what it measures, the thresholds used, and where to read more. All checks are automated and indicative &mdash; manual verification is still required before citing for formal WCAG compliance.</p>
-
-        <h3 class="glossary-group">WCAG compliance</h3>
-        <details id="check-info-wcag-aa" class="glossary-item">
-          <summary>WCAG AA</summary>
-          <p>The minimum contrast ratio required by <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html" target="_blank" rel="noopener noreferrer">WCAG 2.2 Success Criterion 1.4.3 Contrast (Minimum)</a>. Text must reach <strong>4.5:1</strong>, or <strong>3:1</strong> for large text (here, an OCR box height of 24&nbsp;px or more). The ratio is computed from the sRGB relative luminance of the sampled foreground and background colours.</p>
-        </details>
-        <details id="check-info-wcag-aaa" class="glossary-item">
-          <summary>WCAG AAA</summary>
-          <p>The enhanced contrast target from <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html" target="_blank" rel="noopener noreferrer">WCAG 2.2 Success Criterion 1.4.6 Contrast (Enhanced)</a>. Text must reach <strong>7:1</strong>, or <strong>4.5:1</strong> for large text. AAA is the standard this tool targets for its own interface.</p>
-        </details>
-
-        <h3 class="glossary-group">Advanced checks</h3>
-        <details id="check-info-apca" class="glossary-item">
-          <summary>APCA</summary>
-          <p>The <a href="https://apcacontrast.com" target="_blank" rel="noopener noreferrer">Advanced Perceptual Contrast Algorithm</a> models how the human eye actually perceives lightness, accounting for text polarity (light-on-dark vs dark-on-light) in a way the WCAG ratio does not. It reports a lightness-contrast value, <code>Lc</code>, from 0 to roughly &plusmn;108.</p>
-          <p>This tool reads the absolute <code>Lc</code>: below 45 fails, 45&ndash;59 is borderline (large text only), 60 or above passes. <strong>APCA is in public beta and is not yet a WCAG requirement</strong> &mdash; it is shown as an extra perceptual signal, computed with the official <code>apca-w3</code> implementation.</p>
-        </details>
-        <details id="check-info-cvd" class="glossary-item">
-          <summary>CVD contrast</summary>
-          <p>The same WCAG contrast ratio, recalculated as the two colours appear to viewers with a colour-vision deficiency (CVD): deuteranopia (green-blind), protanopia (red-blind) and tritanopia (blue-blind). Colours are transformed with the Machado, Oliveira &amp; Fernandes (2009) matrices in linear-RGB space, then the contrast is recomputed.</p>
-          <p>A combination is flagged when it passes WCAG AA for normal vision but drops below the threshold for one of these deficiencies &mdash; a difference standard contrast checks miss. Achromatopsia is shown in the whole-image simulation but omitted here, because it preserves luminance and so never changes the ratio.</p>
-        </details>
-        <details id="check-info-vestibular" class="glossary-item">
-          <summary>Vestibular</summary>
-          <p>Highly saturated colours can appear to shimmer or vibrate, which can trigger discomfort, nausea or disorientation for people with <a href="https://vestibular.org" target="_blank" rel="noopener noreferrer">vestibular disorders</a>. This check measures the HSL saturation of <strong>both</strong> the text and the background &mdash; saturated text shimmers just as a saturated background does.</p>
-          <p>The higher of the two saturations is graded: under 60% is safe, 60&ndash;79% is a warning, and 80% or above is high risk.</p>
-          <p>The 60% and 80% cut-offs are this project&rsquo;s in-house heuristic. The Web Content Accessibility Guidelines (WCAG) do not define a saturation threshold, and the wider accessibility literature treats vestibular trigger thresholds qualitatively rather than numerically. These bands are a team-set rule, not a WCAG requirement.</p>
-        </details>
-        <details id="check-info-cognitive" class="glossary-item">
-          <summary>Cognitive</summary>
-          <p>A derived verdict that combines the other checks into a single plain-language read on cognitive load. It cascades through, in order: text physically too small, failing WCAG contrast, high saturation, an extremely bright pairing (APCA above 105) that causes eye fatigue, a bright saturated pairing that appears to shimmer, and finally very high contrast that can feel &ldquo;too sharp&rdquo;.</p>
-          <p>A <strong>HARSH</strong> result is not a failure &mdash; it flags that contrast above roughly 18:1 can be uncomfortably sharp for some readers, and is worth a manual look.</p>
-        </details>
-
-        <details id="check-info-overall" class="glossary-item">
-          <summary>How the results combine</summary>
-          <p>Every colour combination is graded in two groups. <strong>WCAG compliance</strong> covers the formal contrast levels &mdash; WCAG AA and AAA &mdash; that accessibility standards require. <strong>Advanced checks</strong> cover the perceptual and inclusive-design signals &mdash; APCA, CVD contrast, vestibular saturation and the cognitive verdict &mdash; which go beyond the formal WCAG ratio.</p>
-          <p>The report shows each combination with two WCAG badges (AA and AAA) and one rolled-up Advanced-checks badge. The Advanced badge <strong>passes</strong> when every advanced check is clear, needs <strong>review</strong> if any warns, and <strong>fails</strong> if any fails. Every row starts collapsed &mdash; open one to see the full per-check breakdown.</p>
-        </details>
       </section>
 
       <footer id="app-footer" class="app-footer"></footer>

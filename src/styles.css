@@ -664,11 +664,57 @@ body {
 
 /* ── Check glossary (on-page "what the checks mean") ─────────────────────── */
 .check-glossary {
-  margin: 28px 0 8px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
+  margin: 0 0 24px;
 }
-.check-glossary h2 { font-size: 1.3rem; margin: 0 0 6px; }
+
+/* Outer collapsible wrapper — the h2 toggle that collapses the whole section */
+.glossary-outer {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+}
+.glossary-outer-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  min-height: 44px; /* WCAG 2.5.8 touch target */
+}
+.glossary-outer-summary::-webkit-details-marker { display: none; }
+.glossary-outer-summary::before {
+  content: '▸';
+  color: var(--accent);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.glossary-outer[open] > .glossary-outer-summary::before { content: '▾'; }
+.glossary-outer-summary h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--fg);
+}
+.glossary-outer-summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+  border-radius: var(--radius);
+}
+.glossary-outer[open] > .glossary-outer-summary {
+  border-bottom: 1px solid var(--border);
+}
+/* Inner content padding when expanded */
+.glossary-outer > :not(summary) {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+.glossary-outer > .glossary-intro { padding-top: 14px; }
+.glossary-outer > .glossary-group:first-of-type { margin-top: 8px; }
+.glossary-outer > details:last-child { margin-bottom: 12px; }
+
+.check-glossary h2 { font-size: 1.1rem; margin: 0; }
 .glossary-intro { color: var(--fg-muted); font-size: 0.92rem; margin: 0 0 16px; line-height: 1.6; }
 .glossary-group {
   font-size: 0.78rem;
