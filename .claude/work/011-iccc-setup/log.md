@@ -155,3 +155,12 @@ Tim's instruction: "lets progress to get the repo all clean and consistent."
 - [2026-05-31 21:23:44] subagent completed
 - [2026-05-31 21:59:31] subagent completed
 - [2026-05-31 22:14:20] subagent completed
+
+## [2026-05-31] merge | Template sync and release 0.4.0 merged to main
+
+Tim approved merge of all open PRs.
+
+- PR 20 (chore/template-sync-1.4.2): merged. Template 1.3.0 → 1.4.2 landed on main. Hooks, agent CORE sections, commands, settings, and scripts all updated.
+- PR 18 (release-please 0.4.0): merged. CHANGELOG.md and package.json bumped to v0.4.0. Release workflow, CI, CodeQL, and Pages deploy triggered on main.
+
+No open PRs remain. CI and deploy workflows in progress at merge time.
