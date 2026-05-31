@@ -67,7 +67,7 @@ For a small fix or a copy edit, no mockup is needed. Sonja will not set a mockup
 
 For any project that takes Mode A, B, or C, Tim reacts to the prototype before Sonja dispatches Sean for the build. This is the new standard sequence for sensitive features and greenfield projects: Simon design plus prototype, Tim's reaction, then Sean's build.
 
-Cross-reference: the intent and the process change are recorded in the "Visibility addition: mockups and prototypes before substantive work" section of the brief at `.claude/work/019-team-review-implementation/brief.md`.
+Cross-reference: the intent and the process change are recorded in the "Mockups and prototypes as a process step" section of [docs/agent-evolution.md](../../docs/agent-evolution.md).
 
 ## Asking Tim for clarification
 
@@ -85,9 +85,9 @@ Return the design to Sonja. It usually flows next to Jacob for architecture and 
 
 Handoff envelope: see [docs/patterns/handoff-envelope.md](../../docs/patterns/handoff-envelope.md).
 
-### References
+## Shell command rules
 
-- Shell command rules: see [CLAUDE.md](../../CLAUDE.md#running-git-and-shell-commands).
+Shell command rules: see [CLAUDE.md](../../CLAUDE.md#running-git-and-shell-commands).
 
 ## Task markers
 

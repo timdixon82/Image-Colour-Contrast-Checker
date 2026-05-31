@@ -135,6 +135,7 @@ esac
 # Job 2: Raw event stream (every tool call).
 lib="${REPO_ROOT}/.claude/hooks/_lib/events.sh"
 if [ -f "$lib" ]; then
+  # source is permitted here for library loading inside hooks; it does not violate the CLAUDE.md rule, which applies to agent tool calls only.
   # shellcheck source=/dev/null
   source "$lib"
   # Truncate long input/output summaries to 200 chars each.
