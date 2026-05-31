@@ -6,6 +6,8 @@
  * @module render/canvas
  */
 
+import { CVD_MATRICES, SRGB_TO_LINEAR, linearToSrgb8 } from '../core/colour-vision.js';
+
 const SWATCH_W    = 80;
 const SWATCH_H    = 20;
 const CLIP_PADDING = 32;
@@ -86,6 +88,41 @@ export function makePreview(sourceCanvas, maxWidth = 600) {
   const h = Math.max(1, Math.round(sourceCanvas.height * scale));
   const canvas = newCanvas(w, h);
   canvas.getContext('2d').drawImage(sourceCanvas, 0, 0, w, h);
+  return { canvas, dataUrl: canvas.toDataURL('image/png') };
+}
+
+/**
+ * Simulate how the source image appears to a viewer with the given
+ * colour-vision deficiency. Downscales to `maxWidth` first, then transforms
+ * every pixel in linear-RGB space (see core/colour-vision.js).
+ *
+ * @param {HTMLCanvasElement} sourceCanvas
+ * @param {string} type  Key of CVD_MATRICES
+ * @param {number} [maxWidth=600]
+ * @returns {{ canvas: HTMLCanvasElement, dataUrl: string }}
+ */
+export function makeCbSim(sourceCanvas, type, maxWidth = 600) {
+  const m = CVD_MATRICES[type];
+  if (!m) throw new Error(`Unknown colour-blindness type: ${type}`);
+
+  const scale = Math.min(1, maxWidth / sourceCanvas.width);
+  const w = Math.max(1, Math.round(sourceCanvas.width  * scale));
+  const h = Math.max(1, Math.round(sourceCanvas.height * scale));
+  const canvas = newCanvas(w, h);
+  const ctx    = canvas.getContext('2d');
+  ctx.drawImage(sourceCanvas, 0, 0, w, h);
+
+  const img = ctx.getImageData(0, 0, w, h);
+  const d   = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const lr = SRGB_TO_LINEAR[d[i]];
+    const lg = SRGB_TO_LINEAR[d[i + 1]];
+    const lb = SRGB_TO_LINEAR[d[i + 2]];
+    d[i]     = linearToSrgb8(m[0] * lr + m[1] * lg + m[2] * lb);
+    d[i + 1] = linearToSrgb8(m[3] * lr + m[4] * lg + m[5] * lb);
+    d[i + 2] = linearToSrgb8(m[6] * lr + m[7] * lg + m[8] * lb);
+  }
+  ctx.putImageData(img, 0, 0);
   return { canvas, dataUrl: canvas.toDataURL('image/png') };
 }
 
