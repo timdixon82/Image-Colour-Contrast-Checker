@@ -185,6 +185,8 @@ Shell command rules: see [CLAUDE.md](../../CLAUDE.md#running-git-and-shell-comma
 
 ## End-of-session wrap-up (task substrate)
 
+Sonja does not emit TASK blocks; only specialist subagents do, and the hook routes them automatically.
+
 Before writing the HANDOFF.md for a session, run two commands and include their output:
 
 1. `bash scripts/tasks.sh --check` — lint the substrate. If it exits non-zero, fix the errors before handing off.

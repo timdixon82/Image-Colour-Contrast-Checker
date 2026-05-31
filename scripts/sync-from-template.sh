@@ -8,10 +8,16 @@
 #     .claude/hooks/        — all hooks, including the safety gate
 #     .claude/settings.json — permissions and hook registrations
 #     .claude/commands/     — slash-command definitions
+#     .claude/output-styles/ — output style definitions
 #
 #   Pass 1b — scripts/ sync (verbatim overwrite):
 #     scripts/next-q.sh           — question-numbering tool
 #     scripts/sync-from-template.sh — this script (self-updating in project)
+#
+#   Pass 1c — root and github template sync (verbatim overwrite):
+#     .editorconfig               — editor configuration (team standard)
+#     .github/workflows/          — CI/CD workflow definitions
+#     .github/accessibility-tools/ — accessibility tooling
 #
 #   Pass 2 — CORE-section update (preserves PROJECT OVERLAY):
 #     .claude/agents/*.md   — only the <!-- BEGIN CORE --> … <!-- END CORE -->
@@ -21,7 +27,7 @@
 # What it never touches:
 #   Agent PROJECT OVERLAY sections
 #   docs/  (the project wiki)
-#   CLAUDE.md, .gitignore, .editorconfig, VERSION, .github/
+#   CLAUDE.md, .gitignore, VERSION
 #
 # After syncing it:
 #   - Updates .claude/template-version with the master VERSION
@@ -62,6 +68,51 @@ sha256_of() {
   else
     shasum -a 256 "$file" | cut -d' ' -f1
   fi
+}
+
+# Read the project type from .claude/project-type.
+# If absent, ask interactively (requires /dev/tty).
+# Writes the type to the file if it was absent and a value was given.
+# Prints the type to stdout; prints nothing on failure.
+read_or_ask_project_type() {
+  local project_root="$1"
+  local type_file="$project_root/.claude/project-type"
+
+  if [ -f "$type_file" ]; then
+    tr -d '[:space:]' < "$type_file"
+    return 0
+  fi
+
+  # Absent — ask if a terminal is available.
+  if [ ! -e /dev/tty ]; then
+    echo "unknown"
+    return 0
+  fi
+
+  printf '[INFO] .claude/project-type is not set for this project.\n' > /dev/tty
+  printf '[INFO] Valid types: web-static, web-php, wordpress, profile, documentation\n' > /dev/tty
+  printf 'Project type: ' > /dev/tty
+  local proj_type=""
+  read -r proj_type < /dev/tty 2>/dev/null || proj_type=""
+
+  case "$proj_type" in
+    web-static|web-php|wordpress|profile|documentation)
+      printf '%s\n' "$proj_type" > "$type_file"
+      printf '%s' "$proj_type"
+      ;;
+    *)
+      printf '[WARN] Unrecognised type "%s". Leaving unset; workflows will be skipped.\n' "$proj_type" > /dev/tty
+      echo "unknown"
+      ;;
+  esac
+}
+
+# Returns true if the given project type should receive workflow files.
+type_gets_workflows() {
+  case "$1" in
+    web-static|web-php|wordpress) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 run_parity_test() {
@@ -150,9 +201,9 @@ run_parity_test() {
 template="${1:?Usage: bash scripts/sync-from-template.sh <path-to-master-template> [<project-root>]}"
 
 if [ -n "${2:-}" ]; then
-  project_root="$(cd "$2" && pwd)"
+  project_root="$(realpath "$2")"
 else
-  project_root="$(cd "$(dirname "$0")/.." && pwd)"
+  project_root="$(realpath "$(dirname "$0")/..")"
 fi
 
 # Validate and verify the supplied master path
@@ -184,6 +235,7 @@ SYNC_MANIFEST=(
   "hooks"
   "settings.json"
   "commands"
+  "output-styles"
 )
 
 # Scripts that are synced verbatim from master's scripts/ to the project's
@@ -196,6 +248,7 @@ SYNC_MANIFEST=(
 SCRIPTS_MANIFEST=(
   "scripts/next-q.sh"
   "scripts/sync-from-template.sh"
+  "scripts/record-backport.sh"
 )
 
 changed=0
@@ -266,6 +319,72 @@ for item in "${SCRIPTS_MANIFEST[@]}"; do
   echo "  synced:    $item"
   changed=$((changed + 1))
 done
+
+# ── Pass 1c: root and github template sync ────────────────────────────────────
+
+ROOT_MANIFEST=(
+  ".editorconfig"
+)
+
+GITHUB_TEMPLATES_MANIFEST=(
+  "workflows"
+  "accessibility-tools"
+)
+
+# Determine project type and whether workflows apply.
+_project_type="$(read_or_ask_project_type "$project_root")"
+echo ""
+echo "Pass 1c: root and github template sync (project type: $_project_type)"
+
+for item in "${ROOT_MANIFEST[@]}"; do
+  src="$template/$item"
+  dst="$project_root/$item"
+
+  if [ ! -e "$src" ]; then
+    echo "  WARNING: $src not found in master; skipping"
+    continue
+  fi
+
+  if [ -e "$dst" ] && cmp -s "$src" "$dst"; then
+    echo "  unchanged: $item"
+    continue
+  fi
+
+  cp "$src" "$dst"
+  echo "  synced:    $item"
+  changed=$((changed + 1))
+done
+
+if type_gets_workflows "$_project_type"; then
+  for item in "${GITHUB_TEMPLATES_MANIFEST[@]}"; do
+    src="$template/templates/.github/$item"
+    dst="$project_root/.github/$item"
+
+    if [ ! -e "$src" ]; then
+      echo "  WARNING: $src not found in master templates; skipping"
+      continue
+    fi
+
+    if [ -e "$dst" ]; then
+      if [ -d "$dst" ] && diff -rq "$src" "$dst" >/dev/null 2>&1; then
+        echo "  unchanged: .github/$item"
+        continue
+      elif [ -f "$dst" ] && cmp -s "$src" "$dst"; then
+        echo "  unchanged: .github/$item"
+        continue
+      fi
+    fi
+
+    mkdir -p "$project_root/.github"
+    rm -rf "$dst"
+    cp -R "$src" "$dst"
+    echo "  synced:    .github/$item"
+    changed=$((changed + 1))
+  done
+else
+  echo "  skipped:   .github/workflows/ (project type '$_project_type' does not use build workflows)"
+  echo "  skipped:   .github/accessibility-tools/ (same reason)"
+fi
 
 # ── Pass 2: agent CORE sections ───────────────────────────────────────────────
 
