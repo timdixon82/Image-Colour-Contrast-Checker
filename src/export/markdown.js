@@ -110,10 +110,12 @@ export function buildMarkdown(entries, timestamp) {
         const asset  = assetByPair.get(p);
         const words  = p.examples.map((e) => `"${e}"`).join(', ');
         const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
-        const badges = pairBadges(p).map((b) => `**[${b.short} ${statusWord(b.status).toUpperCase()}]**`).join(' · ');
+        // Inside <summary>, markdown is not processed by any parser — use plain HTML.
+        // <strong> for bold badges, <code> for hex values (backticks are literal here).
+        const badges = pairBadges(p).map((b) => `[${b.short} ${statusWord(b.status).toUpperCase()}]`).join(' · ');
 
         lines.push('<details>');
-        lines.push(`<summary><strong>${badges}</strong> — \`${p.bgHex}\` background / \`${p.fgHex}\` foreground${words ? ` — ${words}` : ''}</summary>`);
+        lines.push(`<summary><strong>${badges}</strong> — <code>${p.bgHex}</code> background / <code>${p.fgHex}</code> foreground${words ? ` — ${words}` : ''}</summary>`);
         lines.push('');
         if (asset?.swatchDataUrl) {
           lines.push(`![Background / foreground swatch](${asset.swatchDataUrl})`);
