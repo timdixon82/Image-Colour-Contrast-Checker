@@ -121,7 +121,6 @@ if printf '%s' "$action" | grep -qiE "$raw_denylist"; then
   decision deny "Blocked by the hard deny-list in CLAUDE.md. Force-push, branch or repository deletion, history rewrite, visibility or branch-protection change, collaborator change, release deletion, and disabling scanning are never permitted."
 fi
 
-
 # 2. Pre-approved actions in the current work folder's brief.
 #
 # The hook holds a fixed dictionary that maps each known brief checklist
