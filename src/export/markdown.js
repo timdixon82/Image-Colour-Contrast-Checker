@@ -120,7 +120,7 @@ export function buildMarkdown(entries, timestamp) {
         const swatchTag = asset?.swatchDataUrl
           ? `<img src="${asset.swatchDataUrl}" alt="${p.bgHex} on ${p.fgHex}" height="14"> `
           : '';
-        lines.push('<details>');
+        lines.push('<details open>');
         lines.push(`<summary>${swatchTag}<strong>${badges}</strong> — <code>${p.bgHex}</code> background / <code>${p.fgHex}</code> foreground${words ? ` — ${words}` : ''}</summary>`);
         lines.push('');
         lines.push(`[Check this pair on WebAIM](${webaim})`);
