@@ -1,11 +1,61 @@
-node_modules
-dist
+# Operating system files
 .DS_Store
-*.log
-.vite
-.env
-.env.local
+Thumbs.db
 
-# Auto-copied at install / build time by scripts/copy-models.mjs
+# iCloud Drive sync conflict files. When the same file is modified in two
+# places (or iCloud perceives a conflict), it creates a sibling with a
+# numeric suffix before the extension: `name 2.md`, `name 3.md`, and so on.
+# These are sync artefacts and never belong in the repository.
+* 2.*
+* 3.*
+* 4.*
+* 5.*
+
+# Editor files
+.vscode/
+.idea/
+
+# Secrets and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+dist/
+build/
+
+# Vite build cache
+.vite
+
+# Logs
+*.log
+
+# ICCC: models and ORT WASM binaries are auto-copied at install / build time
+# by scripts/copy-models.mjs. Do not commit the copies; they are regenerated
+# from devDependencies on every install.
 public/models/
 public/ort/
+
+# Claude Code local settings — local to this machine, not shared
+.claude/settings.local.json
+
+# Transcripts written by the session hook — local audit trail, not for the repo
+.claude/transcripts/
+
+# Hook-generated telemetry files — appended by post-tool-use.sh on every
+# tool call. Local-only audit trails.
+.claude/work/*/events.jsonl
+.claude/work/*/github-actions-log.md
+
+# CI-only Pa11y config, derived from pa11y.json in the accessibility workflow.
+# Generated at CI time and must never be committed.
+pa11y.ci.json
+
+# understand-anything generated knowledge graph and fingerprints — generated artefact, not for commit.
+.understand-anything/

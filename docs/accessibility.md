@@ -85,6 +85,34 @@ Proposed fix for the accessibility phase: same as ACC-ICCC-002. Darken `--fg-mut
 
 Carol's baseline audit was completed on 2026-05-23 (HEAD 6fe48ab). Pa11y found two pre-existing AAA codes (ACC-ICCC-001, ACC-ICCC-002). After the rework Pa11y scoped ignore list was applied (commit 713766b), axe-core ran and found two further pre-existing groups of contrast shortfalls (ACC-ICCC-003, ACC-ICCC-004). All four groups are pre-existing on `main` and are not regressions. The Pa11y and axe-core CI job passes (axe-core CLI exits 0 on violations). ACC-ICCC-001, ACC-ICCC-002, and ACC-ICCC-003 are deferred to the accessibility phase. ACC-ICCC-004 was closed in the setup-build pull request (chore/project-setup): the `.preloader-header .tagline` selector was added to the existing `.app-header .tagline` rule in `src/styles.css`, setting `color: #63D2FF` (sky blue) and reaching 10.64:1 AAA on the always-navy preloader header in both light and dark themes.
 
+## CI accessibility check setup
+
+The accessibility CI workflow (`.github/workflows/accessibility.yml`) builds the Vite application, serves `dist/` on port 8080, and runs Pa11y and axe-core against `index.html` and `privacy.html`.
+
+### Accessibility tools
+
+Pa11y, `@axe-core/cli`, and `wait-on` are pinned in `.github/accessibility-tools/package.json`. Dependabot tracks this manifest and proposes version bumps automatically. CI installs them with `npm ci` from the committed `package-lock.json` in that directory.
+
+### ChromeDriver strategy (CDN-based exact version match)
+
+The workflow uses the team-standard CDN-based ChromeDriver approach:
+
+1. Pa11y: `pa11y.ci.json` is generated at CI time using `jq`, overriding `chromeLaunchConfig.executablePath` to the runner's system Chrome path. `pa11y.ci.json` must not be committed; it is excluded in `.gitignore`.
+2. axe-core: the workflow probes the Chrome binary for its full four-part version, then downloads the exactly matching ChromeDriver from the Chrome for Testing CDN (`storage.googleapis.com/chrome-for-testing-public`). The path is written to `GITHUB_ENV` and passed to axe via `--chromedriver-path`.
+
+This approach replaced `browser-driver-manager` on 2026-05-31 to align with the team template.
+
+### Reverting to browser-driver-manager
+
+If the CDN approach fails (for example, if GitHub Actions removes the Chrome binary from its expected path), revert by replacing the "Install matching ChromeDriver for axe-core" step and the "Build CI pa11y config" step in `accessibility.yml` with:
+
+```yaml
+- name: Install matching Chrome and ChromeDriver
+  run: npm install -g browser-driver-manager@2.0.1 && npx browser-driver-manager install chrome
+```
+
+Also remove `--chromedriver-path "$CHROMEDRIVER_PATH"` and the surrounding conditional from both axe steps, and revert to `npm install -g pa11y@9.1.1 @axe-core/cli@4.11.3 wait-on@8.0.1` in place of the `npm ci` in `.github/accessibility-tools/`.
+
 ### ACC-ICCC-005 — pdfmake does not produce a tagged PDF; images have no structural alt text (WCAG 4.1.2 Level A, PDF/UA context)
 
 The PDF export uses the pdfmake library (version 0.2.x). pdfmake does not generate a tagged PDF conforming to ISO 14289 (PDF/UA). Screen readers that process the PDF will read content in reading order but will not announce images as image elements, because the PDF lacks a structural accessibility tree.
