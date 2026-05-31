@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.4.0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.3.0...v0.4.0) (2026-05-31)
+
+
+### Features
+
+* **markdown:** embed colour swatch inline in &lt;summary&gt; for at-a-glance colour preview ([ad82789](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/ad827892722e54e7cfdf53db4b99b3769190b522))
+* **markdown:** expand all colour-pair details blocks by default ([3483ed0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/3483ed002d71c78c695da39f69aeeae7b649934d))
+* **report:** rename Check column to External Checkers, add layout alignment ([9db4bf1](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/9db4bf1e45cfff6f62c4d5b27c8a1f6bef68ac9d))
+* **ui:** move 'What the checks mean' above drop zone, collapsed by default ([393c341](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/393c3416b61545fbca02605d51ef094d0b4a76fc))
+
+
+### Bug Fixes
+
+* **export:** correct section order, blank page, and wording in PDF and Markdown ([c561744](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/c561744c99522cda0943583d71154c9cc21fddd8))
+* **markdown:** separate WCAG/Advanced summary lines; add markdownlint config ([256a1f9](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/256a1f99bb6bae15a8bf1f2a8021800276ebc3c2))
+* **markdown:** use pure HTML inside &lt;summary&gt; — markdown not parsed there ([892351d](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/892351d1d2e9389f82013d59b2a2f07ec13ecb6e))
+* **ui:** open ancestor &lt;details&gt; when navigating to a check via ⓘ link ([1f68fec](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/1f68fec658831cb63e95b549f86d8eb5f2f0db3d))
+
 ## [0.3.0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.2.12...v0.3.0) (2026-05-31)
 
 
