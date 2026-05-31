@@ -451,6 +451,15 @@ body {
   margin: 0 0 10px;
   color: var(--fg);
 }
+.summary h2::after {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 3px;
+  background: var(--accent);
+  margin-top: 5px;
+  border-radius: 2px;
+}
 
 /* Image cards — h3 filename matches page heading scale */
 .image-card-title {
@@ -458,6 +467,15 @@ body {
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.1px;
+}
+.image-card-title::after {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 3px;
+  background: var(--accent);
+  margin-top: 6px;
+  border-radius: 2px;
 }
 
 /* Sub-section headings inside cards — h4 */
@@ -529,12 +547,16 @@ body {
 .results-summary-group { margin: 0 0 6px; }
 .results-overall { margin: 0 0 4px; font-size: 0.9rem; color: var(--fg-muted); }
 
-/* Link prompting single-pair checking */
-.pair-check-prompt {
-  margin: 6px 0 12px;
-  font-size: 0.85rem;
+/* External checkers list — two links stacked vertically in the results table */
+.external-checkers-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.pair-check-prompt a { color: var(--accent); }
+.external-checkers-list a { color: var(--accent); font-size: 0.85rem; white-space: nowrap; }
 .results-table code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
 .results-table .examples { font-style: italic; color: var(--fg-muted); max-width: 240px; }
 .results-table td { border-bottom: none; }
@@ -642,11 +664,57 @@ body {
 
 /* ── Check glossary (on-page "what the checks mean") ─────────────────────── */
 .check-glossary {
-  margin: 28px 0 8px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
+  margin: 0 0 24px;
 }
-.check-glossary h2 { font-size: 1.3rem; margin: 0 0 6px; }
+
+/* Outer collapsible wrapper — the h2 toggle that collapses the whole section */
+.glossary-outer {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+}
+.glossary-outer-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  min-height: 44px; /* WCAG 2.5.8 touch target */
+}
+.glossary-outer-summary::-webkit-details-marker { display: none; }
+.glossary-outer-summary::before {
+  content: '▸';
+  color: var(--accent);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.glossary-outer[open] > .glossary-outer-summary::before { content: '▾'; }
+.glossary-outer-summary h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--fg);
+}
+.glossary-outer-summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+  border-radius: var(--radius);
+}
+.glossary-outer[open] > .glossary-outer-summary {
+  border-bottom: 1px solid var(--border);
+}
+/* Inner content padding when expanded */
+.glossary-outer > :not(summary) {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+.glossary-outer > .glossary-intro { padding-top: 14px; }
+.glossary-outer > .glossary-group:first-of-type { margin-top: 8px; }
+.glossary-outer > details:last-child { margin-bottom: 12px; }
+
+.check-glossary h2 { font-size: 1.1rem; margin: 0; }
 .glossary-intro { color: var(--fg-muted); font-size: 0.92rem; margin: 0 0 16px; line-height: 1.6; }
 .glossary-group {
   font-size: 0.78rem;
@@ -901,10 +969,10 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
  * (#0d2040, 6.27:1) and on other dark-mode surfaces. In dark mode the
  * six selectors below override to --fg-muted (#63D2FF, sky blue):
  *
- *   .glossary-item > p > a    on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .image-card h4             on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .pair-check-prompt a       on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .row-toggle                on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .glossary-item > p > a      on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .image-card h4              on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .external-checkers-list a   on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .row-toggle                 on #0d2040 (bg-card):   9.40:1 AAA ✓
  *   .queue-stage (in-progress) on ~#2f2d37 (blended):  7.26:1 AAA ✓
  *   .check-group-row th        on #1a3050 (neutral-bg): 7.70:1 AAA ✓
  *
@@ -915,7 +983,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .glossary-item > p > a,
   :root:not([data-theme="light"]) .image-card h4,
-  :root:not([data-theme="light"]) .pair-check-prompt a,
+  :root:not([data-theme="light"]) .external-checkers-list a,
   :root:not([data-theme="light"]) .row-toggle {
     color: var(--fg-muted); /* #63D2FF, 9.40:1 on #0d2040 AAA */
   }
@@ -934,7 +1002,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 /* Manual toggle dark path (NF-01 fix: mirrors block above for toggle-dark users) */
 :root[data-theme="dark"] .glossary-item > p > a,
 :root[data-theme="dark"] .image-card h4,
-:root[data-theme="dark"] .pair-check-prompt a,
+:root[data-theme="dark"] .external-checkers-list a,
 :root[data-theme="dark"] .row-toggle {
   color: var(--fg-muted); /* #63D2FF, 9.40:1 on #0d2040 AAA */
 }

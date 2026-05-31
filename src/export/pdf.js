@@ -8,7 +8,7 @@
 
 import {
   APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
-  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_FULL_LABEL
+  VESTIBULAR_CHECKER_URL
 } from './strings.js';
 import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
@@ -118,7 +118,9 @@ function pairBlock(p, asset) {
   out.push({
     text: [
       p.examples.length ? { text: p.examples.map((e) => `"${e}"`).join(', ') + '   ', style: 'examples' } : '',
-      { text: 'WebAIM', link: webaim, style: 'link' }
+      { text: 'WebAIM', link: webaim, style: 'link' },
+      { text: '   ' },
+      { text: 'Vestibular Accessible Design Checker', link: VESTIBULAR_CHECKER_URL, style: 'link' }
     ],
     fontSize: 9,
     margin: [0, 0, 0, 4]
@@ -245,13 +247,16 @@ function buildDocDefinition(entries, timestamp) {
   });
 
   // ── Per-image detail ─────────────────────────────────────────────────────
-  for (const entry of entries) {
+  // Section order matches the web UI: heading → preview → result →
+  // colour-blindness simulation → contrast results.
+  // pageBreak: 'before' only from the second entry onward — avoids a blank
+  // page between the cover/summary page and the first image.
+  entries.forEach((entry, idx) => {
     const { filename, report, previewDataUrl, pairAssets = [], cbSimAssets = [] } = entry;
 
-    // Unbreakable: per-image H2 heading plus preview image — prevents the heading
-    // appearing at the bottom of a page with the image on the next.
+    // Unbreakable: heading + preview — keeps them together on the same page.
     const headingAndPreview = [
-      { text: filename, style: 'h2', pageBreak: 'before' }
+      { text: filename, style: 'h2', ...(idx > 0 ? { pageBreak: 'before' } : {}) }
     ];
     if (previewDataUrl) {
       headingAndPreview.push({ image: previewDataUrl, width: 420, margin: [0, 6, 0, 8] });
@@ -260,42 +265,26 @@ function buildDocDefinition(entries, timestamp) {
 
     const verdictStatus = report.flag ? 'FAIL' : (report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
 
+    // Result line — always shown for every image
+    content.push({
+      columns: [
+        { text: 'Result: ', bold: true, width: 'auto' },
+        { width: 'auto', ...pillCell(verdictStatus) },
+        { text: ` — ${report.detail}`, margin: [4, 2, 0, 0] }
+      ],
+      margin: [0, 0, 0, 8]
+    });
+
+    // Colour-blindness simulation — before contrast results, matching the web UI
+    content.push(...cbSimBlock(cbSimAssets));
+
     if (report.hasText && report.colourPairs.length) {
-      // Unbreakable: result line + WCAG/Advanced summary + Tas link — approx 80pt, fits any page.
+      // Unbreakable: contrast results H3 + WCAG/Advanced summary
       content.push({
         stack: [
-          {
-            columns: [
-              { text: 'Result: ', bold: true, width: 'auto' },
-              { width: 'auto', ...pillCell(verdictStatus) },
-              { text: ` — ${report.detail}`, margin: [4, 2, 0, 0] }
-            ],
-            margin: [0, 0, 0, 8]
-          },
-          // Unbreakable: contrast results H3 + WCAG/Advanced summary + Tas link
-          {
-            stack: [
-              { text: 'Contrast results', style: 'h3', margin: [0, 8, 0, 2] },
-              { text: wcagLine(report), style: 'examples', margin: [0, 0, 0, 1] },
-              { text: advancedLine(report), style: 'examples', margin: [0, 0, 0, 4] },
-              // Tas the Artist link — after summary lines, before per-pair blocks.
-              // "(opens in new window)" omitted: PDF links do not open browser tabs.
-              {
-                text: [
-                  { text: 'Check and adjust individual colour pairs: ' },
-                  {
-                    text: VESTIBULAR_CHECKER_FULL_LABEL.replace(' (opens in new window)', ''),
-                    link: VESTIBULAR_CHECKER_URL,
-                    style: 'link'
-                  },
-                  { text: '.' }
-                ],
-                fontSize: 9,
-                margin: [0, 0, 0, 4]
-              }
-            ],
-            unbreakable: true
-          }
+          { text: 'Contrast results', style: 'h3', margin: [0, 8, 0, 2] },
+          { text: wcagLine(report), style: 'examples', margin: [0, 0, 0, 1] },
+          { text: advancedLine(report), style: 'examples', margin: [0, 0, 0, 4] }
         ],
         unbreakable: true
       });
@@ -305,20 +294,8 @@ function buildDocDefinition(entries, timestamp) {
         // Unbreakable: each pairBlock stays together — prevents header orphaning.
         content.push({ stack: pairBlock(p, assetByPair.get(p)), unbreakable: true });
       }
-    } else {
-      // No text found — show result line only.
-      content.push({
-        columns: [
-          { text: 'Result: ', bold: true, width: 'auto' },
-          { width: 'auto', ...pillCell(verdictStatus) },
-          { text: ` — ${report.detail}`, margin: [4, 2, 0, 0] }
-        ],
-        margin: [0, 0, 0, 12]
-      });
     }
-
-    content.push(...cbSimBlock(cbSimAssets));
-  }
+  });
 
   // ── Footer ───────────────────────────────────────────────────────────────
   content.push({ text: THRESHOLDS_FOOTER, style: 'footer', italics: true, margin: [0, 16, 0, 4] });

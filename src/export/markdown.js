@@ -7,7 +7,7 @@
 
 import {
   APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
-  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_FULL_LABEL
+  VESTIBULAR_CHECKER_URL
 } from './strings.js';
 import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
@@ -66,22 +66,29 @@ export function buildMarkdown(entries, timestamp) {
   lines.push('');
 
   // ── Per-image detail ──────────────────────────────────────────────────────
-  entries.forEach((entry, idx) => {
+  entries.forEach((entry) => {
     const { filename, report, previewDataUrl, pairAssets = [], cbSimAssets = [] } = entry;
 
-    lines.push(`### ${idx + 1}. ${filename}`);
-    lines.push('');
-    const resultPill = report.flag ? '**[FAIL]**' : (report.verdict === 'PASS' ? '**[PASS]**' : '[NO TEXT]');
-    lines.push(`- **Result:** ${resultPill} — ${report.detail}`);
+    // Heading — no number prefix, matches PDF h2 and web UI h3
+    lines.push(`### ${filename}`);
     lines.push('');
 
+    // Preview — before result line, matching UI and PDF order
     if (previewDataUrl) {
       lines.push(`![Preview of ${filename}](${previewDataUrl})`);
       lines.push('');
     }
 
+    // Result line
+    const resultPill = report.flag ? '**[FAIL]**' : (report.verdict === 'PASS' ? '**[PASS]**' : '[NO TEXT]');
+    lines.push(`**Result:** ${resultPill} — ${report.detail}`);
+    lines.push('');
+
+    // Colour-blindness simulation — before contrast results, matching UI and PDF order
     if (cbSimAssets.length) {
-      lines.push('**Colour-blindness simulation:**');
+      lines.push('**Colour-blindness simulation**');
+      lines.push('');
+      lines.push('_How this image may appear to viewers with the most common colour-vision deficiencies._');
       lines.push('');
       for (const a of cbSimAssets) {
         lines.push(`![${a.label} — ${a.note}](${a.dataUrl})`);
@@ -92,12 +99,11 @@ export function buildMarkdown(entries, timestamp) {
     }
 
     if (report.hasText && report.colourPairs.length) {
-      lines.push('**Contrast results:**');
+      lines.push('**Contrast results**');
       lines.push('');
       lines.push(`_${wcagLine(report)}_`);
-      lines.push(`_${advancedLine(report)}_`);
       lines.push('');
-      lines.push(`For single-pair vestibular checking, visit [${VESTIBULAR_CHECKER_FULL_LABEL}](${VESTIBULAR_CHECKER_URL}).`);
+      lines.push(`_${advancedLine(report)}_`);
       lines.push('');
 
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
@@ -105,16 +111,21 @@ export function buildMarkdown(entries, timestamp) {
         const asset  = assetByPair.get(p);
         const words  = p.examples.map((e) => `"${e}"`).join(', ');
         const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
-        const badges = pairBadges(p).map((b) => `**[${b.short} ${statusWord(b.status).toUpperCase()}]**`).join(' · ');
+        // Inside <summary>, markdown is not processed by any parser — use plain HTML.
+        // <strong> for bold badges, <code> for hex values (backticks are literal here).
+        const badges = pairBadges(p).map((b) => `[${b.short} ${statusWord(b.status).toUpperCase()}]`).join(' · ');
 
-        lines.push('<details>');
-        lines.push(`<summary><strong>${badges}</strong> — \`${p.bgHex}\` background / \`${p.fgHex}\` foreground${words ? ` — ${words}` : ''}</summary>`);
+        // Swatch is embedded inline in the summary so the colours are visible
+        // without expanding the block. height="14" keeps it flush with the text.
+        const swatchTag = asset?.swatchDataUrl
+          ? `<img src="${asset.swatchDataUrl}" alt="${p.bgHex} on ${p.fgHex}" height="14"> `
+          : '';
+        lines.push('<details open>');
+        lines.push(`<summary>${swatchTag}<strong>${badges}</strong> — <code>${p.bgHex}</code> background / <code>${p.fgHex}</code> foreground${words ? ` — ${words}` : ''}</summary>`);
         lines.push('');
-        if (asset?.swatchDataUrl) {
-          lines.push(`![Background / foreground swatch](${asset.swatchDataUrl})`);
-          lines.push('');
-        }
         lines.push(`[Check this pair on WebAIM](${webaim})`);
+        lines.push('');
+        lines.push(`[Vestibular Accessible Design Checker](${VESTIBULAR_CHECKER_URL})`);
         lines.push('');
         lines.push('| Check | Value | Status | What it means |');
         lines.push('|-------|-------|--------|---------------|');

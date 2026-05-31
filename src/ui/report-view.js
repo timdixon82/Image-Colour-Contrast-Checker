@@ -8,7 +8,7 @@
 import { makeSwatch, makeClip, makePreview, makeThumb, makeCbSim } from '../render/canvas.js';
 import {
   THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES,
-  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_BRAND_LABEL, VESTIBULAR_CHECKER_FULL_LABEL
+  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_FULL_LABEL
 }                                                                   from '../export/strings.js';
 import {
   pairChecks, wcagLine, advancedLine,
@@ -284,28 +284,6 @@ function renderContrastResults(card, entry) {
   summaryGroup.append(wcagSummary, advSummary);
   card.append(summaryGroup);
 
-  // Link to the vestibular-accessible design checker for single-pair checking.
-  // Visible text: VESTIBULAR_CHECKER_BRAND_LABEL ("Tas the Artist") followed by
-  // an aria-hidden arrow. The full aria-label carries the destination, the tool
-  // title, and the new-window notice for screen reader users. The sr-only
-  // "(opens in new window)" span is intentionally omitted here because the
-  // aria-label already contains that phrase. If the aria-label is ever removed,
-  // restore a sr-only span so the new-window announcement is not lost.
-  const pairCheckLink = document.createElement('p');
-  pairCheckLink.className = 'pair-check-prompt';
-  const pairAnchor = document.createElement('a');
-  pairAnchor.href             = VESTIBULAR_CHECKER_URL;
-  pairAnchor.target           = '_blank';
-  pairAnchor.rel              = 'noopener noreferrer';
-  pairAnchor.setAttribute('aria-label', VESTIBULAR_CHECKER_FULL_LABEL);
-  pairAnchor.textContent      = VESTIBULAR_CHECKER_BRAND_LABEL;
-  const arrowHint = document.createElement('span');
-  arrowHint.setAttribute('aria-hidden', 'true');
-  arrowHint.textContent = ' ↗';
-  pairAnchor.append(arrowHint);
-  pairCheckLink.append(pairAnchor);
-  card.append(pairCheckLink);
-
   const scroll = document.createElement('div');
   scroll.className = 'table-scroll';
 
@@ -320,7 +298,7 @@ function renderContrastResults(card, entry) {
         <th scope="col">Advanced</th>
         <th scope="col">Background</th>
         <th scope="col">Foreground</th>
-        <th scope="col">Check</th>
+        <th scope="col">External Checkers</th>
         <th scope="col">Detected text</th>
       </tr>
     </thead>
@@ -366,7 +344,14 @@ function renderContrastResults(card, entry) {
     fgCell.innerHTML = `<code>${p.fgHex}</code>`;
 
     const checkCell = document.createElement('td');
-    checkCell.append(webaimLink(p.fgHex, p.bgHex));
+    const ul = document.createElement('ul');
+    ul.className = 'external-checkers-list';
+    const liWebaim = document.createElement('li');
+    liWebaim.append(webaimLink(p.fgHex, p.bgHex));
+    const liVestibular = document.createElement('li');
+    liVestibular.append(vestibularLink());
+    ul.append(liWebaim, liVestibular);
+    checkCell.append(ul);
 
     const textCell = document.createElement('td');
     textCell.className   = 'examples';
@@ -538,6 +523,20 @@ function webaimLink(fgHex, bgHex) {
   return a;
 }
 
+function vestibularLink() {
+  const a = document.createElement('a');
+  a.href   = VESTIBULAR_CHECKER_URL;
+  a.target = '_blank';
+  a.rel    = 'noopener noreferrer';
+  a.setAttribute('aria-label', VESTIBULAR_CHECKER_FULL_LABEL);
+  a.textContent = 'Vestibular Accessible Design Checker';
+  const arrow = document.createElement('span');
+  arrow.setAttribute('aria-hidden', 'true');
+  arrow.textContent = ' ↗';
+  a.append(arrow);
+  return a;
+}
+
 function verdictBadge(verdict) {
   if (verdict === 'PASS') return '✓ PASS';
   if (verdict === 'FAIL') return '✗ FAIL';
@@ -560,7 +559,15 @@ export { verdictBadge };
 function openCheckDetails(id) {
   const el = document.getElementById(id);
   if (!el) return;
+  // Open the target <details> element itself
   if (el.tagName === 'DETAILS') el.open = true;
+  // Open every ancestor <details> so the target is not hidden inside a
+  // closed wrapper (e.g. the outer glossary-outer that wraps the whole section)
+  let ancestor = el.parentElement;
+  while (ancestor) {
+    if (ancestor.tagName === 'DETAILS') ancestor.open = true;
+    ancestor = ancestor.parentElement;
+  }
   el.scrollIntoView({ block: 'start' });
   (el.querySelector('summary') || el).focus({ preventScroll: true });
 }
