@@ -25,7 +25,7 @@
   "dependencies": {
     "@gutenye/ocr-browser": "^1.4.8",
     "onnxruntime-web": "^1.26.0",
-    "pdfmake": "^0.2.10"
+    "pdfmake": "^0.3.9"
   },
   "devDependencies": {
     "@gutenye/ocr-models": "^1.4.2",
