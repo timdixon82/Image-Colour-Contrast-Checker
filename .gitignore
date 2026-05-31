@@ -56,3 +56,6 @@ public/ort/
 # CI-only Pa11y config, derived from pa11y.json in the accessibility workflow.
 # Generated at CI time and must never be committed.
 pa11y.ci.json
+
+# understand-anything generated knowledge graph and fingerprints — generated artefact, not for commit.
+.understand-anything/
