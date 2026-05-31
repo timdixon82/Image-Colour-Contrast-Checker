@@ -164,3 +164,5 @@ Tim approved merge of all open PRs.
 - PR 18 (release-please 0.4.0): merged. CHANGELOG.md and package.json bumped to v0.4.0. Release workflow, CI, CodeQL, and Pages deploy triggered on main.
 
 No open PRs remain. CI and deploy workflows in progress at merge time.
+- [2026-05-31 22:43:03] subagent completed
+- [2026-05-31 22:46:28] subagent completed

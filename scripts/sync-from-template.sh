@@ -90,15 +90,19 @@ read_or_ask_project_type() {
   fi
 
   printf '[INFO] .claude/project-type is not set for this project.\n' > /dev/tty
-  printf '[INFO] Valid types: web-static, web-php, wordpress, profile, documentation\n' > /dev/tty
+  printf '[INFO] Valid types: code (c), documentation (d)\n' > /dev/tty
   printf 'Project type: ' > /dev/tty
   local proj_type=""
   read -r proj_type < /dev/tty 2>/dev/null || proj_type=""
 
   case "$proj_type" in
-    web-static|web-php|wordpress|profile|documentation)
-      printf '%s\n' "$proj_type" > "$type_file"
-      printf '%s' "$proj_type"
+    code|c)
+      printf 'code\n' > "$type_file"
+      printf 'code'
+      ;;
+    documentation|d)
+      printf 'documentation\n' > "$type_file"
+      printf 'documentation'
       ;;
     *)
       printf '[WARN] Unrecognised type "%s". Leaving unset; workflows will be skipped.\n' "$proj_type" > /dev/tty
@@ -110,7 +114,7 @@ read_or_ask_project_type() {
 # Returns true if the given project type should receive workflow files.
 type_gets_workflows() {
   case "$1" in
-    web-static|web-php|wordpress) return 0 ;;
+    code|web-static|web-php|wordpress) return 0 ;;
     *) return 1 ;;
   esac
 }
