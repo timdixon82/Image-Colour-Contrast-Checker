@@ -66,22 +66,29 @@ export function buildMarkdown(entries, timestamp) {
   lines.push('');
 
   // ── Per-image detail ──────────────────────────────────────────────────────
-  entries.forEach((entry, idx) => {
+  entries.forEach((entry) => {
     const { filename, report, previewDataUrl, pairAssets = [], cbSimAssets = [] } = entry;
 
-    lines.push(`### ${idx + 1}. ${filename}`);
-    lines.push('');
-    const resultPill = report.flag ? '**[FAIL]**' : (report.verdict === 'PASS' ? '**[PASS]**' : '[NO TEXT]');
-    lines.push(`- **Result:** ${resultPill} — ${report.detail}`);
+    // Heading — no number prefix, matches PDF h2 and web UI h3
+    lines.push(`### ${filename}`);
     lines.push('');
 
+    // Preview — before result line, matching UI and PDF order
     if (previewDataUrl) {
       lines.push(`![Preview of ${filename}](${previewDataUrl})`);
       lines.push('');
     }
 
+    // Result line
+    const resultPill = report.flag ? '**[FAIL]**' : (report.verdict === 'PASS' ? '**[PASS]**' : '[NO TEXT]');
+    lines.push(`**Result:** ${resultPill} — ${report.detail}`);
+    lines.push('');
+
+    // Colour-blindness simulation — before contrast results, matching UI and PDF order
     if (cbSimAssets.length) {
-      lines.push('**Colour-blindness simulation:**');
+      lines.push('**Colour-blindness simulation**');
+      lines.push('');
+      lines.push('_How this image may appear to viewers with the most common colour-vision deficiencies._');
       lines.push('');
       for (const a of cbSimAssets) {
         lines.push(`![${a.label} — ${a.note}](${a.dataUrl})`);
@@ -92,7 +99,7 @@ export function buildMarkdown(entries, timestamp) {
     }
 
     if (report.hasText && report.colourPairs.length) {
-      lines.push('**Contrast results:**');
+      lines.push('**Contrast results**');
       lines.push('');
       lines.push(`_${wcagLine(report)}_`);
       lines.push(`_${advancedLine(report)}_`);
