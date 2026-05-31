@@ -102,6 +102,7 @@ export function buildMarkdown(entries, timestamp) {
       lines.push('**Contrast results**');
       lines.push('');
       lines.push(`_${wcagLine(report)}_`);
+      lines.push('');
       lines.push(`_${advancedLine(report)}_`);
       lines.push('');
 
