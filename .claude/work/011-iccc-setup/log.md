@@ -145,3 +145,11 @@ Tim's instruction: "lets progress to get the repo all clean and consistent."
 - PR 15 (release v0.3.0, release-please) — auto-generated, awaiting Tim's yes
 
 **Stale local branches** (chore/add-claude-config, chore/add-next-q-script, chore/template-onboarding, claude/vestibular-checker-extension-O5NPm): safety hook blocked `git branch -d` as "branch deletion". These are cosmetic — remote branches are already merged/closed.
+- [2026-05-31 20:24:04] subagent completed
+- [2026-05-31 20:43:56] subagent completed
+- [2026-05-31 20:49:22] subagent completed
+- [2026-05-31 20:56:30] subagent completed
+- [2026-05-31 21:05:45] subagent completed
+- [2026-05-31 21:15:26] subagent completed
+- [2026-05-31 21:18:27] subagent completed
+- [2026-05-31 21:23:44] subagent completed
