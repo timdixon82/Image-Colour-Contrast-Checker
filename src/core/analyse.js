@@ -12,6 +12,60 @@ import {
   thresholdsFor,
   colourDistance
 } from './contrast.js';
+import { cvdPairContrast } from './colour-vision.js';
+import { apcaResult, vestibularResult, cognitiveResult } from './perceptual.js';
+
+// Dichromacies whose contrast is recomputed per pair. Achromatopsia is
+// omitted: it preserves luminance, so its WCAG ratio always equals the
+// unmodified one.
+const CVD_DICHROMACIES = ['deuteranopia', 'protanopia', 'tritanopia'];
+
+/** Roll the individual checks of one pair into a single PASS/WARN/FAIL. */
+function overallVerdict(p) {
+  if (!p.pass || p.apca.status === 'FAIL' || p.vestibular.status === 'HIGH' || p.cognitive.status === 'FAIL')
+    return 'FAIL';
+  // 'HARSH' is not a FAIL but it is worth a review, so it raises the verdict
+  // to WARN here to match the warning severity assigned by advancedStatus in
+  // checks.js, keeping the top-level overall field consistent with the detail panel.
+  if (p.apca.status === 'WARN' || p.vestibular.status === 'WARN' || p.cognitive.status === 'WARN' || p.cognitive.status === 'HARSH' || p.cvdRisk)
+    return 'WARN';
+  return 'PASS';
+}
+
+/**
+ * Attach every per-pair check to each colour pair: CVD contrast, APCA,
+ * vestibular saturation, the derived cognitive verdict, and a rolled-up
+ * `overall` verdict. `cvdRisk` is set when a pair passes WCAG AA for normal
+ * vision but drops below the same threshold for a simulated deficiency.
+ *
+ * @param {import('./schema.js').ColourPair[]} pairs
+ */
+function annotatePairs(pairs) {
+  for (const p of pairs) {
+    const cvd = {};
+    let risk = false;
+    for (const type of CVD_DICHROMACIES) {
+      const sim  = cvdPairContrast(p.fgHex, p.bgHex, type);
+      const pass = sim.contrast >= p.required;
+      cvd[type]  = { fgHex: sim.fgHex, bgHex: sim.bgHex, contrast: sim.contrast, pass };
+      if (p.pass && !pass) risk = true;
+    }
+    p.cvd     = cvd;
+    p.cvdRisk = risk;
+
+    p.apca       = apcaResult(p.fgHex, p.bgHex);
+    p.vestibular = vestibularResult(p.fgHex, p.bgHex);
+    const heightPx = p.bboxes.length ? Math.min(...p.bboxes.map((b) => b.h)) : 0;
+    p.cognitive  = cognitiveResult({
+      contrast: p.contrast,
+      passAA:   p.pass,
+      heightPx,
+      apcaLc:   p.apca.lc,
+      maxSat:   p.vestibular.maxSat
+    });
+    p.overall = overallVerdict(p);
+  }
+}
 
 // ── OCR filter ───────────────────────────────────────────────────────────────
 
@@ -161,6 +215,7 @@ export function analyseImage(imageData, ocrDetections) {
   }
 
   const colourPairs = buildColourPairs(findings);
+  annotatePairs(colourPairs);
   const failures    = colourPairs.filter((p) => !p.pass);
   const verdict     = failures.length ? 'FAIL' : 'PASS';
   const minCr       = colourPairs[0].contrast;

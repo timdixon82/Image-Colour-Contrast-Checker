@@ -113,6 +113,19 @@ If the CDN approach fails (for example, if GitHub Actions removes the Chrome bin
 
 Also remove `--chromedriver-path "$CHROMEDRIVER_PATH"` and the surrounding conditional from both axe steps, and revert to `npm install -g pa11y@9.1.1 @axe-core/cli@4.11.3 wait-on@8.0.1` in place of the `npm ci` in `.github/accessibility-tools/`.
 
+### ACC-ICCC-005 — pdfmake does not produce a tagged PDF; images have no structural alt text (WCAG 4.1.2 Level A, PDF/UA context)
+
+The PDF export uses the pdfmake library (version 0.2.x). pdfmake does not generate a tagged PDF conforming to ISO 14289 (PDF/UA). Screen readers that process the PDF will read content in reading order but will not announce images as image elements, because the PDF lacks a structural accessibility tree.
+
+Every image in the exported PDF (preview, swatch, colour-blindness simulations, cropped region) will be treated as an untagged artefact. Mitigating factors are in place: every image has a visible text caption or an adjacent descriptive sentence, so the semantic content is available to sighted readers. The PDF is a supplementary export format; the primary accessible experience is the interactive web report.
+
+This is a known limitation of the pdfmake library and is not a regression in this branch. The only complete fix is a migration to a different PDF library that supports PDF/UA tagging, or adopting a future version of pdfmake if tagging support is added upstream.
+
+- WCAG criterion: 4.1.2 Name, Role, Value, Level A (as applied to PDF/UA)
+- Library: pdfmake 0.2.x
+- Deferred backlog: D8 in todo.md
+- Resolution path: migrate to a PDF/UA-compliant library when available.
+
 ## Exceptions
 
 Exceptions for this project are held in `docs/exceptions/`. At the time of project wiki scaffolding:
