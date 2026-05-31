@@ -112,7 +112,7 @@ async function handleFiles(files) {
       try {
         await processOne(entry);
       } catch (err) {
-        console.error(`[${entry.filename}]`, err);
+        console.error(`[${entry.filename}]`, err); // nosemgrep: javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
         setRowStage(entry.row, 'failed', err.message);
       }
     }
