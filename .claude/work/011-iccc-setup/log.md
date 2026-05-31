@@ -119,3 +119,29 @@ Tim's instruction (2026-05-30): leave ICCC alone for now; noted here for the nex
 - [2026-05-31 13:59:48] subagent completed
 - [2026-05-31 14:06:27] subagent completed
 - [2026-05-31 18:30:01] subagent completed
+
+## [2026-05-31] cleanup | Repo consistency pass — all stale and failing items resolved
+
+Tim's instruction: "lets progress to get the repo all clean and consistent."
+
+**Completed:**
+- Pages deploy: already fixed by earlier template sync (last two deploy runs green). Log note from 2026-05-30 superseded.
+- PR 16 (add-next-q.sh): closed as superseded — script already on main via template sync ce5b778.
+- Uncommitted log.md: committed to main (94def3f).
+- PR 7 (vestibular feature v0.3.1): merged to main on Tim's approval. One merge conflict in `docs/accessibility.md` resolved — vestibular's ACC-ICCC-005 (pdfmake PDF tagging) combined with main's CI accessibility setup section. All 8 CI checks passed (including Semgrep after adding nosemgrep suppress for `unsafe-formatstring` false positive in `src/main.js` line 105 — `console.error` with `entry.filename` template literal is not an attacker-controlled format string).
+- PR 10 (ESLint 9→10): merged to main on Tim's approval. All 9 checks green.
+- PR 12 (globals 16→17): merged to main on Tim's approval. All 9 checks green.
+- `src/styles.css` `.sr-only` pattern: replaced deprecated `clip: rect(0 0 0 0)` with `clip-path: inset(50%)` — surfaced by stylelint-config-standard v40's new `property-no-deprecated` rule. Committed to main (4d88a7b).
+
+**Fixed on dep PR branches (now all CI-green, awaiting Tim's merge approval):**
+- PR 8 (pdfmake 0.2→0.3): same nosemgrep fix applied. All 8 checks green.
+- PR 9 (vite 5→8): Rolldown (Vite 8's new bundler) rejected `js-clipper/clipper.js` due to a Latin-1 byte (0xb9 at position 165105). Fixed with a pre-enforce Vite plugin that re-reads the file as latin1. Build and all linters pass.
+- PR 11 (stylelint 38→40): stylelint-config-standard v40 requires stylelint v17 (peer dep conflict). Bumped stylelint from ^16.19.1 to ^17.12.0. Also fixed the `clip-path` CSS issue. All 8 checks green.
+
+**Pending Tim's merge approval:**
+- PR 8 (pdfmake 0.2→0.3) — 8/8 green
+- PR 9 (vite 5→8) — 9/9 green
+- PR 11 (stylelint 38→40 + v17) — 8/8 green
+- PR 15 (release v0.3.0, release-please) — auto-generated, awaiting Tim's yes
+
+**Stale local branches** (chore/add-claude-config, chore/add-next-q-script, chore/template-onboarding, claude/vestibular-checker-extension-O5NPm): safety hook blocked `git branch -d` as "branch deletion". These are cosmetic — remote branches are already merged/closed.
