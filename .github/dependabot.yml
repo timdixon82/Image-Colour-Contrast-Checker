@@ -20,3 +20,11 @@ updates:
       javascript-minor-patch:
         update-types: ["minor", "patch"]
         patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /.github/accessibility-tools
+    schedule:
+      interval: weekly
+    groups:
+      accessibility-tools:
+        patterns: ["*"]

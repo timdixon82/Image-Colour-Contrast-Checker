@@ -9,6 +9,9 @@ function isImageFile(f) {
 }
 
 export function initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles }) {
+  // The dropzone is held disabled until the OCR models have downloaded.
+  const isDisabled = () => dropzoneEl.getAttribute('aria-disabled') === 'true';
+
   function emitFiles(fileList) {
     const files = [...fileList].filter(isImageFile);
     if (files.length) onFiles(files);
@@ -16,10 +19,11 @@ export function initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles }) {
 
   chooseBtn.addEventListener('click', () => inputEl.click());
   dropzoneEl.addEventListener('click', (e) => {
-    if (e.target.closest('button')) return;
+    if (isDisabled() || e.target.closest('button')) return;
     inputEl.click();
   });
   dropzoneEl.addEventListener('keydown', (e) => {
+    if (isDisabled()) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       inputEl.click();
@@ -37,7 +41,7 @@ export function initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles }) {
   ['dragenter', 'dragover'].forEach((evt) => {
     dropzoneEl.addEventListener(evt, (e) => {
       e.preventDefault();
-      dropzoneEl.classList.add('dropzone-active');
+      if (!isDisabled()) dropzoneEl.classList.add('dropzone-active');
     });
   });
   ['dragleave', 'dragend', 'drop'].forEach((evt) => {
@@ -47,6 +51,7 @@ export function initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles }) {
   });
   dropzoneEl.addEventListener('drop', (e) => {
     e.preventDefault();
+    if (isDisabled()) return;
     if (e.dataTransfer?.files?.length) emitFiles(e.dataTransfer.files);
   });
 
@@ -55,7 +60,7 @@ export function initDropzone({ dropzoneEl, inputEl, chooseBtn, onFiles }) {
   window.addEventListener('drop', (e) => {
     if (!dropzoneEl.contains(e.target)) {
       e.preventDefault();
-      if (e.dataTransfer?.files?.length) emitFiles(e.dataTransfer.files);
+      if (!isDisabled() && e.dataTransfer?.files?.length) emitFiles(e.dataTransfer.files);
     }
   });
 }
