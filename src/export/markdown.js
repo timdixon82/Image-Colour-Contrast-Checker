@@ -115,13 +115,14 @@ export function buildMarkdown(entries, timestamp) {
         // <strong> for bold badges, <code> for hex values (backticks are literal here).
         const badges = pairBadges(p).map((b) => `[${b.short} ${statusWord(b.status).toUpperCase()}]`).join(' · ');
 
+        // Swatch is embedded inline in the summary so the colours are visible
+        // without expanding the block. height="14" keeps it flush with the text.
+        const swatchTag = asset?.swatchDataUrl
+          ? `<img src="${asset.swatchDataUrl}" alt="${p.bgHex} on ${p.fgHex}" height="14"> `
+          : '';
         lines.push('<details>');
-        lines.push(`<summary><strong>${badges}</strong> — <code>${p.bgHex}</code> background / <code>${p.fgHex}</code> foreground${words ? ` — ${words}` : ''}</summary>`);
+        lines.push(`<summary>${swatchTag}<strong>${badges}</strong> — <code>${p.bgHex}</code> background / <code>${p.fgHex}</code> foreground${words ? ` — ${words}` : ''}</summary>`);
         lines.push('');
-        if (asset?.swatchDataUrl) {
-          lines.push(`![Background / foreground swatch](${asset.swatchDataUrl})`);
-          lines.push('');
-        }
         lines.push(`[Check this pair on WebAIM](${webaim})`);
         lines.push('');
         lines.push(`[Vestibular Accessible Design Checker](${VESTIBULAR_CHECKER_URL})`);
