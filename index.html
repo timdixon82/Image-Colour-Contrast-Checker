@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://iccc.goatcounter.com; img-src 'self' blob: data:; worker-src 'self' blob:; child-src blob:; frame-ancestors 'none';">
     <meta name="referrer" content="strict-origin-when-cross-origin">
+    <!-- Privacy-friendly analytics (GoatCounter), self-hosted so it loads
+         under cross-origin isolation. Runs first; counts one page view via
+         sendBeacon. -->
+    <script data-goatcounter="https://iccc.goatcounter.com/count" src="count.js"></script>
     <!--
       Apply theme before CSS loads to prevent a flash of the wrong palette.
       Reads localStorage first; falls back to the OS preference.
@@ -20,7 +24,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>Image Colour Contrast Checker — Tim Dixon</title>
-    <meta name="description" content="Drop in screenshots to audit WCAG AA and AAA text-colour contrast. Uses AI to detect text regions. Runs entirely in your browser — nothing is uploaded." />
+    <meta name="description" content="Audit WCAG 2.2 AA and AAA text-colour contrast, plus APCA, colour-vision, vestibular, and cognitive checks. Runs in your browser. Nothing is uploaded." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
@@ -28,45 +32,12 @@
     <!-- Skip navigation for keyboard users (WCAG 2.4.1) -->
     <a href="#app" class="skip-link">Skip to main content</a>
 
-    <!-- Preloader: covers the page until model files are downloaded. -->
-    <div id="preloader" class="preloader" role="dialog" aria-modal="true" aria-labelledby="preloader-heading">
-      <div class="preloader-header" aria-hidden="true">
-        <div class="app-header-inner">
-          <div class="app-header-text">
-            <p class="preloader-app-title">Image Colour <span class="header-accent">Contrast Checker</span></p>
-            <p class="tagline">Drop in images to check WCAG AA / AAA text-contrast. Runs entirely in your browser &mdash; nothing is uploaded.</p>
-          </div>
-        </div>
-      </div>
-      <div class="preloader-body">
-        <div class="preloader-card">
-          <h2 id="preloader-heading" class="preloader-heading">Preparing the analysis engine</h2>
-          <p class="preloader-desc">
-            This app uses AI to detect and locate text in your images. The required models &mdash;
-            around 30&nbsp;MB &mdash; are downloaded to your browser once, then cached instantly for every
-            visit after that.
-          </p>
-          <div class="preloader-progress" aria-hidden="true">
-            <div class="preloader-bar-track">
-              <div id="preloader-bar" class="preloader-bar-fill"></div>
-            </div>
-            <div id="preloader-pct" class="preloader-pct">0%</div>
-          </div>
-          <p id="preloader-status" class="preloader-status" aria-live="polite" aria-atomic="true">Starting download…</p>
-          <div class="privacy-notice">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Your images never leave your device. No upload. No server. Ever.
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Branded header — always navy, regardless of light/dark mode -->
     <header class="app-header">
       <div class="app-header-inner">
         <div class="app-header-text">
           <h1>Image Colour <span class="header-accent">Contrast Checker</span></h1>
-          <p class="tagline">Drop in images to check WCAG AA / AAA text-contrast. Runs entirely in your browser &mdash; nothing is uploaded.</p>
+          <p class="tagline">Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. Runs entirely in your browser &mdash; nothing is uploaded.</p>
         </div>
         <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode">
           <!-- Sun icon: visible in dark mode (click to switch to light) -->
@@ -90,10 +61,26 @@
       </div>
     </header>
 
-    <main id="app" inert>
+    <main id="app">
       <section id="landing" class="landing">
-        <div id="dropzone" class="dropzone" tabindex="0" role="button"
+        <div id="dropzone" class="dropzone is-loading" role="button" aria-disabled="true"
              aria-label="Drop images here or click to choose files">
+          <div class="dropzone-loading">
+            <p class="dz-loading-heading">Preparing the analysis engine</p>
+            <p class="dz-loading-desc">
+              This tool uses AI to detect text in your images. The models &mdash; around
+              30&nbsp;MB &mdash; download to your browser once, then load instantly on every
+              visit after. You can read what the checks mean further down the page while
+              this finishes.
+            </p>
+            <div class="dz-progress" aria-hidden="true">
+              <div class="dz-bar-track">
+                <div id="dl-bar" class="dz-bar-fill"></div>
+              </div>
+              <div id="dl-pct" class="dz-pct">0%</div>
+            </div>
+            <p id="dl-status" class="dz-status" aria-live="polite" aria-atomic="true">Starting download…</p>
+          </div>
           <div class="dropzone-inner">
             <div class="dropzone-icon" aria-hidden="true">&#8682;</div>
             <p class="dropzone-primary">Drop images here</p>
@@ -116,12 +103,6 @@
           <span><strong>Automated analysis only.</strong> Results are indicative and are designed to speed up accessibility review &mdash; manual verification is required before citing for formal WCAG compliance.</span>
         </div>
 
-        <div id="model-banner" class="model-banner" hidden>
-          <span class="spinner" aria-hidden="true"></span>
-          <span class="model-banner-text">
-            Loading PaddleOCR PP-OCRv4 models (~28 MB on first run, cached after).
-          </span>
-        </div>
       </section>
 
       <section id="processing" class="processing" hidden>
@@ -136,6 +117,50 @@
         <footer id="thresholds" class="thresholds"></footer>
       </section>
 
+      <section id="check-glossary" class="check-glossary" aria-labelledby="glossary-heading">
+        <h2 id="glossary-heading">What the checks mean</h2>
+        <p class="glossary-intro">For every colour combination found in an image, the tool runs six checks, grouped into formal WCAG compliance and advanced perceptual checks. Open any check below to see what it measures, the thresholds used, and where to read more. All checks are automated and indicative &mdash; manual verification is still required before citing for formal WCAG compliance.</p>
+
+        <h3 class="glossary-group">WCAG compliance</h3>
+        <details id="check-info-wcag-aa" class="glossary-item">
+          <summary>WCAG AA</summary>
+          <p>The minimum contrast ratio required by <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html" target="_blank" rel="noopener noreferrer">WCAG 2.2 Success Criterion 1.4.3 Contrast (Minimum)</a>. Text must reach <strong>4.5:1</strong>, or <strong>3:1</strong> for large text (here, an OCR box height of 24&nbsp;px or more). The ratio is computed from the sRGB relative luminance of the sampled foreground and background colours.</p>
+        </details>
+        <details id="check-info-wcag-aaa" class="glossary-item">
+          <summary>WCAG AAA</summary>
+          <p>The enhanced contrast target from <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html" target="_blank" rel="noopener noreferrer">WCAG 2.2 Success Criterion 1.4.6 Contrast (Enhanced)</a>. Text must reach <strong>7:1</strong>, or <strong>4.5:1</strong> for large text. AAA is the standard this tool targets for its own interface.</p>
+        </details>
+
+        <h3 class="glossary-group">Advanced checks</h3>
+        <details id="check-info-apca" class="glossary-item">
+          <summary>APCA</summary>
+          <p>The <a href="https://apcacontrast.com" target="_blank" rel="noopener noreferrer">Advanced Perceptual Contrast Algorithm</a> models how the human eye actually perceives lightness, accounting for text polarity (light-on-dark vs dark-on-light) in a way the WCAG ratio does not. It reports a lightness-contrast value, <code>Lc</code>, from 0 to roughly &plusmn;108.</p>
+          <p>This tool reads the absolute <code>Lc</code>: below 45 fails, 45&ndash;59 is borderline (large text only), 60 or above passes. <strong>APCA is in public beta and is not yet a WCAG requirement</strong> &mdash; it is shown as an extra perceptual signal, computed with the official <code>apca-w3</code> implementation.</p>
+        </details>
+        <details id="check-info-cvd" class="glossary-item">
+          <summary>CVD contrast</summary>
+          <p>The same WCAG contrast ratio, recalculated as the two colours appear to viewers with a colour-vision deficiency (CVD): deuteranopia (green-blind), protanopia (red-blind) and tritanopia (blue-blind). Colours are transformed with the Machado, Oliveira &amp; Fernandes (2009) matrices in linear-RGB space, then the contrast is recomputed.</p>
+          <p>A combination is flagged when it passes WCAG AA for normal vision but drops below the threshold for one of these deficiencies &mdash; a difference standard contrast checks miss. Achromatopsia is shown in the whole-image simulation but omitted here, because it preserves luminance and so never changes the ratio.</p>
+        </details>
+        <details id="check-info-vestibular" class="glossary-item">
+          <summary>Vestibular</summary>
+          <p>Highly saturated colours can appear to shimmer or vibrate, which can trigger discomfort, nausea or disorientation for people with <a href="https://vestibular.org" target="_blank" rel="noopener noreferrer">vestibular disorders</a>. This check measures the HSL saturation of <strong>both</strong> the text and the background &mdash; saturated text shimmers just as a saturated background does.</p>
+          <p>The higher of the two saturations is graded: under 60% is safe, 60&ndash;79% is a warning, and 80% or above is high risk.</p>
+          <p>The 60% and 80% cut-offs are this project&rsquo;s in-house heuristic. The Web Content Accessibility Guidelines (WCAG) do not define a saturation threshold, and the wider accessibility literature treats vestibular trigger thresholds qualitatively rather than numerically. These bands are a team-set rule, not a WCAG requirement.</p>
+        </details>
+        <details id="check-info-cognitive" class="glossary-item">
+          <summary>Cognitive</summary>
+          <p>A derived verdict that combines the other checks into a single plain-language read on cognitive load. It cascades through, in order: text physically too small, failing WCAG contrast, high saturation, an extremely bright pairing (APCA above 105) that causes eye fatigue, a bright saturated pairing that appears to shimmer, and finally very high contrast that can feel &ldquo;too sharp&rdquo;.</p>
+          <p>A <strong>HARSH</strong> result is not a failure &mdash; it flags that contrast above roughly 18:1 can be uncomfortably sharp for some readers, and is worth a manual look.</p>
+        </details>
+
+        <details id="check-info-overall" class="glossary-item">
+          <summary>How the results combine</summary>
+          <p>Every colour combination is graded in two groups. <strong>WCAG compliance</strong> covers the formal contrast levels &mdash; WCAG AA and AAA &mdash; that accessibility standards require. <strong>Advanced checks</strong> cover the perceptual and inclusive-design signals &mdash; APCA, CVD contrast, vestibular saturation and the cognitive verdict &mdash; which go beyond the formal WCAG ratio.</p>
+          <p>The report shows each combination with two WCAG badges (AA and AAA) and one rolled-up Advanced-checks badge. The Advanced badge <strong>passes</strong> when every advanced check is clear, needs <strong>review</strong> if any warns, and <strong>fails</strong> if any fails. Every row starts collapsed &mdash; open one to see the full per-check breakdown.</p>
+        </details>
+      </section>
+
       <footer id="app-footer" class="app-footer"></footer>
 
       <div id="action-bar" class="action-bar" hidden>
@@ -143,9 +168,10 @@
           Download PDF report
         </button>
         <button type="button" id="download-md" class="button"
-                title="Best viewed in VS Code / Obsidian / Typora — GitHub may strip embedded images.">
+                aria-describedby="md-hint">
           Download Markdown
         </button>
+        <p id="md-hint" class="sr-only">Best viewed in VS Code, Obsidian, or Typora. GitHub may strip embedded images.</p>
         <button type="button" id="reset" class="button button-ghost">
           Audit another batch
         </button>
@@ -153,8 +179,5 @@
     </main>
 
     <script type="module" src="/src/main.js"></script>
-
-    <script data-goatcounter="https://iccc.goatcounter.com/count"
-            async src="/analytics/count.js"></script>
   </body>
 </html>

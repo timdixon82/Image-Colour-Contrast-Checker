@@ -5,16 +5,27 @@
  * @module export/markdown
  */
 
-import { APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT } from './strings.js';
+import {
+  APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
+  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_FULL_LABEL
+} from './strings.js';
+import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
 function anchor(filename) {
   return filename.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-function verdictLabel(verdict) {
-  if (verdict === 'PASS') return '✓ PASS';
-  if (verdict === 'FAIL') return '✗ FAIL';
-  return '— NO TEXT';
+/**
+ * Markdown pill: bold-bracketed label per Simon's design spec.
+ * Screen readers on VS Code / Obsidian / GitHub announce "bold PASS" etc.,
+ * which is unambiguous. Raw-text fallback reads as **[PASS]**, which still
+ * carries the verdict clearly.
+ */
+function mdPill(status) {
+  if (status === 'PASS' || status === 'SAFE') return '**[PASS]**';
+  if (status === 'FAIL' || status === 'HIGH') return '**[FAIL]**';
+  if (status === 'WARN' || status === 'HARSH') return '**[REVIEW]**';
+  return '[NO TEXT]';
 }
 
 /**
@@ -45,7 +56,8 @@ export function buildMarkdown(entries, timestamp) {
   lines.push('| Image | Result |');
   lines.push('|-------|--------|');
   for (const e of entries) {
-    lines.push(`| [${e.filename}](#${anchor(e.filename)}) | ${verdictLabel(e.report.verdict)} |`);
+    const resultPill = e.report.flag ? '**[FAIL]**' : (e.report.verdict === 'PASS' ? '**[PASS]**' : '[NO TEXT]');
+    lines.push(`| [${e.filename}](#${anchor(e.filename)}) | ${resultPill} |`);
   }
   lines.push('');
   lines.push('---');
@@ -55,49 +67,73 @@ export function buildMarkdown(entries, timestamp) {
 
   // ── Per-image detail ──────────────────────────────────────────────────────
   entries.forEach((entry, idx) => {
-    const { filename, report, previewDataUrl, pairAssets = [] } = entry;
+    const { filename, report, previewDataUrl, pairAssets = [], cbSimAssets = [] } = entry;
 
     lines.push(`### ${idx + 1}. ${filename}`);
     lines.push('');
-    lines.push(`- **Result:** ${verdictLabel(report.verdict)} — ${report.detail}`);
+    const resultPill = report.flag ? '**[FAIL]**' : (report.verdict === 'PASS' ? '**[PASS]**' : '[NO TEXT]');
+    lines.push(`- **Result:** ${resultPill} — ${report.detail}`);
     lines.push('');
 
     if (previewDataUrl) {
-      lines.push(`![${filename}](${previewDataUrl})`);
+      lines.push(`![Preview of ${filename}](${previewDataUrl})`);
       lines.push('');
     }
 
-    if (report.hasText && report.colourPairs.length) {
-      lines.push('**Colour combinations detected:**');
+    if (cbSimAssets.length) {
+      lines.push('**Colour-blindness simulation:**');
       lines.push('');
-      // Background before Foreground
-      lines.push('| Swatch | Background | Foreground | Ratio | AA | AAA | Check | Example words |');
-      lines.push('|--------|-----------|-----------|-------|-----|-----|-------|---------------|');
+      for (const a of cbSimAssets) {
+        lines.push(`![${a.label} — ${a.note}](${a.dataUrl})`);
+        lines.push('');
+        lines.push(`_${a.label} — ${a.note}_`);
+        lines.push('');
+      }
+    }
+
+    if (report.hasText && report.colourPairs.length) {
+      lines.push('**Contrast results:**');
+      lines.push('');
+      lines.push(`_${wcagLine(report)}_`);
+      lines.push(`_${advancedLine(report)}_`);
+      lines.push('');
+      lines.push(`For single-pair vestibular checking, visit [${VESTIBULAR_CHECKER_FULL_LABEL}](${VESTIBULAR_CHECKER_URL}).`);
+      lines.push('');
 
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
-
       for (const p of report.colourPairs) {
-        const asset   = assetByPair.get(p);
-        const swatch  = asset?.swatchDataUrl ? `![](${asset.swatchDataUrl})` : '';
-        const webaim  = `[WebAIM ↗](https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)})`;
-        const examples = p.examples.map((e) => `"${e}"`).join(', ');
-        lines.push(`| ${swatch} | \`${p.bgHex}\` | \`${p.fgHex}\` | ${p.contrast.toFixed(2)}:1 | ${p.pass ? '✓ Pass' : '✗ Fail'} | ${p.passAaa ? '✓ Pass' : '✗ Fail'} | ${webaim} | ${examples} |`);
-      }
-      lines.push('');
+        const asset  = assetByPair.get(p);
+        const words  = p.examples.map((e) => `"${e}"`).join(', ');
+        const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
+        const badges = pairBadges(p).map((b) => `**[${b.short} ${statusWord(b.status).toUpperCase()}]**`).join(' · ');
 
-      const failing = report.colourPairs.filter((p) => !p.pass);
-      if (failing.length) {
-        lines.push('**Failing regions:**');
+        lines.push('<details>');
+        lines.push(`<summary><strong>${badges}</strong> — \`${p.bgHex}\` background / \`${p.fgHex}\` foreground${words ? ` — ${words}` : ''}</summary>`);
         lines.push('');
-        for (const p of failing) {
-          const asset = assetByPair.get(p);
-          lines.push(`Background \`${p.bgHex}\` / Foreground \`${p.fgHex}\` — ${p.contrast.toFixed(2)}:1`);
+        if (asset?.swatchDataUrl) {
+          lines.push(`![Background / foreground swatch](${asset.swatchDataUrl})`);
           lines.push('');
-          if (asset?.clipDataUrl) {
-            lines.push(`![Failing region](${asset.clipDataUrl})`);
-            lines.push('');
+        }
+        lines.push(`[Check this pair on WebAIM](${webaim})`);
+        lines.push('');
+        lines.push('| Check | Value | Status | What it means |');
+        lines.push('|-------|-------|--------|---------------|');
+        const checks = pairChecks(p);
+        for (const grp of CHECK_GROUPS) {
+          lines.push(`| **${grp.label}** | | | |`);
+          for (const c of checks.filter((check) => check.group === grp.id)) {
+            lines.push(`| [${c.label}](${checkInfoUrl(c.id)}) | ${c.value || '—'} | ${mdPill(c.status)} | ${c.detail} |`);
           }
         }
+        lines.push('');
+        if (asset?.clipDataUrl) {
+          lines.push('Where this combination appears in the image:');
+          lines.push('');
+          lines.push(`![Cropped image region](${asset.clipDataUrl})`);
+          lines.push('');
+        }
+        lines.push('</details>');
+        lines.push('');
       }
     }
 
