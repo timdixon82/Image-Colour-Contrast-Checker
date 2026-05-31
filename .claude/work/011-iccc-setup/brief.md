@@ -4,8 +4,8 @@
 
 Adopt the Image-Colour-Contrast-Checker repository (`timdixon82/Image-Colour-Contrast-Checker`) as a team project, run the four-agent backfill, then review the open feature branch `claude/vestibular-checker-extension-O5NPm` and prepare it for a merge to `main`. The repository is Tim's priority HANDOFF item and already has its own GoatCounter analytics counter, which the team uses as the implementation model for the wider analytics rollout.
 
-- Status: `active`
-- Status note: merge gate prepared; Tim not merging at this time
+- Status: `closed`
+- Status note: closed 2026-05-31 on Tim's instruction. All main-scope work shipped. Deferred items (ACC-ICCC-001/002/003/005, D1-D3) tracked in HANDOFF.md.
 - Branch: claude/vestibular-checker-extension-O5NPm (PR 7 open)
 - Priority: 2
 - Blockers: None. Sonja conformance check complete (sonja-conformance-check.md). Awaiting Tim's express merge approval.
