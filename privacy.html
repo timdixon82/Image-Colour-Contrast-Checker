@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://iccc.goatcounter.com; img-src 'self' blob: data:; worker-src 'self' blob:; child-src blob:; frame-ancestors 'none';">
     <meta name="referrer" content="strict-origin-when-cross-origin">
+    <!-- Privacy-friendly analytics (GoatCounter), self-hosted so it loads
+         under cross-origin isolation. Counts one page view via sendBeacon. -->
+    <script data-goatcounter="https://iccc.goatcounter.com/count" src="count.js"></script>
     <script>
       (function () {
         var t = localStorage.getItem('td-theme');
@@ -24,7 +27,7 @@
       <div class="app-header-inner">
         <div class="app-header-text">
           <h1>Image Colour <span class="header-accent">Contrast Checker</span></h1>
-          <p class="tagline">Drop in images to check WCAG AA / AAA text-contrast. Runs entirely in your browser &mdash; nothing is uploaded.</p>
+          <p class="tagline">Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. Runs entirely in your browser &mdash; nothing is uploaded.</p>
         </div>
         <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle colour theme">
           <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -86,7 +89,7 @@
 
         <section>
           <h3>Third-party scripts</h3>
-          <p>All application JavaScript, including the GoatCounter analytics snippet (<code>count.js</code>), is bundled and served from <code>image-colour-contrast-checker.timdixon.net</code>. No third-party scripts, external fonts, or stylesheets are loaded from third-party origins.</p>
+          <p>No third-party scripts, fonts or stylesheets are loaded from external origins. All JavaScript — including the GoatCounter analytics snippet (<code>count.js</code>) — is served from <code>image-colour-contrast-checker.timdixon.net</code>. The only request that leaves your device is the single anonymous page-view sent to GoatCounter, described above.</p>
         </section>
 
         <section>
@@ -122,7 +125,9 @@
           sep(),
           lnk(`${repoBase}#dependencies-and-licensing`, 'Third-party licences', true),
           sep(),
-          lnk('./privacy.html', 'Privacy'),
+          lnk('./index.html#check-glossary', 'What the checks mean', true),
+          sep(),
+          lnk('./privacy.html', 'Privacy', true),
           sep(),
           lnk('https://www.timdixon.net/contact/', 'Contact / feedback', true, true)
         );
@@ -154,8 +159,5 @@
         if (!localStorage.getItem(STORAGE_KEY)) setTheme(e.matches ? 'dark' : 'light', false);
       });
     </script>
-
-    <script data-goatcounter="https://iccc.goatcounter.com/count"
-            async src="/analytics/count.js"></script>
   </body>
 </html>
