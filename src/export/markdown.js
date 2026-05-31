@@ -7,7 +7,7 @@
 
 import {
   APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
-  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_FULL_LABEL
+  VESTIBULAR_CHECKER_URL
 } from './strings.js';
 import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
@@ -97,8 +97,6 @@ export function buildMarkdown(entries, timestamp) {
       lines.push(`_${wcagLine(report)}_`);
       lines.push(`_${advancedLine(report)}_`);
       lines.push('');
-      lines.push(`For single-pair vestibular checking, visit [${VESTIBULAR_CHECKER_FULL_LABEL}](${VESTIBULAR_CHECKER_URL}).`);
-      lines.push('');
 
       const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
       for (const p of report.colourPairs) {
@@ -115,6 +113,8 @@ export function buildMarkdown(entries, timestamp) {
           lines.push('');
         }
         lines.push(`[Check this pair on WebAIM](${webaim})`);
+        lines.push('');
+        lines.push(`[Vestibular Accessible Design Checker](${VESTIBULAR_CHECKER_URL})`);
         lines.push('');
         lines.push('| Check | Value | Status | What it means |');
         lines.push('|-------|-------|--------|---------------|');

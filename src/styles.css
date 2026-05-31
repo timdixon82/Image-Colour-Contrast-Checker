@@ -451,6 +451,15 @@ body {
   margin: 0 0 10px;
   color: var(--fg);
 }
+.summary h2::after {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 3px;
+  background: var(--accent);
+  margin-top: 5px;
+  border-radius: 2px;
+}
 
 /* Image cards — h3 filename matches page heading scale */
 .image-card-title {
@@ -458,6 +467,15 @@ body {
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.1px;
+}
+.image-card-title::after {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 3px;
+  background: var(--accent);
+  margin-top: 6px;
+  border-radius: 2px;
 }
 
 /* Sub-section headings inside cards — h4 */
@@ -529,12 +547,16 @@ body {
 .results-summary-group { margin: 0 0 6px; }
 .results-overall { margin: 0 0 4px; font-size: 0.9rem; color: var(--fg-muted); }
 
-/* Link prompting single-pair checking */
-.pair-check-prompt {
-  margin: 6px 0 12px;
-  font-size: 0.85rem;
+/* External checkers list — two links stacked vertically in the results table */
+.external-checkers-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.pair-check-prompt a { color: var(--accent); }
+.external-checkers-list a { color: var(--accent); font-size: 0.85rem; white-space: nowrap; }
 .results-table code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
 .results-table .examples { font-style: italic; color: var(--fg-muted); max-width: 240px; }
 .results-table td { border-bottom: none; }
@@ -901,10 +923,10 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
  * (#0d2040, 6.27:1) and on other dark-mode surfaces. In dark mode the
  * six selectors below override to --fg-muted (#63D2FF, sky blue):
  *
- *   .glossary-item > p > a    on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .image-card h4             on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .pair-check-prompt a       on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .row-toggle                on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .glossary-item > p > a      on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .image-card h4              on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .external-checkers-list a   on #0d2040 (bg-card):   9.40:1 AAA ✓
+ *   .row-toggle                 on #0d2040 (bg-card):   9.40:1 AAA ✓
  *   .queue-stage (in-progress) on ~#2f2d37 (blended):  7.26:1 AAA ✓
  *   .check-group-row th        on #1a3050 (neutral-bg): 7.70:1 AAA ✓
  *
@@ -915,7 +937,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .glossary-item > p > a,
   :root:not([data-theme="light"]) .image-card h4,
-  :root:not([data-theme="light"]) .pair-check-prompt a,
+  :root:not([data-theme="light"]) .external-checkers-list a,
   :root:not([data-theme="light"]) .row-toggle {
     color: var(--fg-muted); /* #63D2FF, 9.40:1 on #0d2040 AAA */
   }
@@ -934,7 +956,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 /* Manual toggle dark path (NF-01 fix: mirrors block above for toggle-dark users) */
 :root[data-theme="dark"] .glossary-item > p > a,
 :root[data-theme="dark"] .image-card h4,
-:root[data-theme="dark"] .pair-check-prompt a,
+:root[data-theme="dark"] .external-checkers-list a,
 :root[data-theme="dark"] .row-toggle {
   color: var(--fg-muted); /* #63D2FF, 9.40:1 on #0d2040 AAA */
 }

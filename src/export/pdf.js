@@ -8,7 +8,7 @@
 
 import {
   APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
-  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_FULL_LABEL
+  VESTIBULAR_CHECKER_URL
 } from './strings.js';
 import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
@@ -118,7 +118,9 @@ function pairBlock(p, asset) {
   out.push({
     text: [
       p.examples.length ? { text: p.examples.map((e) => `"${e}"`).join(', ') + '   ', style: 'examples' } : '',
-      { text: 'WebAIM', link: webaim, style: 'link' }
+      { text: 'WebAIM', link: webaim, style: 'link' },
+      { text: '   ' },
+      { text: 'Vestibular Accessible Design Checker', link: VESTIBULAR_CHECKER_URL, style: 'link' }
     ],
     fontSize: 9,
     margin: [0, 0, 0, 4]
@@ -272,27 +274,12 @@ function buildDocDefinition(entries, timestamp) {
             ],
             margin: [0, 0, 0, 8]
           },
-          // Unbreakable: contrast results H3 + WCAG/Advanced summary + Tas link
+          // Unbreakable: contrast results H3 + WCAG/Advanced summary
           {
             stack: [
               { text: 'Contrast results', style: 'h3', margin: [0, 8, 0, 2] },
               { text: wcagLine(report), style: 'examples', margin: [0, 0, 0, 1] },
-              { text: advancedLine(report), style: 'examples', margin: [0, 0, 0, 4] },
-              // Tas the Artist link — after summary lines, before per-pair blocks.
-              // "(opens in new window)" omitted: PDF links do not open browser tabs.
-              {
-                text: [
-                  { text: 'Check and adjust individual colour pairs: ' },
-                  {
-                    text: VESTIBULAR_CHECKER_FULL_LABEL.replace(' (opens in new window)', ''),
-                    link: VESTIBULAR_CHECKER_URL,
-                    style: 'link'
-                  },
-                  { text: '.' }
-                ],
-                fontSize: 9,
-                margin: [0, 0, 0, 4]
-              }
+              { text: advancedLine(report), style: 'examples', margin: [0, 0, 0, 4] }
             ],
             unbreakable: true
           }
