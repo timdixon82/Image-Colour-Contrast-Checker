@@ -28,9 +28,11 @@ This file tracks outstanding and deferred work items. The setup-build items (ite
 
 ## Deferred backlog
 
-### D1 — File input accessible name (ACC-ICCC-001, WCAG 4.1.2 Level A)
+### ~~D1 — File input accessible name (ACC-ICCC-001, WCAG 4.1.2 Level A)~~
 
-Add `aria-label="Upload images for analysis"` to `#file-input`. The hidden input is triggered by a visible button but still needs an accessible name. Pa11y code: `WCAG2AAA.Principle4.Guideline4_1.4_1_2.H91.InputFile.Name`. Pre-existing on `main`; not a regression from the setup build. Fix in the accessibility phase. Remove the Pa11y ignore entry for this code from `pa11y.json` when this fix lands. See `docs/accessibility.md` ACC-ICCC-001.
+~~Add `aria-label="Upload images for analysis"` to `#file-input`. The hidden input is triggered by a visible button but still needs an accessible name. Pa11y code: `WCAG2AAA.Principle4.Guideline4_1.4_1_2.H91.InputFile.Name`. Pre-existing on `main`; not a regression from the setup build. Fix in the accessibility phase. Remove the Pa11y ignore entry for this code from `pa11y.json` when this fix lands. See `docs/accessibility.md` ACC-ICCC-001.~~
+
+**Done in accessibility phase PR (fix/accessibility-phase).** `aria-label="Upload images for analysis"` added to `#file-input` in `index.html`. Pa11y ignore entry removed from `pa11y.json`.
 
 ### D2 — CSS code-style rules (Stylelint)
 
@@ -40,13 +42,17 @@ Seven Stylelint rules are set to `null` in `.stylelintrc.json` because the exist
 
 The team safety hook blocked `actionlint` invocations referencing `.github/workflows/` paths during the setup build. The workflow files follow the same structure as the LLBS workflow files, which passed actionlint. Verify with `actionlint` locally or observe CI results on push.
 
-### D5 — Footer and model-banner contrast in light mode (ACC-ICCC-002, WCAG 1.4.6 AAA)
+### ~~D5 — Footer and model-banner contrast in light mode (ACC-ICCC-002, WCAG 1.4.6 AAA)~~
 
-`--fg-muted` (#454c58) gives 6.98:1 on the footer surface and 6.74:1 on the model-banner surface. Both fail the 7:1 AAA threshold. Pa11y code: `WCAG2AAA.Principle1.Guideline1_4.1_4_6.G17.Fail`. Pre-existing on `main`; not a regression from the setup build. Fix in the accessibility phase: darken the light-mode `--fg-muted` custom property in `src/styles.css` until both the footer and the model-banner text reach 7:1 or better on `--bg`. Remove the Pa11y ignore entry for this code from `pa11y.json` when this fix lands. See `docs/accessibility.md` ACC-ICCC-002.
+~~`--fg-muted` (#454c58) gives 6.98:1 on the footer surface and 6.74:1 on the model-banner surface. Both fail the 7:1 AAA threshold. Pa11y code: `WCAG2AAA.Principle1.Guideline1_4.1_4_6.G17.Fail`. Pre-existing on `main`; not a regression from the setup build. Fix in the accessibility phase: darken the light-mode `--fg-muted` custom property in `src/styles.css` until both the footer and the model-banner text reach 7:1 or better on `--bg`. Remove the Pa11y ignore entry for this code from `pa11y.json` when this fix lands. See `docs/accessibility.md` ACC-ICCC-002.~~
 
-### D6 — Privacy notice and privacy page contrast (ACC-ICCC-003, WCAG 1.4.6 AAA)
+**Done in accessibility phase PR (fix/accessibility-phase).** Confirmed `--fg-muted` (#454c58) achieves 7.98:1 on `--bg` (#f4f6f8) and 7.71:1 on `--neutral-bg` (#f0f2f5) — both above 7:1 AAA. CSS comment corrected to reference actual surfaces. Pa11y ignore entry removed from `pa11y.json`.
 
-Same root cause as D5: `--fg-muted` on `--bg` below 7:1 in light mode. Selectors: `.privacy-notice` (index.html); `.privacy-page-intro`, `#app-footer`, and several link elements (privacy.html). Pre-existing on `main`; not a regression from the setup build. The fix for D5 will also close these instances. No Pa11y ignore needed; axe-core CLI exits 0 on violations by default. Fix in the accessibility phase alongside D5. See `docs/accessibility.md` ACC-ICCC-003.
+### ~~D6 — Privacy notice and privacy page contrast (ACC-ICCC-003, WCAG 1.4.6 AAA)~~
+
+~~Same root cause as D5: `--fg-muted` on `--bg` below 7:1 in light mode. Selectors: `.privacy-notice` (index.html); `.privacy-page-intro`, `#app-footer`, and several link elements (privacy.html). Pre-existing on `main`; not a regression from the setup build. The fix for D5 will also close these instances. No Pa11y ignore needed; axe-core CLI exits 0 on violations by default. Fix in the accessibility phase alongside D5. See `docs/accessibility.md` ACC-ICCC-003.~~
+
+**Done in accessibility phase PR (fix/accessibility-phase).** Closed by the same fix as D5: `--fg-muted` (#454c58) confirmed at 7.98:1 on `--bg` and 7.71:1 on `--neutral-bg` in light mode.
 
 ### D8 — pdfmake untagged PDF (ACC-ICCC-005, WCAG 4.1.2 Level A, PDF/UA context)
 
