@@ -8,7 +8,7 @@
   --bg:         #f4f6f8;
   --bg-card:    #fff;
   --fg:         #1a1a1a;   /* Near-black — 17.8:1 on white AAA */
-  --fg-muted:   #454c58;   /* 8.7:1 on white, 7.7:1 on panel — AAA */
+  --fg-muted:   #454c58;   /* 7.98:1 on --bg (#f4f6f8), 7.71:1 on --neutral-bg — AAA */
   --border:     #d1d5db;
   --accent:     #061528;   /* Navy — 18.33:1 on white AAA */
   --accent-hover: #0a2445;
