@@ -23,8 +23,13 @@ export default defineConfig({
     }
   ],
   optimizeDeps: {
-    exclude: ['onnxruntime-web'],
-    include: ['blob-stream'],
+    // onnxruntime-web: must not be pre-bundled (WASM / worker constraints).
+    // js-clipper: contains a Latin-1 byte that Rolldown rejects; handled by the
+    //   fix-non-utf8-deps plugin during build but excluded here so the pre-bundle
+    //   step never touches it.
+    // blob-stream: CJS module used by the PDFKit wrapper; exclude from pre-bundling
+    //   so the fix-non-utf8-deps plugin does not trigger a re-scan via its include path.
+    exclude: ['onnxruntime-web', 'js-clipper', 'blob-stream'],
   },
   worker: {
     format: 'es'
