@@ -1,9 +1,13 @@
 import { readFileSync } from 'fs';
 import { defineConfig } from 'vite';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
   base: './',
   plugins: [
+    // Polyfill Node.js built-ins required by PDFKit for browser use.
+    // We only include the five modules PDFKit actually needs.
+    nodePolyfills({ include: ['buffer', 'stream', 'zlib', 'util', 'process'] }),
     {
       // js-clipper/clipper.js contains a Latin-1 byte (0xb9, superscript-1 in a
       // comment) that Rolldown (Vite 6+) rejects as non-UTF-8. Rollup 5 was
@@ -19,7 +23,8 @@ export default defineConfig({
     }
   ],
   optimizeDeps: {
-    exclude: ['onnxruntime-web']
+    exclude: ['onnxruntime-web'],
+    include: ['blob-stream'],
   },
   worker: {
     format: 'es'

@@ -1,344 +1,334 @@
 /**
- * PDF export via pdfmake.
- * Accepts an array of AnalysedEntry (see core/schema.js) plus a timestamp
- * string. Nothing from the app's internal state leaks in here.
+ * PDF export via PDFKit — ISO 14289-1 (PDF/UA-1) compliant.
+ *
+ * Replaces the pdfmake implementation. Uses the `src/lib/pdf-ua/` wrapper
+ * which handles PDFKit 0.18.0 bug workarounds (see ADR 010 and the wrapper's
+ * module-level comment for details).
+ *
+ * Public API is unchanged:
+ *   downloadPdf(entries, timestamp, filename) — browser download
+ *
+ * Additional export for tests:
+ *   buildPdf(entries, timestamp) — returns Promise<Buffer>
  *
  * @module export/pdf
  */
 
+import { fileURLToPath } from 'node:url';
+import { join }          from 'node:path';
+
 import {
-  APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
-  VESTIBULAR_CHECKER_URL
+  createDocument,
+  addHeading,
+  addParagraph,
+  addFigure,
+  artifact,
+  toBlob,
+  toBuffer,
+} from '../lib/pdf-ua/index.js';
+
+import {
+  APP_NAME,
+  THRESHOLDS_FOOTER,
+  DISCLAIMER_TEXT,
 } from './strings.js';
-import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
-let pdfMakePromise = null;
+import {
+  pairChecks,
+  wcagLine,
+  advancedLine,
+  pairBadges,
+  statusWord,
+  CHECK_GROUPS,
+} from './checks.js';
 
-async function loadPdfMake() {
-  if (pdfMakePromise) return pdfMakePromise;
-  pdfMakePromise = (async () => {
-    const pdfMake = (await import('pdfmake/build/pdfmake.js')).default;
-    const fonts   = (await import('pdfmake/build/vfs_fonts.js')).default;
-    pdfMake.vfs = fonts.vfs ?? fonts.pdfMake?.vfs ?? fonts;
-    return pdfMake;
-  })();
-  return pdfMakePromise;
-}
+// ── Font paths ───────────────────────────────────────────────────────────────
+// Roboto TTF files bundled with pdfmake. The wrapper never uses AFM built-ins.
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const FONT_DIR  = join(__dirname, '../../node_modules/pdfmake/fonts/Roboto');
+const FONTS     = {
+  regular: join(FONT_DIR, 'Roboto-Regular.ttf'),
+  medium:  join(FONT_DIR, 'Roboto-Medium.ttf'),
+};
 
-/** Map a check status to a pdfmake style name. */
+// Available page width for A4 with 40 pt left/right margins (595.28 – 80 ≈ 515).
+const PAGE_W = 515;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Map a check/verdict status to a semantic key. */
 function statusStyle(status) {
   if (status === 'PASS' || status === 'SAFE') return 'pass';
   if (status === 'FAIL' || status === 'HIGH') return 'fail';
-  return 'warn'; // WARN, HARSH
+  return 'warn';
 }
 
 /**
- * Whole-image colour-blindness simulations, two per row.
- * Returns a single unbreakable stack so the heading and image grid stay
- * together on the same page. CVD images are capped at fit:[220,150] so
- * the four-image group fits reliably on a single A4 page.
- */
-function cbSimBlock(cbSimAssets) {
-  if (!cbSimAssets.length) return [];
-  const cell = (a) => a
-    ? { stack: [
-        { image: a.dataUrl, fit: [220, 150] },
-        { text: `${a.label} — ${a.note}`, fontSize: 8, color: '#4b5563', margin: [0, 3, 0, 6] }
-      ] }
-    : {};
-  const rows = [];
-  for (let i = 0; i < cbSimAssets.length; i += 2) {
-    rows.push([cell(cbSimAssets[i]), cell(cbSimAssets[i + 1])]);
-  }
-  return [{
-    stack: [
-      { text: 'Colour-blindness simulation', style: 'h3', margin: [0, 8, 0, 4] },
-      { table: { widths: ['*', '*'], body: rows }, layout: 'noBorders', margin: [0, 0, 0, 10] }
-    ],
-    unbreakable: true
-  }];
-}
-
-/**
- * Build a solid-fill pill cell for a pdfmake table cell.
- * Uses a single-cell table with fillColor so the pill has a visible
- * background in print. All colour pairings are WCAG 2.2 AAA (7:1 minimum).
+ * Build a `doc.table()` cell object styled as a status pill.
+ * The background colour is rendered by PDFKit's table engine and is marked
+ * as an Artifact internally; the text carries the semantic status value.
  */
 function pillCell(status) {
-  const PILL_COLOURS = {
-    pass:    { text: '#14532d', fill: '#dcfce7' }, /* 9.1:1 AAA */
-    fail:    { text: '#7f1d1d', fill: '#fee2e2' }, /* 10:1 AAA */
-    warn:    { text: '#663a00', fill: '#fef3c7' }, /* 8.7:1 AAA */
-    neutral: { text: '#4b5563', fill: '#f0f2f5' }  /* 7.6:1 AAA */
+  const colours = {
+    pass:    { backgroundColor: '#dcfce7', color: '#14532d' },
+    fail:    { backgroundColor: '#fee2e2', color: '#7f1d1d' },
+    warn:    { backgroundColor: '#fef3c7', color: '#663a00' },
+    neutral: { backgroundColor: '#f0f2f5', color: '#4b5563' },
   };
-  const key  = statusStyle(status);
-  const pair = PILL_COLOURS[key] || PILL_COLOURS.neutral;
+  const c = colours[statusStyle(status)] || colours.neutral;
   return {
-    table: {
-      widths: ['auto'],
-      body: [[{
-        text: status,
-        bold: true,
-        color: pair.text,
-        fillColor: pair.fill,
-        margin: [6, 2, 6, 2],
-        fontSize: 8
-      }]]
-    },
-    layout: 'noBorders'
+    text: status,
+    ...c,
+    font: { size: 8 },
+    padding: [6, 2, 6, 2],
   };
 }
 
-/** One colour combination: header line, every check, and the cropped region. */
-function pairBlock(p, asset) {
-  const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
-  const out = [];
-
-  const badgeText = pairBadges(p).flatMap((b) => [
-    { text: `${b.short} ${statusWord(b.status)}`, style: statusStyle(b.status), bold: true },
-    { text: '    ' }
-  ]);
-
-  out.push({
-    columns: [
-      asset?.swatchDataUrl
-        ? { image: asset.swatchDataUrl, width: 48, height: 14, margin: [0, 2, 8, 0] }
-        : { text: '', width: 1 },
-      {
-        width: '*',
-        text: [
-          ...badgeText,
-          { text: `Background ${p.bgHex}  ·  Foreground ${p.fgHex}`, bold: true }
-        ]
-      }
-    ],
-    margin: [0, 10, 0, 2]
-  });
-
-  out.push({
-    text: [
-      p.examples.length ? { text: p.examples.map((e) => `"${e}"`).join(', ') + '   ', style: 'examples' } : '',
-      { text: 'WebAIM', link: webaim, style: 'link' },
-      { text: '   ' },
-      { text: 'Vestibular Accessible Design Checker', link: VESTIBULAR_CHECKER_URL, style: 'link' }
-    ],
-    fontSize: 9,
-    margin: [0, 0, 0, 4]
-  });
-
-  const body = [[
-    { text: 'Check',         style: 'th' },
-    { text: 'Value',         style: 'th' },
-    { text: 'Status',        style: 'th' },
-    { text: 'What it means', style: 'th' }
-  ]];
-  const checks = pairChecks(p);
-  for (const grp of CHECK_GROUPS) {
-    body.push([{ text: grp.label, colSpan: 4, style: 'checkGroup' }, {}, {}, {}]);
-    for (const c of checks.filter((check) => check.group === grp.id)) {
-      body.push([
-        { text: c.label, link: checkInfoUrl(c.id), style: 'link' },
-        c.value || '—',
-        pillCell(c.status),
-        { text: c.detail, style: 'examples' }
-      ]);
-    }
-  }
-  out.push({
-    table: { headerRows: 1, widths: ['auto', 'auto', 'auto', '*'], body },
-    layout: 'lightHorizontalLines',
-    margin: [0, 0, 0, 4]
-  });
-
-  if (asset?.clipDataUrl) {
-    out.push({ text: 'Where this combination appears:', style: 'examples', margin: [0, 2, 0, 3] });
-    out.push({ image: asset.clipDataUrl, width: 360, margin: [0, 0, 0, 6] });
-  }
-  return out;
-}
+// ── Document builder ─────────────────────────────────────────────────────────
 
 /**
- * Build the pdfmake document definition from a batch of analysed entries.
+ * Build the full audit-report PDFDocument.
  *
  * @param {import('../core/schema.js').AnalysedEntry[]} entries
  * @param {string} timestamp
- * @returns {Object}  pdfmake docDefinition
+ * @returns {import('pdfkit')} A PDFDocument ready to be finalised.
  */
-function buildDocDefinition(entries, timestamp) {
-  const content = [];
-
-  // ── Branded header block + title lines (unbreakable: prevents timestamp orphan) ──
-  content.push({
-    stack: [
-      {
-        table: {
-          widths: ['*'],
-          body: [[{
-            stack: [
-              {
-                text: [
-                  { text: 'Image Colour ',    color: '#ffffff', fontSize: 18, bold: true },
-                  { text: 'Contrast Checker', color: '#FF7C00', fontSize: 18, bold: true }
-                ]
-              },
-              {
-                // Tagline line: sky blue, 87.5% of body font size (10pt × 0.875 ≈ 8.75pt)
-                text: 'Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. Runs entirely in your browser — nothing is uploaded.',
-                color: '#63D2FF',
-                fontSize: 8.75,
-                margin: [0, 4, 0, 0]
-              }
-            ],
-            fillColor: '#061528',
-            margin: [16, 14, 16, 14]
-          }]]
-        },
-        layout: 'noBorders',
-        margin: [0, 0, 0, 12]
-      },
-      { text: 'Audit Report', style: 'h1', margin: [0, 0, 0, 2] },
-      { text: `Generated ${timestamp}`, style: 'timestamp', margin: [0, 0, 0, 4] },
-      {
-        text: [
-          { text: 'Generated by ', style: 'timestamp' },
-          { text: APP_NAME, link: SITE_URL, style: 'link', fontSize: 9 }
-        ],
-        margin: [0, 0, 0, 10]
-      }
-    ],
-    unbreakable: true
+function buildDocument(entries, timestamp) {
+  const doc = createDocument({
+    title:   'Audit Report',
+    fonts:   FONTS,
+    lang:    'en',
+    size:    'A4',
+    margins: { top: 50, bottom: 50, left: 40, right: 40 },
   });
 
-  // ── Disclaimer — brand-adjacent amber fill, near-black text (#1a1a1a, 13.5:1 AAA) ──
-  content.push({
-    table: {
-      widths: ['*'],
-      body: [[{
-        text: [
-          { text: 'Automated analysis only — ', bold: true },
-          { text: DISCLAIMER_TEXT.replace('This report is generated automatically to help speed up accessibility review. ', '') }
-        ],
-        fillColor: '#fef3c7', /* --warn-bg light mode token */
-        color: '#1a1a1a',    /* near-black, 13.5:1 on #fef3c7 AAA */
-        margin: [10, 8, 10, 8],
-        fontSize: 9
-      }]]
-    },
-    layout: 'noBorders',
-    margin: [0, 0, 0, 14]
+  // ── Branded header ────────────────────────────────────────────────────────
+  // Navy background is a page-level Artifact (decorative fill, not content).
+  // The heading text is a single H1 structure element whose readable text is
+  // "Image Colour Contrast Checker"; the white/orange colour split is visual.
+  const headerTop = doc.y;
+  artifact(doc, (d) => {
+    d.rect(doc.page.margins.left, headerTop, PAGE_W, 70).fill('#061528');
   });
 
-  // ── Summary table ────────────────────────────────────────────────────────
-  content.push({ text: 'Summary', style: 'h2', margin: [0, 6, 0, 6] });
-  const summaryBody = [
-    [{ text: 'Image', style: 'th' }, { text: 'Result', style: 'th' }]
-  ];
-  for (const e of entries) {
-    const verdictStatus = e.report.flag ? 'FAIL' : (e.report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
-    summaryBody.push([
-      e.filename,
-      pillCell(verdictStatus)
-    ]);
-  }
-  content.push({
-    table: { headerRows: 1, widths: ['*', 'auto'], body: summaryBody },
-    layout: 'lightHorizontalLines',
-    margin: [0, 0, 0, 12]
+  const h1 = doc.struct('H1');
+  doc.addStructure(h1);
+  h1.add(doc.markStructureContent('H1', () => {
+    doc.font('Medium').fontSize(18)
+       .fillColor('#ffffff').text('Image Colour ', { continued: true })
+       .fillColor('#FF7C00').text('Contrast Checker', { continued: false });
+  }));
+  h1.end();
+
+  addParagraph(doc,
+    'Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. '
+    + 'Runs entirely in your browser — nothing is uploaded.',
+    { fontSize: 8.75, fillColor: '#63D2FF' }
+  );
+  doc.moveDown(0.5);
+
+  // ── Report title + timestamp ──────────────────────────────────────────────
+  doc.fillColor('#000000');
+  addHeading(doc, 2, 'Audit Report',          { font: 'Medium', fontSize: 14 });
+  addParagraph(doc, `Generated ${timestamp}`, { fontSize: 9, fillColor: '#4b5563' });
+  addParagraph(doc, `Generated by ${APP_NAME}`,{ fontSize: 9, fillColor: '#4b5563' });
+  doc.moveDown(0.5);
+
+  // ── Disclaimer ────────────────────────────────────────────────────────────
+  const disclTop = doc.y;
+  artifact(doc, (d) => {
+    d.rect(doc.page.margins.left, disclTop, PAGE_W, 40).fill('#fef3c7');
   });
+  const shortDisclaimer = DISCLAIMER_TEXT.replace(
+    'This report is generated automatically to help speed up accessibility review. ', ''
+  );
+  addParagraph(doc, `Automated analysis only — ${shortDisclaimer}`, {
+    fontSize: 9, fillColor: '#1a1a1a',
+  });
+  doc.moveDown(0.75);
 
-  // ── Per-image detail ─────────────────────────────────────────────────────
-  // Section order matches the web UI: heading → preview → result →
-  // colour-blindness simulation → contrast results.
-  // pageBreak: 'before' only from the second entry onward — avoids a blank
-  // page between the cover/summary page and the first image.
-  entries.forEach((entry, idx) => {
-    const { filename, report, previewDataUrl, pairAssets = [], cbSimAssets = [] } = entry;
-
-    // Unbreakable: heading + preview — keeps them together on the same page.
-    const headingAndPreview = [
-      { text: filename, style: 'h2', ...(idx > 0 ? { pageBreak: 'before' } : {}) }
-    ];
-    if (previewDataUrl) {
-      headingAndPreview.push({ image: previewDataUrl, width: 420, margin: [0, 6, 0, 8] });
-    }
-    content.push({ stack: headingAndPreview, unbreakable: true });
-
-    const verdictStatus = report.flag ? 'FAIL' : (report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
-
-    // Result line — always shown for every image
-    content.push({
-      columns: [
-        { text: 'Result: ', bold: true, width: 'auto' },
-        { width: 'auto', ...pillCell(verdictStatus) },
-        { text: ` — ${report.detail}`, margin: [4, 2, 0, 0] }
+  // ── Summary table ─────────────────────────────────────────────────────────
+  doc.fillColor('#000000');
+  addHeading(doc, 2, 'Summary', { font: 'Medium', fontSize: 14 });
+  doc.table({
+    columnStyles: [{ width: 380 }, { width: 100 }],
+    defaultStyle: { fontSize: 10 },
+    data: [
+      [
+        { type: 'TH', scope: 'column', text: 'Image',  font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
+        { type: 'TH', scope: 'column', text: 'Result', font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
       ],
-      margin: [0, 0, 0, 8]
-    });
+      ...entries.map((e) => {
+        const vs = e.report.flag ? 'FAIL' : (e.report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
+        return [{ text: e.filename }, pillCell(vs)];
+      }),
+    ],
+  });
+  doc.moveDown();
 
-    // Colour-blindness simulation — before contrast results, matching the web UI
-    content.push(...cbSimBlock(cbSimAssets));
+  // ── Per-image sections ────────────────────────────────────────────────────
+  entries.forEach((entry, idx) => {
+    if (idx > 0) doc.addPage();
+    doc.fillColor('#000000');
 
-    if (report.hasText && report.colourPairs.length) {
-      // Unbreakable: contrast results H3 + WCAG/Advanced summary
-      content.push({
-        stack: [
-          { text: 'Contrast results', style: 'h3', margin: [0, 8, 0, 2] },
-          { text: wcagLine(report), style: 'examples', margin: [0, 0, 0, 1] },
-          { text: advancedLine(report), style: 'examples', margin: [0, 0, 0, 4] }
-        ],
-        unbreakable: true
-      });
+    // 1.5 Heading + preview
+    addHeading(doc, 2, entry.filename, { font: 'Medium', fontSize: 14 });
+    if (entry.previewDataUrl) {
+      addFigure(doc, entry.previewDataUrl, `Preview of ${entry.filename}`, { width: 420 });
+    }
 
-      const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
-      for (const p of report.colourPairs) {
-        // Unbreakable: each pairBlock stays together — prevents header orphaning.
-        content.push({ stack: pairBlock(p, assetByPair.get(p)), unbreakable: true });
+    // 1.6 Result line
+    const vs = entry.report.flag
+      ? 'FAIL'
+      : (entry.report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
+    addParagraph(doc, `Result: ${vs} — ${entry.report.detail}`, { fontSize: 10 });
+
+    // 1.7 CVD simulation images
+    if (entry.cbSimAssets && entry.cbSimAssets.length) {
+      addHeading(doc, 3, 'Colour-blindness simulation', { font: 'Medium', fontSize: 12 });
+      for (const asset of entry.cbSimAssets) {
+        addFigure(doc, asset.dataUrl,
+          `${asset.label} colour vision simulation — ${asset.note}`,
+          { width: 220 }
+        );
+        addParagraph(doc, `${asset.label} — ${asset.note}`, {
+          fontSize: 8, fillColor: '#4b5563', oblique: true,
+        });
+      }
+      doc.moveDown(0.5);
+    }
+
+    // 1.8 Contrast results + 1.9 per-pair blocks
+    if (entry.report.hasText && entry.report.colourPairs && entry.report.colourPairs.length) {
+      doc.fillColor('#000000');
+      addHeading(doc, 3, 'Contrast results', { font: 'Medium', fontSize: 12 });
+      addParagraph(doc, wcagLine(entry.report),    { fontSize: 10, fillColor: '#374151', oblique: true });
+      addParagraph(doc, advancedLine(entry.report), { fontSize: 10, fillColor: '#374151', oblique: true });
+
+      const assetMap = new Map((entry.pairAssets || []).map((a) => [a.pair, a]));
+
+      for (const pair of entry.report.colourPairs) {
+        const asset = assetMap.get(pair);
+        doc.moveDown(0.5);
+        doc.fillColor('#000000');
+
+        // 1.9.1 Swatch (decorative) + badge strip + hex pair label
+        if (asset?.swatchDataUrl) {
+          // Swatch is a decorative colour chip — Artifact, not Figure.
+          const swatchY = doc.y;
+          artifact(doc, (d) => {
+            d.image(asset.swatchDataUrl, doc.page.margins.left, swatchY, { width: 48, height: 14 });
+          });
+          doc.y = swatchY + 18;
+        }
+        const badges = pairBadges(pair)
+          .map((b) => `${b.short} ${statusWord(b.status)}`)
+          .join('    ');
+        addParagraph(doc,
+          `${badges}    Background ${pair.bgHex}  ·  Foreground ${pair.fgHex}`,
+          { font: 'Regular', fontSize: 10, fillColor: '#000000' }
+        );
+
+        // 1.9.2 Examples + links (plain text v1 — tagged Link elements are Phase 2)
+        const exStr = pair.examples && pair.examples.length
+          ? pair.examples.map((e) => `"${e}"`).join(', ') + '   '
+          : '';
+        addParagraph(doc, `${exStr}WebAIM   Vestibular Accessible Design Checker`, {
+          fontSize: 9, fillColor: '#374151',
+        });
+
+        // 1.9.3 Checks table
+        const checks    = pairChecks(pair);
+        const tableRows = [[
+          { type: 'TH', scope: 'column', text: 'Check',         font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'Value',         font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'Status',        font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'What it means', font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
+        ]];
+
+        for (const grp of CHECK_GROUPS) {
+          // Group separator: TH spanning the row, bold, grey background.
+          // Four cells are used instead of colSpan since PDFKit's table API
+          // does not guarantee colSpan support.
+          tableRows.push([
+            { type: 'TH', scope: 'row', text: grp.label,
+              font: { src: FONTS.medium, size: 8 },
+              backgroundColor: '#e5e7eb', color: '#1a1a1a' },
+            { text: '' },
+            { text: '' },
+            { text: '' },
+          ]);
+          for (const c of checks.filter((ch) => ch.group === grp.id)) {
+            tableRows.push([
+              { text: c.label },
+              { text: c.value || '—' },
+              pillCell(c.status),
+              { text: c.detail, oblique: true },
+            ]);
+          }
+        }
+
+        doc.table({
+          data: tableRows,
+          columnStyles: [
+            { width: 110 },
+            { width: 80  },
+            { width: 80  },
+            { width: 225 },
+          ],
+        });
+
+        // 1.9.4 Clip image (conditional)
+        if (asset?.clipDataUrl) {
+          addParagraph(doc, 'Where this combination appears:', {
+            fontSize: 9, fillColor: '#374151', oblique: true,
+          });
+          addFigure(doc, asset.clipDataUrl,
+            `Cropped region showing where ${pair.bgHex} background with `
+            + `${pair.fgHex} foreground text appears in the image`,
+            { width: 360 }
+          );
+        }
       }
     }
   });
 
-  // ── Footer ───────────────────────────────────────────────────────────────
-  content.push({ text: THRESHOLDS_FOOTER, style: 'footer', italics: true, margin: [0, 16, 0, 4] });
-  content.push({
-    text: [
-      { text: 'Generated by ' },
-      { text: APP_NAME, link: SITE_URL, style: 'link' }
-    ],
-    style: 'footer',
-    margin: [0, 4, 0, 0]
-  });
+  // ── Footer ────────────────────────────────────────────────────────────────
+  doc.moveDown();
+  doc.fillColor('#000000');
+  addParagraph(doc, THRESHOLDS_FOOTER, { fontSize: 9, fillColor: '#4b5563', oblique: true });
+  addParagraph(doc, `Generated by ${APP_NAME}`, { fontSize: 9, fillColor: '#4b5563' });
 
-  return {
-    content,
-    defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.4 },
-    pageMargins: [40, 50, 40, 50],
-    styles: {
-      h1:          { fontSize: 18, bold: true, margin: [0, 0, 0, 4] },
-      h2:          { fontSize: 14, bold: true, margin: [0, 12, 0, 6] },
-      h3:          { fontSize: 12, bold: true },
-      th:          { bold: true, fillColor: '#f3f4f6' },
-      /* checkGroup: #1a1a1a on #e5e7eb — approx 13.8:1 AAA (was #374151, 6.1:1 AA only) */
-      checkGroup:  { bold: true, fillColor: '#e5e7eb', fontSize: 8, color: '#1a1a1a' },
-      pass:        { color: '#14532d', bold: true }, /* used in pairBadges inline text */
-      fail:        { color: '#7f1d1d', bold: true },
-      warn:        { color: '#663a00', bold: true },
-      neutral:     { color: '#4b5563' },
-      timestamp:   { fontSize: 9, color: '#4b5563' },
-      examples:    { italics: true, color: '#374151' },
-      link:        { color: '#061528', decoration: 'underline' }, /* Navy on white 18.33:1 AAA */
-      footer:      { fontSize: 9, color: '#4b5563' }
-    }
-  };
+  return doc;
 }
 
+// ── Public API ───────────────────────────────────────────────────────────────
+
 /**
- * Generate and trigger a download of the PDF report.
+ * Generate and download the PDF report in the browser.
  *
  * @param {import('../core/schema.js').AnalysedEntry[]} entries
  * @param {string} timestamp
  * @param {string} filename
  */
 export async function downloadPdf(entries, timestamp, filename) {
-  const pdfMake = await loadPdfMake();
-  pdfMake.createPdf(buildDocDefinition(entries, timestamp)).download(filename);
+  const blob = await toBlob(buildDocument(entries, timestamp));
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Build the PDF and return it as a Buffer (Node.js / test path).
+ * Does not touch the DOM.
+ *
+ * @param {import('../core/schema.js').AnalysedEntry[]} entries
+ * @param {string} timestamp
+ * @returns {Promise<Buffer>}
+ */
+export async function buildPdf(entries, timestamp) {
+  return toBuffer(buildDocument(entries, timestamp));
 }

@@ -54,10 +54,6 @@ The team safety hook blocked `actionlint` invocations referencing `.github/workf
 
 **Done in accessibility phase PR (fix/accessibility-phase).** Closed by the same fix as D5: `--fg-muted` (#454c58) confirmed at 7.98:1 on `--bg` and 7.71:1 on `--neutral-bg` in light mode.
 
-### D8 — pdfmake untagged PDF (ACC-ICCC-005, WCAG 4.1.2 Level A, PDF/UA context)
+### ~~D8 — pdfmake untagged PDF (ACC-ICCC-005, WCAG 4.1.2 Level A, PDF/UA context)~~
 
-pdfmake does not produce a tagged PDF conforming to ISO 14289 (PDF/UA). Images in the exported PDF lack structural alt text and will not be announced semantically by PDF-reading screen readers. The web report is the primary accessible experience.
-
-Resolution path: migrate to a PDF/UA-compliant library when one is available, or adopt a future pdfmake version if tagging support is added upstream.
-
-See `docs/accessibility.md` ACC-ICCC-005.
+**Done in PR feat/pdf-ua-rewrite.** PDF export replaced with PDFKit 0.18.0 via the `src/lib/pdf-ua/` wrapper. Output is formally ISO 14289-1 (PDF/UA-1) compliant, verified by veraPDF. All images have alt text. See `docs/accessibility.md` ACC-ICCC-005 (resolved) and ADR 010.
