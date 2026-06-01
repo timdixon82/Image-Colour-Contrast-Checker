@@ -32,6 +32,7 @@ import {
   DISCLAIMER_TEXT,
   VESTIBULAR_CHECKER_URL,
   VESTIBULAR_CHECKER_FULL_LABEL,
+  checkInfoUrl,
 } from './strings.js';
 
 import {
@@ -409,7 +410,7 @@ async function buildDocument(entries, timestamp) {
           ]);
           for (const c of checks.filter((ch) => ch.group === grp.id)) {
             tableRows.push([
-              { text: c.label, color: '#061528' },
+              { text: c.label, color: '#061528', link: checkInfoUrl(c.id), underline: true },
               { text: c.value || '—' },
               pillCell(c.status),
               { text: c.detail, oblique: true },
