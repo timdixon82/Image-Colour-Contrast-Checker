@@ -134,6 +134,30 @@ describe('pdf-ua wrapper — veraPDF PDF/UA-1 compliance', () => {
 
     addParagraph(doc, 'Footer paragraph.', { fontSize: 9 });
 
+    // Test: paragraph containing a Link struct (PDF/UA-1 §7.18)
+    // §7.18.5: the link annotation's Contents key must be non-empty.
+    // PDFKit 0.18.0 sets Contents = '' when inside a Link struct; override
+    // doc.link temporarily to inject the visible text as Contents.
+    const pLink = doc.struct('P');
+    doc.addStructure(pLink);
+    const linkEl = doc.struct('Link', { alt: 'Visit example dot com' });
+    pLink.add(linkEl);
+    linkEl.add(() => {
+      const _origLink = doc.link.bind(doc);
+      doc.link = (x, y, w, h, url, opts = {}) => {
+        opts.Contents = new String('Example link');
+        return _origLink(x, y, w, h, url, opts);
+      };
+      try {
+        doc.font('Regular').fontSize(10).fillColor('#000000')
+           .text('Example link', { continued: false, link: 'https://example.com', underline: true });
+      } finally {
+        doc.link = _origLink;
+      }
+    });
+    linkEl.end();
+    pLink.end();
+
     const buffer = await toBuffer(doc);
 
     // Basic structural checks

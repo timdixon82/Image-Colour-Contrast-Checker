@@ -123,23 +123,56 @@ function pillCell(status) {
  * }>} spans
  */
 function writeParagraph(doc, spans) {
-  const struct = doc.struct('P');
-  doc.addStructure(struct);
-  struct.add(() => {
-    spans.forEach((span, i) => {
-      const isLast = i === spans.length - 1;
-      if (span.font)     doc.font(span.font);
-      if (span.fontSize) doc.fontSize(span.fontSize);
-      if (span.color)    doc.fillColor(span.color);
-      doc.text(span.text, {
-        continued: !isLast,
-        link:      null,
-        underline: false,
-        oblique:   !!span.oblique,
+  const p = doc.struct('P');
+  doc.addStructure(p);
+
+  spans.forEach((span, i) => {
+    const isLast = i === spans.length - 1;
+
+    if (span.link) {
+      // PDF/UA-1 §7.18: link annotation must be inside a Link struct with /Alt text.
+      // §7.18.5: the annotation's Contents key must also be non-empty.
+      // PDFKit 0.18.0 sets Contents = '' when structParent is active; we
+      // temporarily override doc.link() to inject the span text as Contents.
+      const linkEl = doc.struct('Link', { alt: span.text });
+      p.add(linkEl);
+      linkEl.add(() => {
+        if (span.font)     doc.font(span.font);
+        if (span.fontSize) doc.fontSize(span.fontSize);
+        if (span.color)    doc.fillColor(span.color);
+        const _origLink = doc.link.bind(doc);
+        doc.link = (x, y, w, h, url, opts = {}) => {
+          opts.Contents = new String(span.text);
+          return _origLink(x, y, w, h, url, opts);
+        };
+        try {
+          doc.text(span.text, {
+            continued: !isLast,
+            link:      span.link,
+            underline: true,
+            oblique:   false,
+          });
+        } finally {
+          doc.link = _origLink;
+        }
       });
-    });
+      linkEl.end();
+    } else {
+      p.add(() => {
+        if (span.font)     doc.font(span.font);
+        if (span.fontSize) doc.fontSize(span.fontSize);
+        if (span.color)    doc.fillColor(span.color);
+        doc.text(span.text, {
+          continued: !isLast,
+          link:      null,
+          underline: false,
+          oblique:   !!span.oblique,
+        });
+      });
+    }
   });
-  struct.end();
+
+  p.end();
 }
 
 // ── Document builder ─────────────────────────────────────────────────────────
@@ -155,27 +188,44 @@ async function buildDocument(entries, timestamp) {
   });
 
   // ── Branded header ────────────────────────────────────────────────────────
+  const HEADER_H     = 88;
+  const HEADER_PAD_L = 12;
+  const HEADER_TEXT_W = PAGE_W - HEADER_PAD_L * 2;  // 491pt (12pt left + 12pt right inner pad)
+
   const headerTop = doc.y;
   artifact(doc, (d) => {
-    d.rect(doc.page.margins.left, headerTop, PAGE_W, 70).fill('#061528');
+    d.rect(doc.page.margins.left, headerTop, PAGE_W, HEADER_H).fill('#061528');
   });
-  doc.y = headerTop + 10;
+  doc.y = headerTop + 12;  // top padding inside header
 
   const h1 = doc.struct('H1');
   doc.addStructure(h1);
   h1.add(() => {
+    const x = doc.page.margins.left + HEADER_PAD_L;
     doc.font('Medium').fontSize(18)
-       .fillColor('#ffffff').text('Image Colour ', { continued: true, link: null, underline: false, oblique: false })
-       .fillColor('#FF7C00').text('Contrast Checker', { continued: false, link: null, underline: false, oblique: false });
+       .fillColor('#ffffff')
+       .text('Image Colour ', x, doc.y, { continued: true, link: null, underline: false, oblique: false, width: HEADER_TEXT_W })
+       .fillColor('#FF7C00')
+       .text('Contrast Checker', { continued: false, link: null, underline: false, oblique: false });
   });
   h1.end();
 
-  addParagraph(doc,
-    'Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. '
-    + 'Runs entirely in your browser — nothing is uploaded.',
-    { fontSize: 8.75, fillColor: '#63D2FF' }
-  );
-  doc.y = headerTop + 70 + 12;
+  // Tagline: write with explicit x to maintain inner padding (addParagraph resets to margin)
+  const taglineStruct = doc.struct('P');
+  doc.addStructure(taglineStruct);
+  taglineStruct.add(() => {
+    const x = doc.page.margins.left + HEADER_PAD_L;
+    doc.font('Regular').fontSize(8.75).fillColor('#63D2FF')
+       .text(
+         'Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. '
+         + 'Runs entirely in your browser — nothing is uploaded.',
+         x, doc.y,
+         { continued: false, link: null, underline: false, oblique: false, width: HEADER_TEXT_W }
+       );
+  });
+  taglineStruct.end();
+
+  doc.y = headerTop + HEADER_H + 12;
 
   // ── Report title + timestamp ──────────────────────────────────────────────
   doc.fillColor('#000000');
@@ -188,18 +238,35 @@ async function buildDocument(entries, timestamp) {
   doc.moveDown(0.5);
 
   // ── Disclaimer ────────────────────────────────────────────────────────────
+  const DISCL_H      = 56;
+  const DISCL_PAD_L  = 10;
+  const DISCL_TEXT_W = PAGE_W - DISCL_PAD_L * 2;  // 495pt
+
   const disclTop = doc.y;
   artifact(doc, (d) => {
-    d.rect(doc.page.margins.left, disclTop, PAGE_W, 40).fill('#fef3c7');
+    d.roundedRect(doc.page.margins.left, disclTop, PAGE_W, DISCL_H, 4).fill('#fef3c7');
   });
-  doc.y = disclTop + 6;
+  doc.y = disclTop + 10;  // top padding inside block
+
   const shortDisclaimer = DISCLAIMER_TEXT.replace(
     'This report is generated automatically to help speed up accessibility review. ', ''
   );
-  addParagraph(doc, `Automated analysis only — ${shortDisclaimer}`, {
-    fontSize: 9, fillColor: '#1a1a1a',
+  // "Automated analysis only" bold + regular continuation, with inner horizontal padding
+  const disclStruct = doc.struct('P');
+  doc.addStructure(disclStruct);
+  disclStruct.add(() => {
+    const x = doc.page.margins.left + DISCL_PAD_L;
+    doc.font('Medium').fontSize(9).fillColor('#1a1a1a')
+       .text('Automated analysis only', x, doc.y, {
+         continued: true, link: null, underline: false, oblique: false, width: DISCL_TEXT_W,
+       });
+    doc.font('Regular')
+       .text(` — ${shortDisclaimer}`, {
+         continued: false, link: null, underline: false, oblique: false,
+       });
   });
-  doc.y = disclTop + 40 + 12;
+  disclStruct.end();
+  doc.y = disclTop + DISCL_H + 12;
 
   // ── Summary table ─────────────────────────────────────────────────────────
   doc.fillColor('#000000');
@@ -231,7 +298,7 @@ async function buildDocument(entries, timestamp) {
     addHeading(doc, 2, entry.filename, { font: 'Medium', fontSize: 14 });
     doc.moveDown(0.3);
     if (entry.previewDataUrl) {
-      addFigure(doc, entry.previewDataUrl, `Preview of ${entry.filename}`, { width: 420 });
+      addFigure(doc, entry.previewDataUrl, `Preview of ${entry.filename}`, { fit: [PAGE_W, 480] });
     }
 
     // Result line — bold "Result:", coloured verdict word, plain detail
@@ -246,19 +313,56 @@ async function buildDocument(entries, timestamp) {
       { text: ` — ${entry.report.detail}`, font: 'Regular', fontSize: 10, color: '#000000' },
     ]);
 
-    // CVD simulations
+    // CVD simulations — 2-column grid matching the reference layout
     if (entry.cbSimAssets && entry.cbSimAssets.length) {
       doc.fillColor('#000000');
       addHeading(doc, 3, 'Colour-blindness simulation', { font: 'Medium', fontSize: 12 });
       doc.moveDown(0.3);
-      for (const asset of entry.cbSimAssets) {
-        addFigure(doc, asset.dataUrl,
-          `${asset.label} colour vision simulation — ${asset.note}`,
-          { width: 220 }
-        );
-        addParagraph(doc, `${asset.label} — ${asset.note}`, {
-          fontSize: 8, fillColor: '#4b5563', oblique: true,
-        });
+
+      const CVD_COLS    = 2;
+      const CVD_GAP     = 15;
+      const CVD_COL_W   = Math.floor((PAGE_W - CVD_GAP) / CVD_COLS);  // ~250pt per column
+      const CVD_IMG     = CVD_COL_W - 5;   // 245pt: max image dimension per cell
+      const CVD_LBL_H   = 20;              // height reserved for label text below image
+      const CVD_ROW_GAP = 12;              // gap between grid rows
+
+      for (let row = 0; row < Math.ceil(entry.cbSimAssets.length / CVD_COLS); row++) {
+        const rowTop = doc.y;
+
+        // Images row
+        for (let col = 0; col < CVD_COLS; col++) {
+          const idx   = row * CVD_COLS + col;
+          const asset = entry.cbSimAssets[idx];
+          if (!asset) continue;
+
+          const imgX = doc.page.margins.left + col * (CVD_COL_W + CVD_GAP);
+          // addFigure passes all options to doc.image(), so x/y/fit work fine
+          addFigure(doc, asset.dataUrl,
+            `${asset.label} colour vision simulation — ${asset.note}`,
+            { fit: [CVD_IMG, CVD_IMG], x: imgX, y: rowTop }
+          );
+        }
+
+        // Labels row — rendered at fixed y below the image row
+        const labelY = rowTop + CVD_IMG + 4;
+        for (let col = 0; col < CVD_COLS; col++) {
+          const idx   = row * CVD_COLS + col;
+          const asset = entry.cbSimAssets[idx];
+          if (!asset) continue;
+
+          const lblX      = doc.page.margins.left + col * (CVD_COL_W + CVD_GAP);
+          const lblStruct = doc.struct('P');
+          doc.addStructure(lblStruct);
+          lblStruct.add(() => {
+            doc.font('Regular').fontSize(8).fillColor('#4b5563')
+               .text(`${asset.label} — ${asset.note}`, lblX, labelY, {
+                 continued: false, link: null, underline: false, oblique: true, width: CVD_COL_W,
+               });
+          });
+          lblStruct.end();
+        }
+
+        doc.y = labelY + CVD_LBL_H + CVD_ROW_GAP;
       }
       doc.moveDown(0.5);
     }
