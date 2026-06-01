@@ -60,6 +60,19 @@ PDF/UA rule. PDFKit's *high-level* table API, `doc.table({ data, … })` with ce
 `{ type: 'TH', scope: 'column' }`, **does** emit correct `/Scope` attributes. Therefore all
 tagged tables must be authored through `doc.table()`, not hand-built from `struct()` calls.
 
+#### Finding 3 — `doc.table()` emits untagged content when called immediately after `artifact()`
+
+If `doc.table()` is called with no intervening `markStructureContent` call after an
+`artifact()` / `doc.endMarkedContent()` sequence, PDFKit 0.18.0 emits the table's content
+items without proper MCID tagging — veraPDF reports them as "Content is neither marked as
+Artifact nor tagged as real content" (clause 7.1, test 3). Adding at least one
+`addHeading()` or `addParagraph()` call between `artifact()` and `doc.table()` resolves
+the issue. The root cause is that `endMarkedContent()` leaves PDFKit in a state where the
+MCID counter for the next content item is not properly registered until a
+`markStructureContent` call re-establishes it. The wrapper's `artifact()` JSDoc documents
+this behaviour. The workaround is systematically applied in `src/export/pdf.js` (each
+artifact is followed by at least one tagged element before any table call).
+
 #### Other required settings (confirmed by the smoke test)
 
 - `lang: 'en'` in the constructor → `/Lang` in the catalog.
