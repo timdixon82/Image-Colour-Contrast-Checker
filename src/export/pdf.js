@@ -208,8 +208,8 @@ async function buildDocument(entries, timestamp) {
     defaultStyle: { fontSize: 10 },
     data: [
       [
-        { type: 'TH', scope: 'column', text: 'Image',  font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
-        { type: 'TH', scope: 'column', text: 'Result', font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
+        { type: 'TH', scope: 'column', text: 'Image',  font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
+        { type: 'TH', scope: 'column', text: 'Result', font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
       ],
       ...entries.map((e) => {
         const vs = e.report.flag ? 'FAIL' : (e.report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
@@ -296,16 +296,16 @@ async function buildDocument(entries, timestamp) {
         // 1.9.3 Checks table — Check column cells carry hyperlinks
         const checks    = pairChecks(pair);
         const tableRows = [[
-          { type: 'TH', scope: 'column', text: 'Check',         font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
-          { type: 'TH', scope: 'column', text: 'Value',         font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
-          { type: 'TH', scope: 'column', text: 'Status',        font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
-          { type: 'TH', scope: 'column', text: 'What it means', font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'Check',         font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'Value',         font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'Status',        font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'What it means', font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
         ]];
 
         for (const grp of CHECK_GROUPS) {
           tableRows.push([
             { type: 'TH', scope: 'row', text: grp.label,
-              font: { src: fonts.medium, size: 8 },
+              font: { src: 'Medium', size: 8 },
               backgroundColor: '#e5e7eb', color: '#1a1a1a' },
             { text: '' }, { text: '' }, { text: '' },
           ]);
