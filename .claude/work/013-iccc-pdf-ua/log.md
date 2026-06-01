@@ -263,3 +263,104 @@ None.
 
 Resume by asking Tim for his decision on Option A vs Option B for the check-info links in the checks table, then dispatch accordingly (Sean to implement if Option B, Carol for full test spec audit if Option A or after Option B is built).
 - [2026-06-01 22:01:56] subagent completed
+- [2026-06-01 22:15:22] subagent completed
+- [2026-06-01 22:22:05] subagent completed
+
+## [2026-06-01] Carol — full audit per 12-section test spec: FAIL
+
+Full audit of PDF generated on branch `feat/pdf-ua-rewrite` from dev server at `http://localhost:5173`.
+Test image: `test-contrast-image.png` (synthetic PIL image, 4 colour pairs, 2 FAIL AA).
+PDF: 205,039 bytes (200KB), valid PDF/1.5 header, 31 pages. Rendered at 150dpi with pdftoppm.
+
+**Result: FAIL — three defects found.**
+
+### Sections 1–4 (Header, Metadata, Disclaimer, Summary): PASS
+All header, metadata, disclaimer, and summary sections pass. Specific measurements:
+- Navy block: 88.3pt height, RGB(6,21,40), left edge 39.8pt — PASS
+- H1 white/orange: RGB(255,255,255)/RGB(255,124,0), padding 13.4pt — PASS
+- Tagline: RGB(97,206,250), inside navy block — PASS
+- Audit Report H2: white background, confirmed — PASS
+- Timestamp: RGB(75,85,99) grey — PASS
+- Generated-by link: navy RGB(6,21,40), underline 262px continuous — PASS
+- Disclaimer: RGB(254,243,199) amber, rounded corners (corner pixel white), padding 12.5pt — PASS
+- Bold "Automated analysis only": density ratio 2.15 — PASS
+- Summary header: RGB(243,244,246) grey — PASS
+- FAIL pill: RGB(254,226,226) background — PASS (text colour rendering at 8pt produces near-black glyphs; source colour #7f1d1d is correct)
+
+### Section 5 (Image section): PASS
+- H2 "test-contrast-image.png": at x=107 (51.4pt from page left) — PASS
+- Preview image: navy content visible y=763-1568, not blank — PASS
+- Result line: y=1572 > image bottom y=1568, no overlap, 4px gap — PASS
+
+### DEFECT 1 — Section 6 (CVD grid): FAIL
+- Section 6.1: "Colour-blindness simulation" heading at x=107 (51.4pt) — PASS (heading correct)
+- Section 6.2: ONLY 2 of 4 CVD images render (row 1, Deuteranopia+Protanopia visible at bottom of page 1). Row 2 (Tritanopia+Achromatopsia) images are NOT visible on any page. Pages 2-5 show only captions with no image content. — FAIL
+- Section 6.3: Row 1 shows correct 2-column layout (col1 left=40pt, col2 left=284.7pt), but row 2 images are missing entirely — PARTIAL/FAIL
+- Section 6.4: Captions on pages 2-5 are present (Deuteranopia/Protanopia at wrong x positions; Tritanopia/Achromatopsia captions visible) but without corresponding images — FAIL
+
+Root cause: `addFigure` uses absolute y positioning (`y: rowTop`). When `rowTop` is near the bottom of the page, the images overflow the page boundary and are not rendered on the next page. The label text uses a separate `doc.text(lblX, labelY, ...)` call which does page-wrap, producing captions on overflow pages without images.
+
+### DEFECT 2 — Sections 7 and 11 (Layout continuity after CVD grid): FAIL
+After the CVD grid overflow, the document cursor is at x=305pt (right-column position) instead of 40pt (left margin).
+
+Affected content for pair 1 only (page 6):
+- "Contrast results" H3 heading: x=637px = 305.8pt (expected ≤45pt) — FAIL
+- WCAG summary line: x=641 (307.7pt) — FAIL
+- Advanced checks summary line: x=641 (307.7pt) — FAIL
+- Badge strip (partial): right-side portion at x=568-699 — FAIL
+- WebAIM link: x=635 (305pt) — FAIL
+
+Pairs 2-4 are NOT affected (subsequent `addTable` calls reset `doc.x = margins.left` before the next pair's `writeParagraph`).
+
+Root cause: The `doc._x = doc.page.margins.left` reset in the CVD grid loop runs after each row, but when the image absolute positioning causes a page overflow, the cursor is left at the right-column x position. PDFKit's internal x state is not properly reset when flowing to a new page after absolute positioning.
+
+### Sections 8–11 (Per-pair blocks): MIXED
+- Section 8.1: All 4 pairs present — PASS
+- Section 9.1: Swatches visible at left margin — PASS (swatch uses explicit `x=doc.page.margins.left`)
+- Section 9.2: Badge strip at left margin for pairs 2-4; pair 1 partially misaligned — FAIL (from Defect 2)
+- Section 9.3: Examples text present (grey italic) — PASS
+- Section 9.4: WebAIM link: navy with underline, correct URL with fcolor/bcolor params — PASS (pairs 2-4 at left margin; pair 1 misaligned but link is correct)
+- Section 9.5: Vestibular link: underline confirmed, correct URL — PASS
+- Section 9.6: 4-column table structure: 110pt/80pt/80pt/225pt columns — PASS
+- Section 9.7: All 6 check-info links present with underlines (WCAG AA 83px, WCAG AAA 95px, APCA 48px, CVD contrast 110px, Vestibular 83px, Cognitive 78px). URLs confirmed: wcag-aa, wcag-aaa, apca, cvd, vestibular, cognitive. PDF has 24 total check-info annotations (4 pairs × 6 checks) — PASS
+- Section 9.8: Value column content present (contrast ratios, Lc values, saturation %) — PASS
+- Section 9.9: PASS/FAIL/SAFE pills with correct colours (RGB(220,252,231)/RGB(254,226,226)/RGB(220,252,231)) — PASS
+- Section 9.10: "What it means" column italic text present — PASS
+- Section 9.11: Clip image present with "Where this combination appears:" label, at left margin — PASS
+
+### DEFECT 3 — Table cell page overflow (Sections 8-9):
+Individual table cells are split across many pages (31 pages for 4 pairs is excessive). The `addTable` function does not implement row-level page breaks: it calculates `rowY` sequentially and individual rows (and even cells) overflow page boundaries. Page 7 shows "WCAG AAA" only; page 8 shows "4.03:1" and a FAIL pill at the page bottom — these are individual table cells. This causes severe readability issues.
+
+Not a criterion in the 12-section spec but is a significant functional defect.
+
+### Section 10 (Footer): PASS
+- Footer grey text: RGB(75,85,99) confirmed at y=1030-1085 on page 31 — PASS
+- Footer link "Image Colour Contrast Checker": navy underline (260px continuous at y=1089) — PASS
+- URL: confirmed `https://image-colour-contrast-checker.timdixon.net` in PDF (2 occurrences: page 1 + footer) — PASS
+
+### Section 12 (Link verification): PASS for URLs; FAIL for alignment of pair 1 links
+URL inventory (all 12 required link types present):
+- Site root: 2× (page 1 + footer) — PASS
+- WebAIM: 4× (one per pair, with correct fcolor/bcolor params) — PASS
+- Vestibular: 9× (pair count × lines wrapped, all same URL) — PASS
+- wcag-aa: 4× — PASS
+- wcag-aaa: 4× — PASS
+- apca: 4× — PASS
+- cvd: 4× — PASS
+- vestibular: 4× — PASS (in Contents field; 9 annotations due to text wrap)
+- cognitive: 4× — PASS
+All 6 check-info links have Contents fields set correctly per PDF/UA §7.18.1.
+
+Total link count: 39 URIs in PDF. Expected for 4 pairs: 2 + 8×4 = 34 (plus vestibular multi-line = 39 observed). Correct.
+
+### Console errors
+Zero non-baseline errors. All errors are pre-existing: ONNX data: URI CSP block, ONNX Runtime node assignment warnings. No PDF export errors.
+
+### Overall verdict: FAIL
+Three defects require rework by Sean:
+1. CVD row 2 images not rendering (absolute y positioning overflows page boundary)
+2. Layout cursor not reset to left margin after CVD grid overflow (pair 1 content misaligned at x=305pt)
+3. `addTable` does not implement row-level page breaks (cells split across many pages, 31 pages for 4 pairs)
+
+Defect 3 was not in the previous test spec but is observable. Defects 1 and 2 are failures of sections 6 and 7 respectively.
+- [2026-06-01 22:51:42] subagent completed

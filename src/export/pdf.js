@@ -309,6 +309,16 @@ async function buildDocument(entries, timestamp) {
       const CVD_ROW_GAP = 12;              // gap between grid rows
 
       for (let row = 0; row < Math.ceil(entry.cbSimAssets.length / CVD_COLS); row++) {
+        // Bug 1 fix: guard against row overflowing the page bottom.
+        // CVD images are placed at absolute y positions — PDFKit will clip
+        // them silently when rowTop + rowHeight exceeds the page bottom.
+        // Add a page break before the row if it would not fit.
+        const rowContentH = CVD_IMG + CVD_LBL_H;
+        const pageBottom  = doc.page.height - doc.page.margins.bottom;
+        if (doc.y + rowContentH > pageBottom) {
+          doc.addPage();
+          doc.y = doc.page.margins.top;
+        }
         const rowTop = doc.y;
 
         // Images row
@@ -347,6 +357,10 @@ async function buildDocument(entries, timestamp) {
         doc.y  = labelY + CVD_LBL_H + CVD_ROW_GAP;
         doc._x = doc.page.margins.left;  // reset cursor after absolute-positioned grid labels
       }
+      // Bug 2 fix: explicitly reset x to the left margin after the CVD grid.
+      // Absolute-positioned image rendering can leave doc.x stranded at the
+      // right-column position (e.g. 305pt) when a page overflow occurs mid-loop.
+      doc.x = doc.page.margins.left;
       doc.moveDown(0.5);
     }
 

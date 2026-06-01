@@ -532,6 +532,17 @@ export function addTable(doc, options) {
   for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
     const row      = rows[rowIdx];
     const rowH     = rowHeights[rowIdx];
+
+    // Bug 3 fix: page-break guard — if this row would overflow the page
+    // bottom, start a new page and reset rowY to the top margin.
+    // The struct tree (table.add(tr)) handles multi-page content correctly;
+    // only the y-coordinate placement needs resetting.
+    const pageBottom = doc.page.height - doc.page.margins.bottom;
+    if (rowY + rowH > pageBottom) {
+      doc.addPage();
+      rowY = doc.page.margins.top;
+    }
+
     const tr = doc.struct('TR');
     // eslint-disable-next-line no-new-wrappers
     tr.dictionary.data.ID = new String(`${tablePrefix}-r${rowIdx}`);
