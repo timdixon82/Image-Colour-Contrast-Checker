@@ -76,7 +76,7 @@ function normaliseImageSrc(src) {
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
-    return bytes;
+    return Buffer.from(bytes);
   }
   return Buffer.from(base64, 'base64');
 }
