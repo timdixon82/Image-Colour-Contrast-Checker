@@ -133,8 +133,8 @@ function writeParagraph(doc, spans) {
       if (span.color)    doc.fillColor(span.color);
       doc.text(span.text, {
         continued: !isLast,
-        link:      span.link    || null,
-        underline: !!span.link,
+        link:      null,
+        underline: false,
         oblique:   !!span.oblique,
       });
     });
@@ -206,6 +206,7 @@ async function buildDocument(entries, timestamp) {
   addHeading(doc, 2, 'Summary', { font: 'Medium', fontSize: 14 });
   doc.moveDown(0.3);
   doc.table({
+    structParent: doc,
     columnStyles: [{ width: PAGE_W - 100 }, { width: 100 }],
     defaultStyle: { fontSize: 10 },
     data: [
@@ -333,6 +334,7 @@ async function buildDocument(entries, timestamp) {
 
         doc.moveDown(0.3);
         doc.table({
+          structParent: doc,
           data: tableRows,
           columnStyles: [
             { width: 110 }, { width: 80 }, { width: 80 }, { width: 225 },

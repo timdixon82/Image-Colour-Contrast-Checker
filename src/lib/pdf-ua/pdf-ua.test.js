@@ -15,6 +15,7 @@ import { writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { deflateSync } from 'node:zlib';
 
 import {
   createDocument,
@@ -32,11 +33,45 @@ const FONTS      = {
   medium:  join(FONT_DIR, 'Roboto-Medium.ttf'),
 };
 
-// Minimal 10×10 red PNG for Figure tests
-const RED_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mP8/wcrAxIAAAP/Av8BVZoAAAAASUVORK5CYII=',
-  'base64'
-);
+/**
+ * Create a minimal valid N×N black RGB PNG as a Buffer.
+ * Uses Node.js zlib so the compressed data is correct — no hand-crafted bytes.
+ */
+function makeTestPng(size = 4) {
+  // CRC-32 lookup table
+  const crcTable = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    crcTable[n] = c;
+  }
+  const crc32 = (buf, start = 0, end = buf.length) => {
+    let c = 0xFFFFFFFF;
+    for (let i = start; i < end; i++) c = crcTable[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  };
+  const chunk = (type, data) => {
+    const t = Buffer.from(type, 'ascii');
+    const d = Buffer.isBuffer(data) ? data : Buffer.from(data);
+    const len = Buffer.alloc(4); len.writeUInt32BE(d.length);
+    const crcBuf = Buffer.concat([t, d]);
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(crcBuf));
+    return Buffer.concat([len, t, d, crc]);
+  };
+  // PNG signature
+  const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  // IHDR: size×size, 8-bit RGB (colour type 2)
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8; ihdr[9] = 2;
+  // IDAT: filter byte (0) + RGB black pixels per scanline
+  const scanline = Buffer.alloc(1 + size * 3, 0);
+  const rows = Buffer.concat(Array.from({ length: size }, () => scanline));
+  return Buffer.concat([sig, chunk('IHDR', ihdr), chunk('IDAT', deflateSync(rows)), chunk('IEND', Buffer.alloc(0))]);
+}
+
+// Minimal 4×4 black PNG for Figure tests — generated via deflateSync (guaranteed valid)
+const RED_PNG = makeTestPng(4);
 
 /**
  * Run verapdf against a Buffer. Returns the XML output string.
@@ -79,6 +114,7 @@ describe('pdf-ua wrapper — veraPDF PDF/UA-1 compliance', () => {
     // content. addParagraph() provides that call. See ADR 010, Finding 3.
     addParagraph(doc, 'Section heading.', { fontSize: 11 });
     doc.table({
+      structParent: doc,
       data: [
         [
           { type: 'TH', scope: 'column', text: 'Check'  },
