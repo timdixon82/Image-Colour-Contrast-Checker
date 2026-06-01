@@ -138,6 +138,15 @@ export function createDocument(options) {
     // PDFKit 0.18.0 (ADR 010, Finding 1). We claim PDF/UA via XMP below.
     // pdfVersion '1.5' is the value the smoke test validated against; keep it
     // unless a later veraPDF run confirms a different version still passes.
+    //
+    // `font: null` — suppress PDFKit's default Helvetica initialisation.
+    // Without this, PDFDocument() calls this.font('Helvetica') during
+    // construction, which immediately runs:
+    //   fs.readFileSync(__dirname + '/data/Helvetica.afm')
+    // In the browser __dirname is not defined (ReferenceError). We register
+    // Roboto TTF immediately after construction, so the Helvetica default
+    // is both wrong and unnecessary.
+    font: null,
     pdfVersion: '1.5',
     tagged: true,
     displayTitle: true,

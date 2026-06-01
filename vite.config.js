@@ -4,6 +4,17 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
   base: './',
+  // PDFKit (pdfkit.es.js) references __dirname in several places (AFM font
+  // loaders, ICC profile loader). These code paths are never reached in the
+  // browser — we use Roboto TTF Buffers, not AFM strings, and do not use
+  // subset — but they exist in the bundle and Rolldown sees them. Defining
+  // __dirname as '' prevents a ReferenceError if pdfkit ever evaluates them
+  // in a browser context. The empty string is safe: normalizeFilename() in
+  // virtual-fs.js strips it as a no-op, and the AFM/ICC paths are dead code.
+  define: {
+    __dirname: JSON.stringify(''),
+    __filename: JSON.stringify(''),
+  },
   plugins: [
     // Polyfill Node.js built-ins required by PDFKit for browser use.
     // We only include the five modules PDFKit actually needs.
@@ -21,7 +32,17 @@ export default defineConfig({
       enforce: 'pre',
       load(id) {
         if (id.includes('js-clipper')) {
-          return readFileSync(id, 'latin1');
+          // Strip Vite's cache-busting query string (e.g. ?v=abc123) before
+          // calling readFileSync — the query is not part of the filesystem path.
+          const content = readFileSync(id.split('?')[0], 'latin1');
+          // js-clipper is CommonJS (module.exports = ClipperLib). Shim a CJS
+          // environment and re-export as ESM default so that
+          // `import clipper from 'js-clipper'` works in browser ES modules.
+          return [
+            'const module = { exports: {} };',
+            content,
+            'export default module.exports;',
+          ].join('\n');
         }
       }
     }

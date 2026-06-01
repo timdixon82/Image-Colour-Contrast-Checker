@@ -70,13 +70,18 @@ async function loadFonts() {
     };
   } else {
     // Browser — fetch fonts from /fonts/ (served by Vite dev and production build).
+    // Pass the raw ArrayBuffer directly: pdfkit's PDFFontFactory.open has an
+    // `instanceof ArrayBuffer` branch that wraps it with `new Uint8Array(src)`
+    // internally before handing it to fontkit.  This avoids any cross-realm
+    // or polyfill issue with `src instanceof Uint8Array` failing on a Buffer
+    // or externally-constructed Uint8Array.
     const [regBuf, medBuf] = await Promise.all([
       fetch('/fonts/Roboto-Regular.ttf').then((r) => r.arrayBuffer()),
       fetch('/fonts/Roboto-Medium.ttf').then((r)  => r.arrayBuffer()),
     ]);
     _fonts = {
-      regular: Buffer.from(regBuf),
-      medium:  Buffer.from(medBuf),
+      regular: regBuf,
+      medium:  medBuf,
     };
   }
   return _fonts;
