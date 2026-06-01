@@ -55,6 +55,33 @@ import * as _blobStreamModule from 'blob-stream';
 const blobStream = _blobStreamModule.default ?? _blobStreamModule;
 
 /**
+ * If `src` is a data URL, decode it to a Uint8Array so PDFKit's image loader
+ * receives raw bytes rather than a data URL string — the browser build of
+ * PDFKit may not parse data URLs correctly.
+ * In Node.js (Vitest), data URLs are handled by PDFKit natively; this helper
+ * is a no-op for non-data-URL inputs.
+ *
+ * @param {string|Buffer|Uint8Array} src
+ * @returns {string|Buffer|Uint8Array}
+ */
+function normaliseImageSrc(src) {
+  if (typeof src !== 'string' || !src.startsWith('data:')) return src;
+  const commaIdx = src.indexOf(',');
+  if (commaIdx === -1) return src;
+  const base64 = src.slice(commaIdx + 1);
+  // Use atob if available (browser), otherwise fall back to Buffer (Node)
+  if (typeof atob === 'function') {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+  return Buffer.from(base64, 'base64');
+}
+
+/**
  * @typedef {Object} FontPaths
  * @property {string} regular  Absolute (Node) or bundler-resolved path to the regular TTF.
  * @property {string} [medium] Path to the medium/bold TTF. Optional but recommended.
@@ -154,7 +181,9 @@ export function createDocument(options) {
     size,
     margins: typeof margins === 'number'
       ? { top: margins, bottom: margins, left: margins, right: margins }
-      : { top: margins[0], right: margins[1], bottom: margins[2], left: margins[3] },
+      : Array.isArray(margins)
+        ? { top: margins[0], right: margins[1], bottom: margins[2], left: margins[3] }
+        : margins,
     info: {
       Title: title,
       ...(author ? { Author: author } : {}),
@@ -206,7 +235,7 @@ export function addHeading(doc, level, text, options = {}) {
     if (fontSize) doc.fontSize(fontSize);
     // fillColor must be set via doc.fillColor(), not as a text() option.
     if (fillColor) doc.fillColor(fillColor);
-    doc.text(text, textOptions);
+    doc.text(text, { continued: false, link: null, underline: false, oblique: false, ...textOptions });
   }));
   struct.end();
 }
@@ -232,7 +261,7 @@ export function addParagraph(doc, text, options = {}) {
     if (fontSize) doc.fontSize(fontSize);
     // fillColor must be set via doc.fillColor(), not as a text() option.
     if (fillColor) doc.fillColor(fillColor);
-    doc.text(text, textOptions);
+    doc.text(text, { continued: false, link: null, underline: false, oblique: false, ...textOptions });
   }));
   struct.end();
 }
@@ -272,7 +301,7 @@ export function addFigure(doc, imageData, altText, options = {}) {
   const struct = doc.struct('Figure', attributes);
   doc.addStructure(struct);
   struct.add(doc.markStructureContent('Figure', () => {
-    doc.image(imageData, imageOptions);
+    doc.image(normaliseImageSrc(imageData), imageOptions);
   }));
   struct.end();
 }

@@ -165,8 +165,8 @@ async function buildDocument(entries, timestamp) {
   doc.addStructure(h1);
   h1.add(doc.markStructureContent('H1', () => {
     doc.font('Medium').fontSize(18)
-       .fillColor('#ffffff').text('Image Colour ', { continued: true })
-       .fillColor('#FF7C00').text('Contrast Checker', { continued: false });
+       .fillColor('#ffffff').text('Image Colour ', { continued: true, link: null, underline: false, oblique: false })
+       .fillColor('#FF7C00').text('Contrast Checker', { continued: false, link: null, underline: false, oblique: false });
   }));
   h1.end();
 
