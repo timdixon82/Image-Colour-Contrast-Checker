@@ -64,8 +64,13 @@ All text must be in tagged structure elements. All decorative fills, borders, an
 - Assert PDF/UA-1 compliant
 
 #### 3. Visual test (Carol — Playwright)
-- Not automated in CI for this PR; Carol runs a manual Playwright session to compare the PDF output against a reference screenshot of the current pdfmake PDF
-- Output must be visually equivalent: same layout structure, same colours, same content order
+- Not automated in CI for this PR; Carol runs a manual Playwright session.
+- **Carol must render the actual PDF** using a real test image (not a synthetic 1×1 PNG) that produces multiple colour pairs and a full report. The test image must exercise: summary table rows, per-image heading + preview, CVD simulation grid, at least two per-pair blocks with the full checks table.
+- Carol must **open the downloaded PDF in the browser** (Chromium can render PDFs), screenshot each section, and compare each screenshot against the requirements in `tad-requirements.md` section by section.
+- Code review of `pdf.js` alone does NOT satisfy this check. A code review only confirms structure is present — it cannot catch positioning, spacing, or rendering defects.
+- Output must be visually equivalent: same layout structure, same colours, same content order.
+
+**Lesson recorded (2026-06-01):** The first visual check was a code review only (structural section inventory). It passed because all 10 sections were present in the code. It did not catch header text outside the coloured block, missing margins, tables with no spacing, or CVD simulations in single column instead of a grid. Always render.
 
 ## Dependencies to add
 
