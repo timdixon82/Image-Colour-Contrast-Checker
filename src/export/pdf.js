@@ -159,6 +159,7 @@ async function buildDocument(entries, timestamp) {
   artifact(doc, (d) => {
     d.rect(doc.page.margins.left, headerTop, PAGE_W, 70).fill('#061528');
   });
+  doc.y = headerTop + 10;
 
   const h1 = doc.struct('H1');
   doc.addStructure(h1);
@@ -174,7 +175,7 @@ async function buildDocument(entries, timestamp) {
     + 'Runs entirely in your browser — nothing is uploaded.',
     { fontSize: 8.75, fillColor: '#63D2FF' }
   );
-  doc.moveDown(0.5);
+  doc.y = headerTop + 70 + 12;
 
   // ── Report title + timestamp ──────────────────────────────────────────────
   doc.fillColor('#000000');
@@ -191,13 +192,14 @@ async function buildDocument(entries, timestamp) {
   artifact(doc, (d) => {
     d.rect(doc.page.margins.left, disclTop, PAGE_W, 40).fill('#fef3c7');
   });
+  doc.y = disclTop + 6;
   const shortDisclaimer = DISCLAIMER_TEXT.replace(
     'This report is generated automatically to help speed up accessibility review. ', ''
   );
   addParagraph(doc, `Automated analysis only — ${shortDisclaimer}`, {
     fontSize: 9, fillColor: '#1a1a1a',
   });
-  doc.moveDown(0.75);
+  doc.y = disclTop + 40 + 12;
 
   // ── Summary table ─────────────────────────────────────────────────────────
   doc.fillColor('#000000');

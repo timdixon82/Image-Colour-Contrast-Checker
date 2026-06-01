@@ -226,8 +226,8 @@ export function addHeading(doc, level, text, options = {}) {
   const tag = `H${lvl}`;
   const { font, fontSize, fillColor, ...textOptions } = options;
 
-  // The struct() + add(markStructureContent()) + end() form is the exact
-  // pattern the smoke test validated against veraPDF. Keep it.
+  // The struct() + add(closure) + end() form. PDFKit calls _contentForClosure()
+  // which opens BDC, runs the closure to render text, then closes EMC.
   const struct = doc.struct(tag);
   doc.addStructure(struct);
   struct.add(() => {
