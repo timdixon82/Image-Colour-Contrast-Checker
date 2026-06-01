@@ -14,9 +14,6 @@
  * @module export/pdf
  */
 
-import { fileURLToPath } from 'node:url';
-import { join }          from 'node:path';
-
 import {
   createDocument,
   addHeading,
@@ -46,13 +43,44 @@ import {
   CHECK_GROUPS,
 } from './checks.js';
 
-// ── Font paths ───────────────────────────────────────────────────────────────
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const FONT_DIR  = join(__dirname, '../../node_modules/pdfmake/fonts/Roboto');
-const FONTS     = {
-  regular: join(FONT_DIR, 'Roboto-Regular.ttf'),
-  medium:  join(FONT_DIR, 'Roboto-Medium.ttf'),
-};
+// ── Font loading ─────────────────────────────────────────────────────────────
+// Browser (Vite): fonts are served from /fonts/ by the dev server and
+//   copied to dist/fonts/ by the production build via scripts/copy-models.mjs.
+//   Loaded as ArrayBuffer via fetch() so no Node.js built-ins are needed.
+// Node.js (Vitest): node:url / node:path are available; fonts are read from
+//   node_modules/pdfmake/fonts/ by filesystem path.
+//   The dynamic import('node:url') branch is dead code in browser builds and
+//   tree-shaken by Vite/Rolldown before it can reach the bundler's module
+//   externalization check.
+
+let _fonts = null;
+
+async function loadFonts() {
+  if (_fonts) return _fonts;
+
+  if (typeof window === 'undefined') {
+    // Node.js / Vitest — use filesystem paths so PDFKit reads fonts directly.
+    const { fileURLToPath } = await import('node:url');
+    const { join }          = await import('node:path');
+    const __dirname = fileURLToPath(new URL('.', import.meta.url));
+    const fontDir   = join(__dirname, '../../node_modules/pdfmake/fonts/Roboto');
+    _fonts = {
+      regular: join(fontDir, 'Roboto-Regular.ttf'),
+      medium:  join(fontDir, 'Roboto-Medium.ttf'),
+    };
+  } else {
+    // Browser — fetch fonts from /fonts/ (served by Vite dev and production build).
+    const [regBuf, medBuf] = await Promise.all([
+      fetch('/fonts/Roboto-Regular.ttf').then((r) => r.arrayBuffer()),
+      fetch('/fonts/Roboto-Medium.ttf').then((r)  => r.arrayBuffer()),
+    ]);
+    _fonts = {
+      regular: Buffer.from(regBuf),
+      medium:  Buffer.from(medBuf),
+    };
+  }
+  return _fonts;
+}
 
 // Available page width for A4 with 40 pt left/right margins
 const PAGE_W = 515;
@@ -112,10 +140,11 @@ function writeParagraph(doc, spans) {
 
 // ── Document builder ─────────────────────────────────────────────────────────
 
-function buildDocument(entries, timestamp) {
-  const doc = createDocument({
-    title:   'Audit Report',
-    fonts:   FONTS,
+async function buildDocument(entries, timestamp) {
+  const fonts = await loadFonts();
+  const doc   = createDocument({
+    title: 'Audit Report',
+    fonts,
     lang:    'en',
     size:    'A4',
     margins: { top: 50, bottom: 50, left: 40, right: 40 },
@@ -174,8 +203,8 @@ function buildDocument(entries, timestamp) {
     defaultStyle: { fontSize: 10 },
     data: [
       [
-        { type: 'TH', scope: 'column', text: 'Image',  font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
-        { type: 'TH', scope: 'column', text: 'Result', font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
+        { type: 'TH', scope: 'column', text: 'Image',  font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
+        { type: 'TH', scope: 'column', text: 'Result', font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
       ],
       ...entries.map((e) => {
         const vs = e.report.flag ? 'FAIL' : (e.report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
@@ -262,16 +291,16 @@ function buildDocument(entries, timestamp) {
         // 1.9.3 Checks table — Check column cells carry hyperlinks
         const checks    = pairChecks(pair);
         const tableRows = [[
-          { type: 'TH', scope: 'column', text: 'Check',         font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
-          { type: 'TH', scope: 'column', text: 'Value',         font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
-          { type: 'TH', scope: 'column', text: 'Status',        font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
-          { type: 'TH', scope: 'column', text: 'What it means', font: { src: FONTS.medium }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'Check',         font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'Value',         font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'Status',        font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', text: 'What it means', font: { src: fonts.medium }, backgroundColor: '#f3f4f6' },
         ]];
 
         for (const grp of CHECK_GROUPS) {
           tableRows.push([
             { type: 'TH', scope: 'row', text: grp.label,
-              font: { src: FONTS.medium, size: 8 },
+              font: { src: fonts.medium, size: 8 },
               backgroundColor: '#e5e7eb', color: '#1a1a1a' },
             { text: '' }, { text: '' }, { text: '' },
           ]);
@@ -322,7 +351,7 @@ function buildDocument(entries, timestamp) {
 // ── Public API ───────────────────────────────────────────────────────────────
 
 export async function downloadPdf(entries, timestamp, filename) {
-  const blob = await toBlob(buildDocument(entries, timestamp));
+  const blob = await toBlob(await buildDocument(entries, timestamp));
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
@@ -332,5 +361,5 @@ export async function downloadPdf(entries, timestamp, filename) {
 }
 
 export async function buildPdf(entries, timestamp) {
-  return toBuffer(buildDocument(entries, timestamp));
+  return toBuffer(await buildDocument(entries, timestamp));
 }

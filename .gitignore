@@ -36,11 +36,12 @@ build/
 # Logs
 *.log
 
-# ICCC: models and ORT WASM binaries are auto-copied at install / build time
-# by scripts/copy-models.mjs. Do not commit the copies; they are regenerated
-# from devDependencies on every install.
+# ICCC: models, ORT WASM binaries, and Roboto fonts are auto-copied at
+# install / build time by scripts/copy-models.mjs. Do not commit the copies;
+# they are regenerated from devDependencies on every install.
 public/models/
 public/ort/
+public/fonts/
 
 # Claude Code local settings — local to this machine, not shared
 .claude/settings.local.json

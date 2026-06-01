@@ -27,10 +27,11 @@ export default [
     },
   },
   {
-    // The pdf-ua wrapper and all test files run in Node.js (Vitest) as well
-    // as in the browser (via Vite polyfills). Include Node globals so that
-    // Buffer, process, etc. are recognised without triggering no-undef.
-    files: ['src/lib/pdf-ua/**/*.js', 'src/**/*.test.js'],
+    // The pdf-ua wrapper, the PDF export module, and all test files run in
+    // Node.js (Vitest) as well as in the browser (via Vite polyfills). Include
+    // Node globals so that Buffer, process, etc. are recognised without
+    // triggering no-undef.
+    files: ['src/lib/pdf-ua/**/*.js', 'src/export/pdf.js', 'src/**/*.test.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

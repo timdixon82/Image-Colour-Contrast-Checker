@@ -7,7 +7,11 @@ export default defineConfig({
   plugins: [
     // Polyfill Node.js built-ins required by PDFKit for browser use.
     // We only include the five modules PDFKit actually needs.
-    nodePolyfills({ include: ['buffer', 'stream', 'zlib', 'util', 'process'] }),
+    // Restrict to JS/TS files so the inject plugin does not warn on CSS imports.
+    nodePolyfills({
+      include: ['buffer', 'stream', 'zlib', 'util', 'process'],
+      overrides: { fs: false },
+    }),
     {
       // js-clipper/clipper.js contains a Latin-1 byte (0xb9, superscript-1 in a
       // comment) that Rolldown (Vite 6+) rejects as non-UTF-8. Rollup 5 was
@@ -25,11 +29,12 @@ export default defineConfig({
   optimizeDeps: {
     // onnxruntime-web: must not be pre-bundled (WASM / worker constraints).
     // js-clipper: contains a Latin-1 byte that Rolldown rejects; handled by the
-    //   fix-non-utf8-deps plugin during build but excluded here so the pre-bundle
-    //   step never touches it.
-    // blob-stream: CJS module used by the PDFKit wrapper; exclude from pre-bundling
-    //   so the fix-non-utf8-deps plugin does not trigger a re-scan via its include path.
-    exclude: ['onnxruntime-web', 'js-clipper', 'blob-stream'],
+    //   fix-non-utf8-deps plugin during build but excluded from pre-bundling so
+    //   Rolldown never touches it during dep optimisation.
+    exclude: ['onnxruntime-web', 'js-clipper'],
+    // blob-stream is a CJS module; include it so Vite transforms it to ESM,
+    // making the default import work in the browser.
+    include: ['blob-stream'],
   },
   worker: {
     format: 'es'

@@ -48,7 +48,11 @@
  */
 
 import PDFDocument from 'pdfkit';
-import blobStream from 'blob-stream';
+// blob-stream is a CommonJS module. Use namespace import + default fallback
+// so it works whether Vite transforms it to ESM (default on .default) or
+// leaves it as CJS interop (default on the module itself).
+import * as _blobStreamModule from 'blob-stream';
+const blobStream = _blobStreamModule.default ?? _blobStreamModule;
 
 /**
  * @typedef {Object} FontPaths
