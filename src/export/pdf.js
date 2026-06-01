@@ -20,6 +20,7 @@ import {
   addParagraph,
   addFigure,
   addLink,
+  addTable,
   artifact,
   toBlob,
   toBuffer,
@@ -392,36 +393,36 @@ async function buildDocument(entries, timestamp) {
           { text: VESTIBULAR_CHECKER_FULL_LABEL,     fontSize: 9, color: '#061528', link: VESTIBULAR_CHECKER_URL },
         ]);
 
-        // 1.9.3 Checks table — Check column cells carry hyperlinks
-        const checks    = pairChecks(pair);
-        const tableRows = [[
-          { type: 'TH', scope: 'column', text: 'Check',         font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
-          { type: 'TH', scope: 'column', text: 'Value',         font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
-          { type: 'TH', scope: 'column', text: 'Status',        font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
-          { type: 'TH', scope: 'column', text: 'What it means', font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
+        // 1.9.3 Checks table — Check column cells carry hyperlinks (requires addTable)
+        const checks     = pairChecks(pair);
+        const tableData  = [[
+          { type: 'TH', scope: 'column', content: 'Check',         font: 'Medium', fontSize: 9, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', content: 'Value',         font: 'Medium', fontSize: 9, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', content: 'Status',        font: 'Medium', fontSize: 9, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', content: 'What it means', font: 'Medium', fontSize: 9, backgroundColor: '#f3f4f6' },
         ]];
 
         for (const grp of CHECK_GROUPS) {
-          tableRows.push([
-            { type: 'TH', scope: 'row', text: grp.label,
-              font: { src: 'Medium', size: 8 },
+          tableData.push([
+            { type: 'TH', scope: 'row', content: grp.label,
+              font: 'Medium', fontSize: 8,
               backgroundColor: '#e5e7eb', color: '#1a1a1a' },
-            { text: '' }, { text: '' }, { text: '' },
+            { content: '' }, { content: '' }, { content: '' },
           ]);
           for (const c of checks.filter((ch) => ch.group === grp.id)) {
-            tableRows.push([
-              { text: c.label, color: '#061528', link: checkInfoUrl(c.id), underline: true },
-              { text: c.value || '—' },
-              pillCell(c.status),
-              { text: c.detail, oblique: true },
+            const pill = pillCell(c.status);
+            tableData.push([
+              { content: [{ text: c.label, link: checkInfoUrl(c.id), color: '#061528', underline: true }] },
+              { content: c.value || '—' },
+              { content: pill.text, backgroundColor: pill.backgroundColor, color: pill.color, fontSize: 8 },
+              { content: c.detail, oblique: true },
             ]);
           }
         }
 
         doc.moveDown(0.3);
-        doc.table({
-          structParent: doc,
-          data: tableRows,
+        addTable(doc, {
+          rows: tableData,
           columnStyles: [
             { width: 110 }, { width: 80 }, { width: 80 }, { width: 225 },
           ],

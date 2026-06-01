@@ -13,9 +13,10 @@
  *          that veraPDF rejects. We omit it and inject the `pdfuaid:part`
  *          XMP claim manually instead.
  *       2. The low-level `doc.struct('TH', { scope })` API silently drops the
- *          `Scope`/`Headers` attributes. Tables MUST be authored with the
- *          high-level `doc.table()` API (see "Tables" note below) — this module
- *          deliberately does NOT wrap tables.
+ *          `Scope`/`Headers` attributes when called directly. `addTable` works
+ *          around this by injecting Scope/Headers attributes manually via the
+ *          struct's attribute dictionary (the same approach PDFKit's own
+ *          `doc.table()` uses internally).
  *
  * Dependencies (only these two — keep it portable):
  *   - pdfkit       0.18.0
@@ -26,23 +27,25 @@
  * ─────────────────────────────────────────────────────────────────────────
  * Tables (read this before authoring a table)
  * ─────────────────────────────────────────────────────────────────────────
- * This wrapper provides NO `addTable` helper. PDFKit's own high-level table
- * API already emits correct TH / Scope / Headers tagging, which is the one
- * thing PDF/UA needs and the low-level `struct()` API gets wrong. Call it
- * directly on the document returned by `createDocument()`:
+ * Use `addTable` from this module for any table that needs rich cell content
+ * (inline hyperlinks, mixed font spans). `addTable` manually injects the
+ * Table/TR/TH/TD structure tree with correct Scope and Headers attributes,
+ * and wraps linked spans in `Link` child structs (PDF/UA-1 §7.18).
+ *
+ * For simple tables that contain only plain text and require no inline links,
+ * PDFKit's own `doc.table()` API is also acceptable and slightly simpler:
  *
  *     doc.table({
- *       // first row is the header row
  *       data: [
- *         [ { type: 'TH', scope: 'column', value: 'Image' },
- *           { type: 'TH', scope: 'column', value: 'Result' } ],
+ *         [ { type: 'TH', scope: 'column', text: 'Image' },
+ *           { type: 'TH', scope: 'column', text: 'Result' } ],
  *         [ 'logo.png', 'PASS' ],
  *       ],
  *     });
  *
- * Use `type: 'TH'` and `scope: 'column'` (or `'row'`) on every header cell.
- * Do NOT build tables from `doc.struct('Table'…)` — the Scope attribute will
- * be dropped and veraPDF will fail the document. See ADR 010, Finding 2.
+ * Do NOT build tables from raw `doc.struct('Table'…)` calls — the Scope /
+ * Headers attributes will be silently dropped and veraPDF will fail the
+ * document. Always use `addTable` or `doc.table()`. See ADR 010, Finding 2.
  *
  * @module lib/pdf-ua
  */
@@ -307,14 +310,42 @@ export function addFigure(doc, imageData, altText, options = {}) {
 }
 
 /**
+ * Temporarily override `doc.link` to inject visible `text` as the annotation
+ * `Contents` value, then run `fn`, then restore the original `doc.link`.
+ *
+ * PDFKit 0.18.0 bug (§7.18.1): in `tagged` mode, `doc.link()` always sets
+ * `Contents` to an empty string. veraPDF rejects empty Contents on link
+ * annotations. This wrapper injects the correct string for the duration of
+ * one `doc.text()` call without mutating any persistent state.
+ *
+ * PDFKit serialises `new String(...)` (a String object) as a PDF string
+ * literal `"(...)"`. A plain primitive string would be serialised as a PDF
+ * name `/...`, which is invalid for `/Contents` (veraPDF parse error).
+ *
+ * @param {import('pdfkit')} doc
+ * @param {string} text  The visible link text — used verbatim as `/Contents`.
+ * @param {() => void} fn  Called while `doc.link` is patched.
+ * @returns {void}
+ */
+function _withLinkContents(doc, text, fn) {
+  const _orig = doc.link.bind(doc);
+  doc.link = (x, y, w, h, u, opts = {}) => {
+    // eslint-disable-next-line no-new-wrappers
+    opts.Contents = new String(text);
+    return _orig(x, y, w, h, u, opts);
+  };
+  try { fn(); }
+  finally { doc.link = _orig; }
+}
+
+/**
  * Add a hyperlink span inside an existing parent structure element.
  *
  * PDF/UA-1 §7.18 requires every link annotation to be wrapped in a `Link`
  * structure element with a non-empty `Contents` key on the annotation.
  * PDFKit 0.18.0 bug: when `tagged` mode is active, `doc.link()` sets
  * `Contents` to an empty string, violating §7.18.1. This helper works around
- * that by temporarily overriding `doc.link` to inject the visible link text
- * as `Contents` before creating the annotation.
+ * that via `_withLinkContents`.
  *
  * Usage: call from inside a parent structure element's content, e.g. a `P`.
  *
@@ -344,25 +375,322 @@ export function addLink(doc, parentStruct, text, url, options = {}) {
     if (font)     doc.font(font);
     if (fontSize) doc.fontSize(fontSize);
     if (color)    doc.fillColor(color);
-
-    // PDFKit 0.18.0 bug workaround (§7.18.1): override doc.link() for the
-    // duration of this text call to inject the visible text as Contents.
-    const _origLink = doc.link.bind(doc);
-    doc.link = (x, y, w, h, u, opts = {}) => {
-      // PDFKit serialises new String() as a PDF string literal "(...)";
-      // a primitive string would be serialised as a PDF name "/..." which
-      // is invalid for the /Contents annotation key (veraPDF parse error).
-      // eslint-disable-next-line no-new-wrappers
-      opts.Contents = new String(text);
-      return _origLink(x, y, w, h, u, opts);
-    };
-    try {
+    _withLinkContents(doc, text, () => {
       doc.text(text, { continued, link: url, underline: true, oblique: false });
-    } finally {
-      doc.link = _origLink;
-    }
+    });
   });
   linkEl.end();
+}
+
+/**
+ * One styled run of text within a table cell. A span with a `link` is rendered
+ * as a PDF/UA `Link` structure element wrapping its annotation (clause 7.18),
+ * with the span's visible `text` injected as the annotation `Contents`.
+ *
+ * @typedef {Object} TableSpan
+ * @property {string}  text              Visible text of this run (also the Link Contents/Alt when linked).
+ * @property {string}  [link]            Destination URL. Present → rendered as a Link struct + annotation.
+ * @property {string}  [color]           Fill colour (hex or CSS name) for this run.
+ * @property {string}  [font]            Registered font name to select for this run.
+ * @property {number}  [fontSize]        Font size in points for this run.
+ * @property {boolean} [underline=false] Underline this run. Linked runs default to underlined.
+ * @property {boolean} [italic=false]    Render this run obliqued/italic.
+ */
+
+/**
+ * One table cell. `content` is either a plain string (single default-styled
+ * run) or an array of {@link TableSpan} for mixed styling / inline links.
+ *
+ * @typedef {Object} TableCell
+ * @property {'TH'|'TD'}             [type='TD']
+ * @property {'column'|'row'|'both'} [scope]      Required when type is 'TH'.
+ * @property {string|TableSpan[]}    content
+ * @property {string}  [backgroundColor]
+ * @property {string}  [color]
+ * @property {string}  [font]
+ * @property {number}  [fontSize]
+ * @property {'left'|'center'|'right'} [align='left']
+ */
+
+/**
+ * @typedef {Object} TableColumnStyle
+ * @property {number} [width]  Fixed column width in points.
+ */
+
+/**
+ * @typedef {Object} AddTableOptions
+ * @property {TableCell[][]} rows
+ * @property {TableColumnStyle[]} [columnStyles]
+ * @property {string}  [borderColor='#cccccc']
+ * @property {number}  [borderWidth=0.5]
+ * @property {number}  [padding=4]
+ */
+
+/**
+ * Add a PDF/UA-1 compliant table with optional inline hyperlinks in cells.
+ *
+ * PDFKit's native `doc.table()` renders each cell with a single hard-coded
+ * `doc.text(cell.text)` call and provides no per-cell renderer hook — so a
+ * cell cannot contain a `Link` structure element. Any link annotation added
+ * inside a `doc.table()` cell is untagged and fails veraPDF clause 7.18.
+ *
+ * `addTable` authors the full Table/TR/TH/TD structure tree using the
+ * low-level struct API (mirroring what PDFKit's `accessibleCell` function does
+ * internally), and wraps linked spans in `Link` child structs using the same
+ * `_withLinkContents` trick as `addLink`.
+ *
+ * Scope and Headers attributes are injected directly into the struct's
+ * attribute dictionary (as a `doc.ref()` object), bypassing the PDFKit
+ * 0.18.0 bug where `doc.struct('TH', { scope })` silently drops those values.
+ *
+ * @param {import('pdfkit')} doc
+ * @param {AddTableOptions} options
+ * @returns {void}
+ */
+export function addTable(doc, options) {
+  const {
+    rows = [],
+    columnStyles = [],
+    borderColor = '#cccccc',
+    borderWidth = 0.5,
+    padding = 4,
+  } = options || {};
+
+  const margins     = doc.page.margins;
+  const contentWidth = doc.page.width - margins.left - margins.right;
+
+  // ── Resolve column widths ─────────────────────────────────────────────────
+  const numCols   = rows.length > 0 ? rows[0].length : 0;
+  let   remaining = contentWidth;
+  const colWidths = [];
+
+  // First pass: claim fixed widths
+  for (let c = 0; c < numCols; c++) {
+    const w = columnStyles[c] && columnStyles[c].width != null ? columnStyles[c].width : null;
+    if (w != null) {
+      colWidths[c] = w;
+      remaining -= w;
+    }
+  }
+  // Second pass: distribute remaining width equally among unspecified columns
+  const unspecified = colWidths.filter((w) => w == null).length;  // counts undefined slots
+  const freeW = unspecified > 0 ? remaining / unspecified : 0;
+  for (let c = 0; c < numCols; c++) {
+    if (colWidths[c] == null) colWidths[c] = freeW;
+  }
+
+  // ── Measure row heights ────────────────────────────────────────────────────
+  const rowHeights = rows.map((row) => {
+    let maxCellH = 0;
+    row.forEach((cell, colIdx) => {
+      const colW    = colWidths[colIdx] || 60;
+      const textW   = colW - 2 * padding;
+      const fs      = cell.fontSize || 9;
+      const content = cell.content;
+      doc.fontSize(fs);
+      if (cell.font) doc.font(cell.font);
+
+      let cellTextH;
+      if (typeof content === 'string') {
+        cellTextH = content
+          ? doc.heightOfString(content, { width: textW })
+          : doc.currentLineHeight();
+      } else if (Array.isArray(content) && content.length > 0) {
+        // For rich spans take the max height across spans
+        cellTextH = content.reduce((acc, span) => {
+          if (span.font)     doc.font(span.font);
+          if (span.fontSize) doc.fontSize(span.fontSize);
+          const h = span.text
+            ? doc.heightOfString(span.text, { width: textW })
+            : doc.currentLineHeight();
+          return Math.max(acc, h);
+        }, 0);
+      } else {
+        cellTextH = doc.currentLineHeight();
+      }
+
+      // Reset to default font/size after measurement
+      doc.font('Regular').fontSize(9);
+      maxCellH = Math.max(maxCellH, cellTextH);
+    });
+    return maxCellH + 2 * padding;
+  });
+
+  // ── Table structure ────────────────────────────────────────────────────────
+  const tablePrefix = `t${(Date.now() % 1e6)}`;
+  const table = doc.struct('Table');
+  doc.addStructure(table);
+
+  // Lookups for Headers attribute
+  // headerColLookup[colIdx] = String id of the column TH
+  // headerRowLookup[rowIdx] = String id of the row TH
+  const headerColLookup = {};
+  const headerRowLookup = {};
+
+  let rowY = doc.y;
+
+  for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+    const row      = rows[rowIdx];
+    const rowH     = rowHeights[rowIdx];
+    const tr = doc.struct('TR');
+    // eslint-disable-next-line no-new-wrappers
+    tr.dictionary.data.ID = new String(`${tablePrefix}-r${rowIdx}`);
+    table.add(tr);
+
+    let colX = margins.left;
+
+    for (let colIdx = 0; colIdx < row.length; colIdx++) {
+      const cell    = row[colIdx];
+      const colW    = colWidths[colIdx] || 60;
+      const content = cell.content != null ? cell.content : '';
+      const isHeader = cell.type === 'TH';
+
+      // ── Cell struct ────────────────────────────────────────────────────
+      const cellStruct = doc.struct(isHeader ? 'TH' : 'TD');
+      // eslint-disable-next-line no-new-wrappers
+      const cellId = new String(`${tablePrefix}-r${rowIdx}-c${colIdx}`);
+      cellStruct.dictionary.data.ID = cellId;
+      tr.add(cellStruct);
+
+      // ── Attributes (Scope, Headers, BackgroundColor) ───────────────────
+      const attrs = { O: 'Table' };
+      if (isHeader) {
+        const scopeMap = { column: 'Column', row: 'Row', both: 'Both' };
+        attrs.Scope = scopeMap[cell.scope] || 'Column';
+      } else {
+        // Build Headers array from col + row lookups
+        const headers = [];
+        if (headerColLookup[colIdx])  headers.push(headerColLookup[colIdx]);
+        if (headerRowLookup[rowIdx])  headers.push(headerRowLookup[rowIdx]);
+        if (headers.length) attrs.Headers = headers;
+      }
+      if (cell.backgroundColor) {
+        attrs.BackgroundColor = doc._normalizeColor(cell.backgroundColor);
+      }
+      const attrRef = doc.ref(attrs);
+      cellStruct.dictionary.data.A = attrRef;
+
+      // Store TH ids for downstream cells' Headers attribute
+      if (isHeader) {
+        if (cell.scope === 'column' || cell.scope === 'both') {
+          headerColLookup[colIdx] = cellId;
+        }
+        if (cell.scope === 'row' || cell.scope === 'both') {
+          headerRowLookup[rowIdx] = cellId;
+        }
+      }
+
+      // ── Cell decoration: background fill + border (Artifact) ──────────
+      const cellX = colX;
+      const cellY = rowY;
+      artifact(doc, (d) => {
+        if (cell.backgroundColor) {
+          d.save().fillColor(cell.backgroundColor).rect(cellX, cellY, colW, rowH).fill().restore();
+        }
+        d.save().lineWidth(borderWidth).strokeColor(borderColor)
+          .rect(cellX, cellY, colW, rowH).stroke().restore();
+      });
+
+      // ── Cell content closure ───────────────────────────────────────────
+      const textX = cellX + padding;
+      const textY = cellY + padding;
+      const textW = colW - 2 * padding;
+
+      if (typeof content === 'string') {
+        // Plain cell — single text run
+        cellStruct.add(() => {
+          doc.font(cell.font || 'Regular');
+          doc.fontSize(cell.fontSize || 9);
+          doc.fillColor(cell.color || '#000000');
+          doc.text(content || ' ', textX, textY, {
+            width: textW,
+            align: cell.align || 'left',
+            link: null, underline: false, oblique: !!cell.oblique, continued: false,
+          });
+        });
+      } else if (Array.isArray(content) && content.length > 0) {
+        // Rich spans — may include Link child structs
+        let firstSpan = true;
+        for (let s = 0; s < content.length; s++) {
+          const span    = content[s];
+          const isLast  = s === content.length - 1;
+          const continued = !isLast;
+
+          if (span.link) {
+            // Linked span — Link child struct wrapping the annotation
+            const linkEl = doc.struct('Link', { alt: span.text });
+            cellStruct.add(linkEl);
+            const capturedFirst = firstSpan;
+            linkEl.add(() => {
+              doc.font(span.font || cell.font || 'Regular');
+              doc.fontSize(span.fontSize || cell.fontSize || 9);
+              doc.fillColor(span.color || cell.color || '#000000');
+              _withLinkContents(doc, span.text, () => {
+                if (capturedFirst) {
+                  doc.text(span.text, textX, textY, {
+                    width: textW, continued,
+                    link: span.link,
+                    underline: span.underline !== false,
+                    oblique: !!span.italic,
+                  });
+                } else {
+                  doc.text(span.text, {
+                    continued,
+                    link: span.link,
+                    underline: span.underline !== false,
+                    oblique: !!span.italic,
+                  });
+                }
+              });
+            });
+            linkEl.end();
+          } else {
+            // Plain span
+            const capturedFirst = firstSpan;
+            cellStruct.add(() => {
+              doc.font(span.font || cell.font || 'Regular');
+              doc.fontSize(span.fontSize || cell.fontSize || 9);
+              doc.fillColor(span.color || cell.color || '#000000');
+              if (capturedFirst) {
+                doc.text(span.text || ' ', textX, textY, {
+                  width: textW, continued,
+                  link: null, underline: !!span.underline, oblique: !!span.italic,
+                });
+              } else {
+                doc.text(span.text || ' ', {
+                  continued,
+                  link: null, underline: !!span.underline, oblique: !!span.italic,
+                });
+              }
+            });
+          }
+          firstSpan = false;
+        }
+      } else {
+        // Empty content fallback
+        cellStruct.add(() => {
+          doc.font('Regular').fontSize(9).fillColor('#000000');
+          doc.text(' ', textX, textY, {
+            width: textW, link: null, underline: false, oblique: false, continued: false,
+          });
+        });
+      }
+
+      cellStruct.end();
+      attrRef.end();
+
+      colX += colW;
+    }
+
+    tr.end();
+    rowY += rowH;
+  }
+
+  table.end();
+
+  // Advance document cursor below the table
+  doc.x = margins.left;
+  doc.y = rowY;
 }
 
 /**

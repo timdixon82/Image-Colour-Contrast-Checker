@@ -23,6 +23,7 @@ import {
   addParagraph,
   addFigure,
   addLink,
+  addTable,
   artifact,
   toBuffer,
 } from './index.js';
@@ -146,6 +147,79 @@ describe('pdf-ua wrapper — veraPDF PDF/UA-1 compliance', () => {
     });
     addLink(doc, pLink, 'Example link', 'https://example.com', { fontSize: 10, color: '#000000', continued: false });
     pLink.end();
+
+    const buffer = await toBuffer(doc);
+
+    // Basic structural checks
+    expect(buffer.length).toBeGreaterThan(1000);
+    expect(buffer.slice(0, 4).toString()).toBe('%PDF');
+
+    // veraPDF PDF/UA-1 validation
+    const xml = verapdfXml(buffer);
+    expect(xml).toContain('isCompliant="true"');
+    expect(xml).toContain('profileName="PDF/UA-1 validation profile"');
+
+    const failedMatch = xml.match(/failedChecks="(\d+)"/);
+    if (failedMatch) {
+      expect(parseInt(failedMatch[1], 10)).toBe(0);
+    }
+  });
+});
+
+// ── addTable — veraPDF compliance ────────────────────────────────────────────
+
+describe('pdf-ua wrapper — addTable veraPDF PDF/UA-1 compliance', () => {
+  it('produces a compliant table with TH headers, row-scope TH, plain TD, linked TD, and mixed spans', async () => {
+    const doc = createDocument({ title: 'addTable Test', fonts: FONTS });
+
+    addHeading(doc, 1, 'Table Test', { fontSize: 16 });
+
+    addTable(doc, {
+      rows: [
+        // Header row with column-scope TH cells
+        [
+          { type: 'TH', scope: 'column', content: 'Check',   font: 'Medium', backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', content: 'Value',   font: 'Medium', backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', content: 'Status',  font: 'Medium', backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', content: 'Details', font: 'Medium', backgroundColor: '#f3f4f6' },
+        ],
+        // Body row with a row-scope TH (group header)
+        [
+          { type: 'TH', scope: 'row', content: 'WCAG Checks', font: 'Medium', backgroundColor: '#e5e7eb' },
+          { content: '' },
+          { content: '' },
+          { content: '' },
+        ],
+        // Plain TD row
+        [
+          { content: 'WCAG AAA' },
+          { content: '7.5:1' },
+          { content: 'PASS', backgroundColor: '#dcfce7', color: '#14532d' },
+          { content: 'Passes AAA minimum.' },
+        ],
+        // Row with a linked TD cell
+        [
+          { content: [{ text: 'WCAG AA', link: 'https://example.com', color: '#061528', underline: true }] },
+          { content: '4.8:1' },
+          { content: 'PASS', backgroundColor: '#dcfce7', color: '#14532d' },
+          { content: 'Meets AA.' },
+        ],
+        // Row with mixed spans (one plain, one linked)
+        [
+          { content: [
+            { text: 'See: ' },
+            { text: 'WCAG AA', link: 'https://example.com/wcag', color: '#061528', underline: true },
+          ]},
+          { content: '3.1:1' },
+          { content: 'FAIL', backgroundColor: '#fee2e2', color: '#7f1d1d' },
+          { content: 'Below AA.' },
+        ],
+      ],
+      columnStyles: [{ width: 110 }, { width: 80 }, { width: 80 }, { width: 225 }],
+      borderColor: '#cccccc',
+      borderWidth: 0.5,
+      padding: 4,
+    });
 
     const buffer = await toBuffer(doc);
 

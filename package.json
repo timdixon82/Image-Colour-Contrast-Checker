@@ -1,7 +1,7 @@
 {
   "name": "image-colour-contrast-checker",
   "private": true,
-  "version": "0.4.14",
+  "version": "0.4.15",
   "type": "module",
   "description": "Client-side WCAG colour-contrast auditor for images. Runs OCR + contrast analysis entirely in the browser.",
   "license": "MIT",
