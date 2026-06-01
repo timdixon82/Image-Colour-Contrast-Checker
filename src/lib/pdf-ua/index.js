@@ -230,13 +230,13 @@ export function addHeading(doc, level, text, options = {}) {
   // pattern the smoke test validated against veraPDF. Keep it.
   const struct = doc.struct(tag);
   doc.addStructure(struct);
-  struct.add(doc.markStructureContent(tag, () => {
+  struct.add(() => {
     if (font) doc.font(font);
     if (fontSize) doc.fontSize(fontSize);
     // fillColor must be set via doc.fillColor(), not as a text() option.
     if (fillColor) doc.fillColor(fillColor);
     doc.text(text, { continued: false, link: null, underline: false, oblique: false, ...textOptions });
-  }));
+  });
   struct.end();
 }
 
@@ -256,13 +256,13 @@ export function addParagraph(doc, text, options = {}) {
 
   const struct = doc.struct('P');
   doc.addStructure(struct);
-  struct.add(doc.markStructureContent('P', () => {
+  struct.add(() => {
     if (font) doc.font(font);
     if (fontSize) doc.fontSize(fontSize);
     // fillColor must be set via doc.fillColor(), not as a text() option.
     if (fillColor) doc.fillColor(fillColor);
     doc.text(text, { continued: false, link: null, underline: false, oblique: false, ...textOptions });
-  }));
+  });
   struct.end();
 }
 
@@ -300,11 +300,9 @@ export function addFigure(doc, imageData, altText, options = {}) {
 
   const struct = doc.struct('Figure', attributes);
   doc.addStructure(struct);
-  struct.add(doc.markStructureContent('Figure', () => {
-    // Pass link: null explicitly — mirrors the fix applied to addParagraph/addHeading
-    // where explicit options are required for content to render in the browser build.
+  struct.add(() => {
     doc.image(normaliseImageSrc(imageData), { link: null, ...imageOptions });
-  }));
+  });
   struct.end();
 }
 
@@ -322,7 +320,7 @@ export function addFigure(doc, imageData, altText, options = {}) {
  * be real structure elements (use addParagraph / addFigure).
  *
  * PDFKit 0.18.0 quirk: calling `doc.table()` immediately after `artifact()`
- * (with no `markStructureContent` in between) causes the table's content to be
+ * (with no `addHeading()` or `addParagraph()` call in between) causes the table's content to be
  * emitted without proper tagging — veraPDF will flag it as untagged content.
  * Always place at least one `addHeading()` or `addParagraph()` call between an
  * `artifact()` and a subsequent `doc.table()`. See ADR 010, Finding 3.

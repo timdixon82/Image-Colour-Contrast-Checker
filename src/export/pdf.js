@@ -125,7 +125,7 @@ function pillCell(status) {
 function writeParagraph(doc, spans) {
   const struct = doc.struct('P');
   doc.addStructure(struct);
-  struct.add(doc.markStructureContent('P', () => {
+  struct.add(() => {
     spans.forEach((span, i) => {
       const isLast = i === spans.length - 1;
       if (span.font)     doc.font(span.font);
@@ -138,7 +138,7 @@ function writeParagraph(doc, spans) {
         oblique:   !!span.oblique,
       });
     });
-  }));
+  });
   struct.end();
 }
 
@@ -162,11 +162,11 @@ async function buildDocument(entries, timestamp) {
 
   const h1 = doc.struct('H1');
   doc.addStructure(h1);
-  h1.add(doc.markStructureContent('H1', () => {
+  h1.add(() => {
     doc.font('Medium').fontSize(18)
        .fillColor('#ffffff').text('Image Colour ', { continued: true, link: null, underline: false, oblique: false })
        .fillColor('#FF7C00').text('Contrast Checker', { continued: false, link: null, underline: false, oblique: false });
-  }));
+  });
   h1.end();
 
   addParagraph(doc,
