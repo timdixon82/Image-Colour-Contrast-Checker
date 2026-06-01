@@ -301,7 +301,9 @@ export function addFigure(doc, imageData, altText, options = {}) {
   const struct = doc.struct('Figure', attributes);
   doc.addStructure(struct);
   struct.add(doc.markStructureContent('Figure', () => {
-    doc.image(normaliseImageSrc(imageData), imageOptions);
+    // Pass link: null explicitly — mirrors the fix applied to addParagraph/addHeading
+    // where explicit options are required for content to render in the browser build.
+    doc.image(normaliseImageSrc(imageData), { link: null, ...imageOptions });
   }));
   struct.end();
 }
