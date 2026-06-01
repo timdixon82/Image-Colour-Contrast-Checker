@@ -307,6 +307,65 @@ export function addFigure(doc, imageData, altText, options = {}) {
 }
 
 /**
+ * Add a hyperlink span inside an existing parent structure element.
+ *
+ * PDF/UA-1 §7.18 requires every link annotation to be wrapped in a `Link`
+ * structure element with a non-empty `Contents` key on the annotation.
+ * PDFKit 0.18.0 bug: when `tagged` mode is active, `doc.link()` sets
+ * `Contents` to an empty string, violating §7.18.1. This helper works around
+ * that by temporarily overriding `doc.link` to inject the visible link text
+ * as `Contents` before creating the annotation.
+ *
+ * Usage: call from inside a parent structure element's content, e.g. a `P`.
+ *
+ *     const p = doc.struct('P');
+ *     doc.addStructure(p);
+ *     p.add(() => { doc.text('See ', { continued: true }); });
+ *     addLink(doc, p, 'Example', 'https://example.com', { continued: false, fontSize: 10 });
+ *     p.end();
+ *
+ * @param {import('pdfkit')} doc
+ * @param {object} parentStruct   The parent structure element (P, etc.) that will own the Link child.
+ * @param {string} text           The visible link text. Also used as the annotation's Contents value.
+ * @param {string} url            The destination URL.
+ * @param {object} [options]
+ * @param {string}  [options.font]      Font name to select.
+ * @param {number}  [options.fontSize]  Font size in points.
+ * @param {string}  [options.color]     Fill colour (hex or CSS name).
+ * @param {boolean} [options.continued=false] Whether text continues on the same line after this link.
+ * @returns {void}
+ */
+export function addLink(doc, parentStruct, text, url, options = {}) {
+  const { font, fontSize, color, continued = false } = options;
+
+  const linkEl = doc.struct('Link', { alt: text });
+  parentStruct.add(linkEl);
+  linkEl.add(() => {
+    if (font)     doc.font(font);
+    if (fontSize) doc.fontSize(fontSize);
+    if (color)    doc.fillColor(color);
+
+    // PDFKit 0.18.0 bug workaround (§7.18.1): override doc.link() for the
+    // duration of this text call to inject the visible text as Contents.
+    const _origLink = doc.link.bind(doc);
+    doc.link = (x, y, w, h, u, opts = {}) => {
+      // PDFKit serialises new String() as a PDF string literal "(...)";
+      // a primitive string would be serialised as a PDF name "/..." which
+      // is invalid for the /Contents annotation key (veraPDF parse error).
+      // eslint-disable-next-line no-new-wrappers
+      opts.Contents = new String(text);
+      return _origLink(x, y, w, h, u, opts);
+    };
+    try {
+      doc.text(text, { continued, link: url, underline: true, oblique: false });
+    } finally {
+      doc.link = _origLink;
+    }
+  });
+  linkEl.end();
+}
+
+/**
  * Draw decorative content (background fills, rules, borders — anything that is
  * NOT part of the document's meaning) as a page-level `Artifact`.
  *

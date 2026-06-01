@@ -22,6 +22,7 @@ import {
   addHeading,
   addParagraph,
   addFigure,
+  addLink,
   artifact,
   toBuffer,
 } from './index.js';
@@ -136,26 +137,14 @@ describe('pdf-ua wrapper — veraPDF PDF/UA-1 compliance', () => {
 
     // Test: paragraph containing a Link struct (PDF/UA-1 §7.18)
     // §7.18.5: the link annotation's Contents key must be non-empty.
-    // PDFKit 0.18.0 sets Contents = '' when inside a Link struct; override
-    // doc.link temporarily to inject the visible text as Contents.
+    // addLink() encapsulates the PDFKit 0.18.0 workaround in the wrapper.
     const pLink = doc.struct('P');
     doc.addStructure(pLink);
-    const linkEl = doc.struct('Link', { alt: 'Visit example dot com' });
-    pLink.add(linkEl);
-    linkEl.add(() => {
-      const _origLink = doc.link.bind(doc);
-      doc.link = (x, y, w, h, url, opts = {}) => {
-        opts.Contents = new String('Example link');
-        return _origLink(x, y, w, h, url, opts);
-      };
-      try {
-        doc.font('Regular').fontSize(10).fillColor('#000000')
-           .text('Example link', { continued: false, link: 'https://example.com', underline: true });
-      } finally {
-        doc.link = _origLink;
-      }
+    pLink.add(() => {
+      doc.font('Regular').fontSize(10).fillColor('#000000')
+         .text('See also: ', { continued: true, link: null });
     });
-    linkEl.end();
+    addLink(doc, pLink, 'Example link', 'https://example.com', { fontSize: 10, color: '#000000', continued: false });
     pLink.end();
 
     const buffer = await toBuffer(doc);

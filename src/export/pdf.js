@@ -19,6 +19,7 @@ import {
   addHeading,
   addParagraph,
   addFigure,
+  addLink,
   artifact,
   toBlob,
   toBuffer,
@@ -130,33 +131,12 @@ function writeParagraph(doc, spans) {
     const isLast = i === spans.length - 1;
 
     if (span.link) {
-      // PDF/UA-1 §7.18: link annotation must be inside a Link struct with /Alt text.
-      // §7.18.5: the annotation's Contents key must also be non-empty.
-      // PDFKit 0.18.0 sets Contents = '' when structParent is active; we
-      // temporarily override doc.link() to inject the span text as Contents.
-      const linkEl = doc.struct('Link', { alt: span.text });
-      p.add(linkEl);
-      linkEl.add(() => {
-        if (span.font)     doc.font(span.font);
-        if (span.fontSize) doc.fontSize(span.fontSize);
-        if (span.color)    doc.fillColor(span.color);
-        const _origLink = doc.link.bind(doc);
-        doc.link = (x, y, w, h, url, opts = {}) => {
-          opts.Contents = new String(span.text);
-          return _origLink(x, y, w, h, url, opts);
-        };
-        try {
-          doc.text(span.text, {
-            continued: !isLast,
-            link:      span.link,
-            underline: true,
-            oblique:   false,
-          });
-        } finally {
-          doc.link = _origLink;
-        }
+      addLink(doc, p, span.text, span.link, {
+        font:      span.font,
+        fontSize:  span.fontSize,
+        color:     span.color,
+        continued: !isLast,
       });
-      linkEl.end();
     } else {
       p.add(() => {
         if (span.font)     doc.font(span.font);
@@ -362,7 +342,8 @@ async function buildDocument(entries, timestamp) {
           lblStruct.end();
         }
 
-        doc.y = labelY + CVD_LBL_H + CVD_ROW_GAP;
+        doc.y  = labelY + CVD_LBL_H + CVD_ROW_GAP;
+        doc._x = doc.page.margins.left;  // reset cursor after absolute-positioned grid labels
       }
       doc.moveDown(0.5);
     }
