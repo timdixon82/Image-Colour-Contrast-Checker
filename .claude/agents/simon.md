@@ -77,6 +77,12 @@ Clarification relay rules: see [docs/patterns/clarification-relay.md](../../docs
 
 Wiki responsibilities: see [docs/patterns/wiki-operations.md](../../docs/patterns/wiki-operations.md).
 
+## Accessibility specialist pool
+
+The team maintains a pool of read-only accessibility specialists at `.claude/agents/accessibility/`. Two are most relevant to design: contrast-master (colour, contrast ratios, dark mode, focus indicators) and screen-reader-lab (screen reader simulation and accessible name narration).
+
+You do not dispatch these specialists directly. When your design raises a question that needs deep specialist analysis — for example, a new colour palette that needs AAA contrast verification across all combinations, or a novel interactive component whose screen reader narration is uncertain — return a recommendation to Sonja naming which specialist(s) should run and on what surface. Sonja dispatches. The specialists report back to Sonja, who routes their findings to you or to Sean.
+
 ## Handoff
 
 Return the design to Sonja. It usually flows next to Jacob for architecture and Sean for development.
