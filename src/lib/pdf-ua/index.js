@@ -330,7 +330,6 @@ export function addFigure(doc, imageData, altText, options = {}) {
 function _withLinkContents(doc, text, fn) {
   const _orig = doc.link.bind(doc);
   doc.link = (x, y, w, h, u, opts = {}) => {
-    // eslint-disable-next-line no-new-wrappers
     opts.Contents = new String(text);
     return _orig(x, y, w, h, u, opts);
   };
@@ -466,17 +465,17 @@ export function addTable(doc, options) {
 
   // First pass: claim fixed widths
   for (let c = 0; c < numCols; c++) {
-    const w = columnStyles[c] && columnStyles[c].width != null ? columnStyles[c].width : null;
-    if (w != null) {
+    const w = columnStyles[c] && columnStyles[c].width !== null && columnStyles[c].width !== undefined ? columnStyles[c].width : null;
+    if (w !== null) {
       colWidths[c] = w;
       remaining -= w;
     }
   }
   // Second pass: distribute remaining width equally among unspecified columns
-  const unspecified = colWidths.filter((w) => w == null).length;  // counts undefined slots
+  const unspecified = colWidths.filter((w) => w === null || w === undefined).length;  // counts undefined slots
   const freeW = unspecified > 0 ? remaining / unspecified : 0;
   for (let c = 0; c < numCols; c++) {
-    if (colWidths[c] == null) colWidths[c] = freeW;
+    if (colWidths[c] === null || colWidths[c] === undefined) colWidths[c] = freeW;
   }
 
   // ── Measure row heights ────────────────────────────────────────────────────
@@ -544,7 +543,6 @@ export function addTable(doc, options) {
     }
 
     const tr = doc.struct('TR');
-    // eslint-disable-next-line no-new-wrappers
     tr.dictionary.data.ID = new String(`${tablePrefix}-r${rowIdx}`);
     table.add(tr);
 
@@ -553,12 +551,11 @@ export function addTable(doc, options) {
     for (let colIdx = 0; colIdx < row.length; colIdx++) {
       const cell    = row[colIdx];
       const colW    = colWidths[colIdx] || 60;
-      const content = cell.content != null ? cell.content : '';
+      const content = cell.content !== null && cell.content !== undefined ? cell.content : '';
       const isHeader = cell.type === 'TH';
 
       // ── Cell struct ────────────────────────────────────────────────────
       const cellStruct = doc.struct(isHeader ? 'TH' : 'TD');
-      // eslint-disable-next-line no-new-wrappers
       const cellId = new String(`${tablePrefix}-r${rowIdx}-c${colIdx}`);
       cellStruct.dictionary.data.ID = cellId;
       tr.add(cellStruct);
