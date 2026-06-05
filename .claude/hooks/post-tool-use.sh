@@ -173,8 +173,7 @@ case "$tool_name" in
       | "${REPO_ROOT}"/.claude/work/*/answers.md)
         status_script="${REPO_ROOT}/scripts/status.sh"
         if [ -f "$status_script" ] && [ -x "$status_script" ]; then
-          repo_hash=$(printf '%s' "${CLAUDE_PROJECT_DIR:-$REPO_ROOT}" | shasum -a 1 | cut -c1-12)
-          marker="/tmp/agentteam-status-rebuild-${repo_hash}.lock"
+          marker="${REPO_ROOT}/.claude/.status-rebuild.lock"
           date +%s%N > "$marker" 2>/dev/null || true
           (
             sleep 2
