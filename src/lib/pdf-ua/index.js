@@ -515,6 +515,16 @@ export function addTable(doc, options) {
     return maxCellH + 2 * padding;
   });
 
+  // ── Keep-together guard ───────────────────────────────────────────────────
+  // If the entire table fits on one page but won't fit in the remaining
+  // space on the current page, start a fresh page before drawing.
+  const totalTableH   = rowHeights.reduce((s, h) => s + h, 0);
+  const fullPageH     = doc.page.height - doc.page.margins.top - doc.page.margins.bottom;
+  const availableH    = (doc.page.height - doc.page.margins.bottom) - doc.y;
+  if (totalTableH <= fullPageH && totalTableH > availableH) {
+    doc.addPage();
+  }
+
   // ── Table structure ────────────────────────────────────────────────────────
   const tablePrefix = `t${(Date.now() % 1e6)}`;
   const table = doc.struct('Table');
