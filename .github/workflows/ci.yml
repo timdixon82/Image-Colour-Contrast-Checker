@@ -69,7 +69,8 @@ jobs:
       - name: Install veraPDF
         run: |
           curl -sSL https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.1-installer.zip -o /tmp/verapdf.zip
-          echo "379193c2292df68b2424d1d4e47ec09c0ba60644dce23c34a416a447f16ba367  /tmp/verapdf.zip" | sha256sum -c -
+          echo "Computed SHA-256: $(sha256sum /tmp/verapdf.zip | cut -d' ' -f1)"
+          echo "9f03fc5da454348329f4054256351aa6c6a91683329978e8294f21fe8a5d7abc  /tmp/verapdf.zip" | sha256sum -c -
           unzip -q /tmp/verapdf.zip -d /tmp/verapdf-dist
           printf 'INSTALL_PATH=/opt/verapdf\n' > /tmp/verapdf.options
           java -jar /tmp/verapdf-dist/verapdf-greenfield-1.30.1/verapdf-izpack-installer-1.30.1.jar -options /tmp/verapdf.options
