@@ -75,6 +75,9 @@ function makeTestPng(size = 4) {
 // Minimal 4×4 black PNG for Figure tests — generated via deflateSync (guaranteed valid)
 const RED_PNG = makeTestPng(4);
 
+/** Path to the veraPDF binary. Honour VERAPDF_PATH if set; fall back to PATH lookup. */
+const VERAPDF = process.env.VERAPDF_PATH ?? 'verapdf';
+
 /**
  * Run verapdf against a Buffer. Returns the XML output string.
  * Uses spawnSync with an argument array (no shell) to avoid any injection risk.
@@ -87,7 +90,7 @@ function verapdfXml(pdfBuffer) {
   try {
     // spawnSync with explicit argument array: no shell, no interpolation risk.
     const result = spawnSync(
-      '/opt/homebrew/bin/verapdf',
+      VERAPDF,
       ['--flavour', 'ua1', tmpFile],
       { encoding: 'utf8' }
     );

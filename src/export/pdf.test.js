@@ -147,6 +147,9 @@ const entries = [
   },
 ];
 
+/** Path to the veraPDF binary. Honour VERAPDF_PATH if set; fall back to PATH lookup. */
+const VERAPDF = process.env.VERAPDF_PATH ?? 'verapdf';
+
 // ── Helper ────────────────────────────────────────────────────────────────
 
 /**
@@ -161,7 +164,7 @@ function verapdfXml(pdfBuffer) {
   writeFileSync(tmpFile, pdfBuffer);
   try {
     const result = spawnSync(
-      '/opt/homebrew/bin/verapdf',
+      VERAPDF,
       ['--flavour', 'ua1', tmpFile],
       { encoding: 'utf8' }
     );
