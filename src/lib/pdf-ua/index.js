@@ -532,9 +532,10 @@ export function addTable(doc, options) {
 
   // Lookups for Headers attribute
   // headerColLookup[colIdx] = String id of the column TH
-  // headerRowLookup[rowIdx] = String id of the row TH
+  // lastRowHeaderId         = String id of the most recent row-scope TH
+  //   (propagated to all following data rows until the next row-scope TH)
   const headerColLookup = {};
-  const headerRowLookup = {};
+  let lastRowHeaderId = null;
 
   let rowY = doc.y;
 
@@ -576,10 +577,10 @@ export function addTable(doc, options) {
         const scopeMap = { column: 'Column', row: 'Row', both: 'Both' };
         attrs.Scope = scopeMap[cell.scope] || 'Column';
       } else {
-        // Build Headers array from col + row lookups
+        // Build Headers array: column header + last row-group header
         const headers = [];
         if (headerColLookup[colIdx])  headers.push(headerColLookup[colIdx]);
-        if (headerRowLookup[rowIdx])  headers.push(headerRowLookup[rowIdx]);
+        if (lastRowHeaderId)           headers.push(lastRowHeaderId);
         if (headers.length) attrs.Headers = headers;
       }
       if (cell.backgroundColor) {
@@ -594,7 +595,7 @@ export function addTable(doc, options) {
           headerColLookup[colIdx] = cellId;
         }
         if (cell.scope === 'row' || cell.scope === 'both') {
-          headerRowLookup[rowIdx] = cellId;
+          lastRowHeaderId = cellId;
         }
       }
 

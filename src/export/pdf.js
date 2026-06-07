@@ -108,7 +108,7 @@ function pillCell(status) {
     neutral: { backgroundColor: '#f0f2f5', color: '#4b5563' },
   };
   const c = colours[statusStyle(status)] || colours.neutral;
-  return { text: status, ...c, font: { size: 8 }, padding: [6, 2, 6, 2] };
+  return { text: statusWord(status), ...c, font: { size: 8 }, padding: [6, 2, 6, 2] };
 }
 
 /**
@@ -402,7 +402,7 @@ async function buildDocument(entries, timestamp) {
           : [];
         writeParagraph(doc, [
           ...exampleSpans,
-          { text: 'WebAIM',                          fontSize: 9, color: '#061528', link: webaim },
+          { text: `Check ${pair.fgHex}/${pair.bgHex} on WebAIM Contrast Checker`, fontSize: 9, color: '#061528', link: webaim },
           { text: '   ',                             fontSize: 9, color: '#374151' },
           { text: VESTIBULAR_CHECKER_FULL_LABEL,     fontSize: 9, color: '#061528', link: VESTIBULAR_CHECKER_URL },
         ]);

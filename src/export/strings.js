@@ -10,7 +10,8 @@ export const APP_NAME = 'Image Colour Contrast Checker';
 export const SITE_URL = 'https://image-colour-contrast-checker.timdixon.net';
 
 export const THRESHOLDS_FOOTER =
-  'Contrast thresholds — AA: 4.5:1 normal / 3:1 large text · '
+  'WCAG = Web Content Accessibility Guidelines; APCA = Advanced Perceptual Contrast Algorithm; CVD = Colour Vision Deficiency. '
+  + 'Contrast thresholds — AA: 4.5:1 normal / 3:1 large text · '
   + 'AAA: 7:1 normal / 4.5:1 large text. '
   + 'Large text = ≥24 px OCR box height. '
   + 'Detected via PaddleOCR PP-OCRv4.';

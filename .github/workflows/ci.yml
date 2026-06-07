@@ -65,3 +65,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Run Vitest tests (veraPDF PDF/UA-1 compliance)
+        run: npm test

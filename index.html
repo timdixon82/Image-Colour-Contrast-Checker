@@ -63,10 +63,9 @@
 
     <main id="app">
       <section id="check-glossary" class="check-glossary" aria-labelledby="glossary-heading">
+        <h2 id="glossary-heading">What the checks mean</h2>
         <details class="glossary-outer">
-          <summary class="glossary-outer-summary">
-            <h2 id="glossary-heading">What the checks mean</h2>
-          </summary>
+          <summary class="glossary-outer-summary">Show/hide explanations</summary>
           <p class="glossary-intro">For every colour combination found in an image, the tool runs six checks, grouped into formal WCAG compliance and advanced perceptual checks. Open any check below to see what it measures, the thresholds used, and where to read more. All checks are automated and indicative &mdash; manual verification is still required before citing for formal WCAG compliance.</p>
 
           <h3 class="glossary-group">WCAG compliance</h3>
@@ -111,7 +110,7 @@
       </section>
 
       <section id="landing" class="landing">
-        <div id="dropzone" class="dropzone is-loading" role="button" aria-disabled="true"
+        <div id="dropzone" class="dropzone is-loading" aria-disabled="true"
              aria-label="Drop images here or click to choose files">
           <div class="dropzone-loading">
             <p class="dz-loading-heading">Preparing the analysis engine</p>
@@ -155,7 +154,7 @@
 
       <section id="processing" class="processing" hidden>
         <h2>Processing</h2>
-        <ul id="queue" class="queue" aria-live="polite"></ul>
+        <ul id="queue" class="queue" aria-live="polite" aria-atomic="true"></ul>
       </section>
 
       <section id="results" class="results" hidden>
@@ -180,6 +179,7 @@
           Audit another batch
         </button>
       </div>
+      <p id="app-status" aria-live="polite" aria-atomic="true" class="sr-only"></p>
     </main>
 
     <script type="module" src="/src/main.js"></script>
