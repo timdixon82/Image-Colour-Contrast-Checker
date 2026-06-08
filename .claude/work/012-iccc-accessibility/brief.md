@@ -1,5 +1,7 @@
 # Brief: 012-iccc-accessibility
 
+**Status: Closed** — all three issues resolved and merged before 2026-06-08 session.
+
 ## Summary
 
 Close the three deferred accessibility issues left by the setup build: the hidden file-input accessible name gap (ACC-ICCC-001), the `--fg-muted` contrast shortfall in light mode (ACC-ICCC-002 and ACC-ICCC-003). Both Pa11y ignore entries are removed once fixed. This is the planned accessibility phase.
