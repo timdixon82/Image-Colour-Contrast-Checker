@@ -2,3 +2,19 @@
 - [2026-06-08 19:42:24] Simon completed — prototype `docs/design-system/mockups/014-four-themes.html` built. All four themes. Roboto fonts copied to mockup fonts/.
 - [2026-06-08 19:49:36] Sonja copied Roboto variable fonts from handoff to docs/design-system/mockups/fonts/. Awaiting Tim review before Sean dispatch.
 - [2026-06-08] Open questions for Tim before build: (1) approve --warn/--warn-bg values for muted themes; (2) confirm dark card shadow — DS silent, prototype uses rgba(0,0,0,0.3).
+- [2026-06-08] Tim answered Q2: keep soft --shadow token in dark themes. No 0.30 override. Elevation comes from --bg-card surface + 1px --border. Sean to use base --shadow only.
+- [2026-06-08] Tim confirmed --warn/--warn-bg values (checker-verified, all AAA). See brief for exact values. Note: Muted Dark --warn bumped from #E8C97A to #DFC686 (original fell to 6.6:1 on --bg-card). Tokens go in styles.css [data-theme] scopes, not component CSS. Both Q1 + Q2 closed. Dispatching Sean.
+- [2026-06-08 19:53:35] subagent completed
+- [2026-06-08 20:09:06] subagent completed
+- [2026-06-08 20:16:54] subagent completed
+- [2026-06-08 21:36:40] subagent completed
+- [2026-06-08 21:40:00] Carol completed functional, accessibility, and visual passes. Result: FAIL — 6 blocking issues found. Test report: carol-review.md. Release checklist: release-checklist.md. Returning to Sonja for rework dispatch to Sean.
+- [2026-06-08 21:40:44] subagent completed
+- [2026-06-08 21:45:52] subagent completed
+- [2026-06-08 21:49:26] subagent completed
+- [2026-06-08 21:51:19] subagent completed
+- [2026-06-08 21:52:33] subagent completed
+- [2026-06-08 21:55:53] subagent completed
+- [2026-06-08 21:56:38] subagent completed
+- [2026-06-08] Carol final re-test: B3 (7.45:1) and B4 (7.28:1) both PASS. All 6 blocking issues resolved. Status: PASS. Release checklist: READY.
+- [2026-06-08] CHANGELOG v0.4.19 entry committed. Merge gate satisfied. Awaiting Tim approval to merge PR #30.
