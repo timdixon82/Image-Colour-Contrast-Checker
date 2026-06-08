@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.19](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.4.18...v0.4.19) (2026-06-08)
+
+
+### Features
+
+* **theme:** four-theme support — Light, Dark, Muted Light, Muted Dark — replaces two-way toggle ([feat/014-design-system-update](https://github.com/timdixon82/Image-Colour-Contrast-Checker/pull/30))
+* **brand:** Tim Dixon Design System v1.0 — new brand palette, Roboto variable font self-hosted ([feat/014-design-system-update](https://github.com/timdixon82/Image-Colour-Contrast-Checker/pull/30))
+* **ui:** theme-adaptive header; four-button theme picker with full keyboard and screen-reader support ([feat/014-design-system-update](https://github.com/timdixon82/Image-Colour-Contrast-Checker/pull/30))
+* **pdf:** report colours updated to muted-light palette (print-safe, all-pass) ([feat/014-design-system-update](https://github.com/timdixon82/Image-Colour-Contrast-Checker/pull/30))
+
+
+### Bug Fixes
+
+* **a11y:** skip link added to privacy.html (WCAG 2.4.1) ([feat/014-design-system-update](https://github.com/timdixon82/Image-Colour-Contrast-Checker/pull/30))
+* **a11y:** --fg-muted tokens corrected for AAA on --neutral-bg surfaces across all four themes ([feat/014-design-system-update](https://github.com/timdixon82/Image-Colour-Contrast-Checker/pull/30))
+
+
 ## [0.4.0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.3.0...v0.4.0) (2026-05-31)
 
 
