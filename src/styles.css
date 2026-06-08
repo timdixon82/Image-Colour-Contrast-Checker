@@ -4,7 +4,7 @@
    the font loads on first visit. */
 
 @font-face {
-  font-family: 'Roboto';
+  font-family: Roboto;
   src: url('/fonts/Roboto-VariableFont.ttf') format('truetype-variations'),
        url('/fonts/Roboto-VariableFont.ttf') format('truetype');
   font-weight: 100 900;
@@ -13,7 +13,7 @@
 }
 
 @font-face {
-  font-family: 'Roboto';
+  font-family: Roboto;
   src: url('/fonts/Roboto-Italic-VariableFont.ttf') format('truetype-variations'),
        url('/fonts/Roboto-Italic-VariableFont.ttf') format('truetype');
   font-weight: 100 900;
@@ -40,7 +40,7 @@
   --accent:        #0C3B64;
   --accent-hover:  #0A3052;
   --accent-text:   #FFFFFF;
-  --accent-subtle: rgba(12, 59, 100, 0.08);
+  --accent-subtle: rgb(12 59 100 / 0.08);
   --warm:          #EB9C52;
   --warm-hover:    #E88E38;
   --warm-text:     #1A1A1A;
@@ -57,13 +57,13 @@
   --warn-bg:       #F6E8C8;
 
   /* ── Structural ─────────────────────────────────────────────────────── */
-  --shadow:        0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.05);
+  --shadow:        0 1px 3px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.05);
   --radius:        10px;
 
   /* ── Typography ─────────────────────────────────────────────────────── */
-  --font-sans:     "Roboto", -apple-system, BlinkMacSystemFont,
-                   "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --font-mono:     "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans:     "Roboto", -apple-system, blinkmacsystemfont,
+                   "Segoe UI", "Helvetica Neue", arial, sans-serif;
+  --font-mono:     "SF Mono", menlo, consolas, "Liberation Mono", monospace;
 
   --text-xs:       0.78rem;
   --text-sm:       0.85rem;
@@ -114,7 +114,7 @@
   --accent:        #0C3B64;
   --accent-hover:  #0A3052;
   --accent-text:   #FFFFFF;
-  --accent-subtle: rgba(12, 59, 100, 0.08);
+  --accent-subtle: rgb(12 59 100 / 0.08);
   --warm:          #EB9C52;
   --warm-hover:    #E88E38;
   --warm-text:     #1A1A1A;
@@ -139,7 +139,7 @@
   --accent:        #EB9C52;
   --accent-hover:  #ECBB83;
   --accent-text:   #061528;
-  --accent-subtle: rgba(235, 156, 82, 0.16);
+  --accent-subtle: rgb(235 156 82 / 0.16);
   --warm:          #52C7EB;
   --warm-hover:    #6AC5E7;
   --warm-text:     #061528;
@@ -165,7 +165,7 @@
   --accent:        #234A73;
   --accent-hover:  #1B3A5C;
   --accent-text:   #FFFFFF;
-  --accent-subtle: rgba(35, 74, 115, 0.08);
+  --accent-subtle: rgb(35 74 115 / 0.08);
   --warm:          #703D1F;
   --warm-hover:    #5E331A;
   --warm-text:     #FFFFFF;
@@ -190,7 +190,7 @@
   --accent:        #E3C196;
   --accent-hover:  #E8D3BA;
   --accent-text:   #142536;
-  --accent-subtle: rgba(227, 193, 150, 0.16);
+  --accent-subtle: rgb(227 193 150 / 0.16);
   --warm:          #8EBDE1;
   --warm-hover:    #A6CBE8;
   --warm-text:     #142536;
