@@ -1,87 +1,225 @@
-/* Tim Dixon brand palette */
+/* ── a. Font faces ────────────────────────────────────────────────────────────
+   Roboto variable font — brand primary typeface. Self-hosted, covers all
+   weights 100–900 in one file. font-display: swap keeps text readable while
+   the font loads on first visit. */
+
+@font-face {
+  font-family: Roboto;
+  src: url('/fonts/Roboto-VariableFont.ttf') format('truetype-variations'),
+       url('/fonts/Roboto-VariableFont.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Roboto;
+  src: url('/fonts/Roboto-Italic-VariableFont.ttf') format('truetype-variations'),
+       url('/fonts/Roboto-Italic-VariableFont.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ── b. :root defaults (Light theme fallback) ────────────────────────────────
+   Verbatim from colors_and_type.css. App-specific --warn / --warn-bg added.
+   Tim-verified values; all AAA across all four themes (checker-confirmed).   */
+
 :root {
-  --navy:   #061528;
-  --orange: #FF7C00;
-  --blue:   #63D2FF;
+  /* ── Brand archive tokens (for logo, wordmark, large accents only) ───── */
+  --brand-navy:   #0C3B64;
+  --brand-orange: #EB9C52;
+  --brand-sky:    #52C7EB;
 
-  /* Light-mode tokens */
-  --bg:         #f4f6f8;
-  --bg-card:    #fff;
-  --fg:         #1a1a1a;   /* Near-black — 17.8:1 on white AAA */
-  --fg-muted:   #454c58;   /* 7.98:1 on --bg (#f4f6f8), 7.71:1 on --neutral-bg — AAA */
-  --border:     #d1d5db;
-  --accent:     #061528;   /* Navy — 18.33:1 on white AAA */
-  --accent-hover: #0a2445;
-  --accent-text: #fff;  /* text on --accent button */
-  --accent-subtle: rgb(6 21 40 / 0.08);
-  --pass:       #14532d;   /* Dark green — 9.1:1 on white AAA */
-  --pass-bg:    #dcfce7;
-  --fail:       #7f1d1d;   /* Dark red — 10:1 on white AAA */
-  --fail-bg:    #fee2e2;
-  --warn:       #663a00;   /* Amber — 8.7:1 on warn-bg AAA */
-  --warn-bg:    #fef3c7;
-  --neutral:    #4b5563;   /* 7.6:1 on white AAA */
-  --neutral-bg: #f0f2f5;
-  --code-bg:    #f0f2f5;
-  --shadow:     0 1px 3px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.05);
-  --radius:     10px;
+  /* ── Theme 1 · Light (default) ──────────────────────────────────────── */
+  --bg:            #F4F6F8;
+  --bg-card:       #FFFFFF;
+  --fg:            #1A1A1A;
+  --fg-muted:      #46505E;
+  --border:        #D1D5DB;
+  --accent:        #0C3B64;
+  --accent-hover:  #0A3052;
+  --accent-text:   #FFFFFF;
+  --accent-subtle: rgb(12 59 100 / 0.08);
+  --warm:          #EB9C52;
+  --warm-hover:    #E88E38;
+  --warm-text:     #1A1A1A;
+  --pass:          #15662F;
+  --pass-bg:       #D9F0E1;
+  --fail:          #A12525;
+  --fail-bg:       #F6DEDE;
+  --neutral:       #46505E;
+  --neutral-bg:    #ECEEF1;
+  --code-bg:       #ECEEF1;
+
+  /* ── App-specific warn tokens (not in DS; Tim-verified AAA) ─────────── */
+  --warn:          #544012;   /* 8.2:1 on warn-bg, 9.1:1 on neutral-bg   */
+  --warn-bg:       #F6E8C8;
+
+  /* ── Structural ─────────────────────────────────────────────────────── */
+  --shadow:        0 1px 3px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.05);
+  --radius:        10px;
+
+  /* ── Typography ─────────────────────────────────────────────────────── */
+  --font-sans:     "Roboto", -apple-system, blinkmacsystemfont,
+                   "Segoe UI", "Helvetica Neue", arial, sans-serif;
+  --font-mono:     "SF Mono", menlo, consolas, "Liberation Mono", monospace;
+
+  --text-xs:       0.78rem;
+  --text-sm:       0.85rem;
+  --text-base:     0.9375rem;
+  --text-lg:       1.1rem;
+  --text-xl:       1.4rem;
+  --text-2xl:      1.9rem;
+  --text-3xl:      2.4rem;
+
+  --leading-tight: 1.3;
+  --leading-body:  1.6;
+  --leading-long:  1.65;
+
+  --weight-regular: 400;
+  --weight-semi:    500;
+  --weight-bold:    700;
+  --weight-black:   900;
+
+  --tracking-h1:   -0.3px;
+
+  /* ── Spacing (4px grid) ─────────────────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+
+  /* ── Touch target (WCAG 2.5.8) ──────────────────────────────────────── */
+  --hit:      44px;
 }
 
-/* Dark mode tokens — shared by both the media-query and manual-toggle paths */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg:           #061528;
-    --bg-card:      #0d2040;
-    --fg:           #fff;
-    --fg-muted:     #63D2FF;   /* Sky Blue — 10.64:1 on Navy AAA */
-    --border:       #1a3050;
-    --accent:       #FF7C00;   /* Orange — 7.10:1 on Navy AAA */
-    --accent-hover: #ff8f1a;
-    --accent-text:  #061528;   /* Navy on orange — 7.10:1 AAA */
-    --accent-subtle: rgb(255 124 0 / 0.14);
-    --code-bg:      #1a3050;
-    --neutral-bg:   #1a3050;
-    --pass:         #4ade80;   /* Bright green — 8.8:1 on card bg AAA */
-    --pass-bg:      #0d3328;
-    --fail:         #fca5a5;   /* Soft red — 8.1:1 on card bg AAA */
-    --fail-bg:      #3a1f1f;
-    --warn:         #fcd34d;   /* Amber — 9.4:1 on warn-bg AAA */
-    --warn-bg:      #3a2c0c;
-    --neutral:      #63D2FF;
-  }
+/* ── c. Four theme scopes ─────────────────────────────────────────────────────
+   Verbatim from colors_and_type.css. --warn / --warn-bg added per Tim's
+   verified values (all WCAG 2.2 AAA; checker-confirmed 2026-06-08).
+   No --shadow override for dark themes: elevation uses --bg-card surface
+   contrast + 1px --border (per Tim log 2026-06-08 Q2 answer).               */
+
+/* ── Theme 1 (explicit) · Light ─────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:            #F4F6F8;
+  --bg-card:       #FFFFFF;
+  --fg:            #1A1A1A;
+  --fg-muted:      #46505E;
+  --border:        #D1D5DB;
+  --accent:        #0C3B64;
+  --accent-hover:  #0A3052;
+  --accent-text:   #FFFFFF;
+  --accent-subtle: rgb(12 59 100 / 0.08);
+  --warm:          #EB9C52;
+  --warm-hover:    #E88E38;
+  --warm-text:     #1A1A1A;
+  --pass:          #15662F;
+  --pass-bg:       #D9F0E1;
+  --fail:          #A12525;
+  --fail-bg:       #F6DEDE;
+  --neutral:       #46505E;
+  --neutral-bg:    #ECEEF1;
+  --code-bg:       #ECEEF1;
+  --warn:          #544012;
+  --warn-bg:       #F6E8C8;
 }
 
-/* Manual dark override */
-:root[data-theme="dark"] {
-  --bg:           #061528;
-  --bg-card:      #0d2040;
-  --fg:           #fff;
-  --fg-muted:     #63D2FF;
-  --border:       #1a3050;
-  --accent:       #FF7C00;
-  --accent-hover: #ff8f1a;
-  --accent-text:  #061528;
-  --accent-subtle: rgb(255 124 0 / 0.14);
-  --code-bg:      #1a3050;
-  --neutral-bg:   #1a3050;
-  --pass:         #4ade80;
-  --pass-bg:      rgb(21 128 61 / 0.22);
-  --fail:         #fca5a5;
-  --fail-bg:      rgb(185 28 28 / 0.22);
-  --neutral:      #63D2FF;
+/* ── Theme 2 · Dark ─────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:            #061528;
+  --bg-card:       #0D2440;
+  --fg:            #E2E7EC;
+  --fg-muted:      #A3C3DA; /* app override: 7.18:1 on --neutral-bg (#15314F); 8.47:1 on --bg-card (#0D2440) — both AAA */
+  --border:        #1C3A5C;
+  --accent:        #EB9C52;
+  --accent-hover:  #ECBB83;
+  --accent-text:   #061528;
+  --accent-subtle: rgb(235 156 82 / 0.16);
+  --warm:          #52C7EB;
+  --warm-hover:    #6AC5E7;
+  --warm-text:     #061528;
+  --sky:           #52C7EB;
+  --code-bg:       #15314F;
+  --neutral-bg:    #15314F;
+  --neutral:       #9FB6CC;
+  --pass:          #8FD3A2;
+  --pass-bg:       #10331F;
+  --fail:          #F0A6A6;
+  --fail-bg:       #3A1A1A;
+  --warn:          #DDB84B;
+  --warn-bg:       #3A2C0C;
 }
 
-/* Ensure CSS display rules never override the HTML hidden attribute. */
+/* ── Theme 3 · Muted Light ──────────────────────────────────────────────── */
+[data-theme="muted-light"] {
+  --bg:            #EDF0F3;
+  --bg-card:       #FFFFFF;
+  --fg:            #2B3138;
+  --fg-muted:      #444B55; /* app override: 7.30:1 on --neutral-bg (#E7EAED); 8.81:1 on --bg-card (#FFFFFF) — both AAA */
+  --border:        #D2D8DE;
+  --accent:        #234A73;
+  --accent-hover:  #1B3A5C;
+  --accent-text:   #FFFFFF;
+  --accent-subtle: rgb(35 74 115 / 0.08);
+  --warm:          #703D1F;
+  --warm-hover:    #5E331A;
+  --warm-text:     #FFFFFF;
+  --pass:          #1E5631;
+  --pass-bg:       #DDEEE2;
+  --fail:          #8A2A2A;
+  --fail-bg:       #F0DCDC;
+  --neutral:       #4A535D;
+  --neutral-bg:    #E7EAED;
+  --code-bg:       #E7EAED;
+  --warn:          #4E3C18;
+  --warn-bg:       #EDE6D2;
+}
+
+/* ── Theme 4 · Muted Dark ───────────────────────────────────────────────── */
+[data-theme="muted-dark"] {
+  --bg:            #142536;
+  --bg-card:       #1E3147;
+  --fg:            #E2E7EC;
+  --fg-muted:      #AACFDE; /* app override: DS #98C7D7 fails 7:1 on --neutral-bg (#283A4E), 6.36:1 */
+  --border:        #2C3F54;
+  --accent:        #E3C196;
+  --accent-hover:  #E8D3BA;
+  --accent-text:   #142536;
+  --accent-subtle: rgb(227 193 150 / 0.16);
+  --warm:          #8EBDE1;
+  --warm-hover:    #A6CBE8;
+  --warm-text:     #142536;
+  --code-bg:       #27384C;
+  --neutral-bg:    #283A4E;
+  --neutral:       #C2CCD6;
+  --pass:          #A7D9B5;
+  --pass-bg:       #1C3528;
+  --fail:          #E6A9A9;
+  --fail-bg:       #3A2020;
+  --warn:          #DFC686;   /* bumped from #E8C97A: original fell to 6.6:1 on --bg-card */
+  --warn-bg:       #332B12;
+}
+
+/* ── d. Base element styles ──────────────────────────────────────────────── */
+
+/* Ensure CSS display never overrides the HTML hidden attribute. */
 [hidden] { display: none !important; }
 
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
+
 html, body { margin: 0; padding: 0; }
 
 body {
   background: var(--bg);
   color: var(--fg);
-  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
   min-height: 100vh;
 }
 
@@ -91,7 +229,18 @@ body {
   padding: 24px 20px 120px;
 }
 
-/* ── Skip-to-content (WCAG 2.4.1) ───────────────────────────────────────── */
+a         { color: var(--accent); }
+a:hover   { color: var(--accent-hover); text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── e. Skip link + sr-only ──────────────────────────────────────────────── */
+
 .skip-link {
   position: absolute;
   top: -50px;
@@ -108,7 +257,7 @@ body {
 
 .skip-link:focus {
   top: 0;
-  outline: 3px solid #FF7C00;
+  outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -123,22 +272,25 @@ body {
   border: 0;
 }
 
-/* ── Global focus ring (WCAG 2.4.11 / 2.4.13) ───────────────────────────── */
+/* ── f. Global focus ring (WCAG 2.4.11 / 2.4.13) ────────────────────────── */
+
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 3px;
   border-radius: 4px;
 }
 
-/* ── Branded site header — always navy regardless of light/dark mode ────── */
+/* ── g. App header — theme-adaptive surface ──────────────────────────────── */
+
 .app-header {
-  background: #061528;
-  color: #fff;
+  background: var(--bg-card);
+  color: var(--fg);
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid var(--border);
 }
 
-/* Orange accent line at the base of the header */
+/* Gradient accent line along the base of the header */
 .app-header::after {
   content: '';
   position: absolute;
@@ -146,83 +298,102 @@ body {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #FF7C00, #ff8f1a 60%, transparent);
+  background: linear-gradient(90deg, var(--warm), var(--accent) 70%, transparent);
   pointer-events: none;
 }
 
 .app-header-inner {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 1.5rem 20px;
+  padding: var(--space-4) var(--space-5);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  position: relative; /* above the ::before overlay */
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  position: relative;
 }
 
 .app-header-text { flex: 1; min-width: 0; }
 
 .app-header h1 {
-  color: #fff;          /* White on Navy — 18.33:1 AAA */
-  font-size: 1.5rem;
+  color: var(--fg);
+  font-size: clamp(1.05rem, 2.5vw, var(--text-2xl));
   font-weight: 800;
   margin: 0 0 4px;
   letter-spacing: -0.3px;
 }
 
-.header-accent {
-  color: #FF7C00;          /* Orange on Navy — 7.10:1 AAA */
-}
+/* "Contrast Checker" wordmark accent — uses --accent in light themes */
+.header-accent { color: var(--accent); }
+
+/* Dark themes: wordmark flips to --warm (approved in design system spec) */
+[data-theme="dark"]       .header-accent { color: var(--warm); }
+/* muted-dark: --warm (#8EBDE1) fails 7:1 on --bg-card (#1E3147), 6.63:1 — use --accent (7.78:1) instead */
+[data-theme="muted-dark"] .header-accent { color: var(--accent); }
 
 .app-header .tagline,
 .preloader-header .tagline {
-  color: #63D2FF;          /* Sky Blue on Navy — 10.64:1 AAA */
+  color: var(--fg-muted);
   margin: 0;
   font-size: 0.875rem;
+  line-height: 1.45;
+  max-width: 55ch;
 }
 
-/* ── Theme toggle button ─────────────────────────────────────────────────── */
-.theme-toggle {
+/* ── h. Theme picker ─────────────────────────────────────────────────────── */
+
+.theme-picker {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.theme-btn {
   appearance: none;
   background: transparent;
-  border: 2px solid rgb(255 255 255 / 0.35);
-  color: #fff;
-  border-radius: 8px;
-  padding: 8px 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: inherit;
-  font-size: 0.875rem;
+  border: 1.5px solid var(--border);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.8rem;
   font-weight: 600;
-  transition: border-color 120ms, background 120ms;
-  flex-shrink: 0;
-  min-height: 44px; /* WCAG 2.5.8 target size */
-  min-width: 44px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 44px; /* WCAG 2.5.8 touch target */
+  white-space: nowrap;
+  transition: background 120ms, border-color 120ms, color 120ms;
 }
 
-.theme-toggle:hover {
-  border-color: #63D2FF;
-  background: rgb(99 210 255 / 0.12);
+.theme-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
 }
 
-.theme-toggle:focus-visible {
-  outline: 3px solid #63D2FF;
-  outline-offset: 3px;
+.theme-btn[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
 }
 
-.theme-toggle:active { transform: translateY(1px); }
+/* Dark themes: ghost buttons need --fg for legibility */
+[data-theme="dark"]       .theme-btn:not([aria-pressed="true"]),
+[data-theme="muted-dark"] .theme-btn:not([aria-pressed="true"]) {
+  color: var(--fg);
+}
 
-.icon-sun  { display: none; }
-.icon-moon { display: none; }
-[data-theme="dark"]  .icon-sun  { display: block; }
-[data-theme="light"] .icon-moon { display: block; }
+/* Compact buttons on narrow screens; 44px height preserved */
+@media (max-width: 480px) {
+  .theme-btn {
+    font-size: 0.7rem;
+    padding: 6px 8px;
+  }
+}
 
-.theme-toggle-label { font-size: 0.8rem; }
+/* ── i. Landing ──────────────────────────────────────────────────────────── */
 
-/* ── Landing ─────────────────────────────────────────────────────────────── */
 .landing { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 
 .dropzone {
@@ -248,9 +419,7 @@ body {
 .dropzone-secondary { margin: 0; color: var(--fg-muted); }
 .dropzone-tertiary { margin: 8px 0 0; color: var(--fg-muted); font-size: 0.9rem; }
 
-/* Dropzone loading state — shown while the OCR models download and the
-   engine warms up. Both states share one grid cell so the dropzone keeps a
-   constant height: switching states never shifts the content below it. */
+/* Dropzone loading state */
 .dropzone.is-loading { cursor: default; border-style: solid; }
 .dropzone.is-loading:hover { background: var(--bg-card); transform: none; }
 .dropzone-loading,
@@ -301,6 +470,7 @@ body {
 }
 
 /* ── Disclaimer notice ───────────────────────────────────────────────────── */
+
 .disclaimer-notice {
   display: flex;
   align-items: flex-start;
@@ -308,7 +478,7 @@ body {
   padding: 12px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--orange);
+  border-left: 4px solid var(--accent);
   border-radius: 8px;
   font-size: 0.85rem;
   color: var(--fg-muted);
@@ -316,25 +486,49 @@ body {
   width: 100%;
   line-height: 1.5;
 }
-.disclaimer-notice svg { flex-shrink: 0; margin-top: 1px; }
+.disclaimer-notice svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent);
+}
 
-/* Inline disclaimer shown at the top of the results section */
+/* Inline disclaimer at the top of the results section */
 .results-disclaimer {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 10px 14px;
   background: var(--neutral-bg);
-  border-left: 4px solid var(--orange);
+  border-left: 4px solid var(--accent);
   border-radius: 6px;
   font-size: 0.85rem;
   color: var(--fg-muted);
   margin-bottom: 16px;
   line-height: 1.5;
 }
-.results-disclaimer svg { flex-shrink: 0; margin-top: 1px; }
+.results-disclaimer svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+/* Dark themes: use --warm for notice border and icon colour */
+[data-theme="dark"]       .disclaimer-notice,
+[data-theme="dark"]       .results-disclaimer,
+[data-theme="muted-dark"] .disclaimer-notice,
+[data-theme="muted-dark"] .results-disclaimer {
+  border-left-color: var(--warm);
+}
+
+[data-theme="dark"]       .disclaimer-notice svg,
+[data-theme="dark"]       .results-disclaimer svg,
+[data-theme="muted-dark"] .disclaimer-notice svg,
+[data-theme="muted-dark"] .results-disclaimer svg {
+  color: var(--warm);
+}
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
+
 .button {
   appearance: none;
   border: 1px solid var(--border);
@@ -376,6 +570,7 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Processing queue ────────────────────────────────────────────────────── */
+
 .processing { margin-top: 24px; }
 .processing h2 { font-size: 1.1rem; margin: 0 0 8px; }
 .queue { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -407,19 +602,19 @@ body {
   color: var(--fg-muted);
   flex-shrink: 0;
 }
-.queue-row[data-stage="done"] .queue-stage { background: var(--pass-bg); color: var(--pass); }
+.queue-row[data-stage="done"]   .queue-stage { background: var(--pass-bg); color: var(--pass); }
 .queue-row[data-stage="failed"] .queue-stage { background: var(--fail-bg); color: var(--fail); }
 
 .queue-row[data-stage="decoding"] .queue-stage,
-.queue-row[data-stage="ocr"] .queue-stage,
+.queue-row[data-stage="ocr"]      .queue-stage,
 .queue-row[data-stage="analysing"] .queue-stage {
   background: var(--accent-subtle); color: var(--accent);
 }
 
 /* ── Results ─────────────────────────────────────────────────────────────── */
+
 .results { margin-top: 24px; }
 
-/* Results header — branded treatment to match the page visual language */
 .results-header {
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
@@ -443,7 +638,6 @@ body {
 }
 .results-header .timestamp { color: var(--fg-muted); margin: 10px 0 12px; font-size: 0.9rem; }
 
-/* Summary section */
 .summary { margin-bottom: 28px; }
 .summary h2 {
   font-size: 1.1rem;
@@ -461,7 +655,6 @@ body {
   border-radius: 2px;
 }
 
-/* Image cards — h3 filename matches page heading scale */
 .image-card-title {
   margin: 0 0 10px;
   font-size: 1.1rem;
@@ -478,7 +671,6 @@ body {
   border-radius: 2px;
 }
 
-/* Sub-section headings inside cards — h4 */
 .image-card h4 {
   font-size: 0.92rem;
   font-weight: 700;
@@ -488,7 +680,6 @@ body {
   color: var(--accent);
 }
 
-/* Wrapper for responsive horizontal scroll on narrow screens */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 .summary-table, .results-table {
@@ -501,7 +692,7 @@ body {
 }
 
 .summary-table th, .summary-table td,
-.results-table th, .results-table td {
+.results-table th,  .results-table td {
   text-align: left;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
@@ -515,11 +706,12 @@ body {
 .summary-table tr:last-child td { border-bottom: none; }
 
 .verdict { font-weight: 700; }
-.verdict-pass { color: var(--pass); }
-.verdict-fail { color: var(--fail); }
-.verdict-no_text { color: var(--neutral); }
+.verdict-pass     { color: var(--pass); }
+.verdict-fail     { color: var(--fail); }
+.verdict-no_text  { color: var(--neutral); }
 
 /* ── Image cards ─────────────────────────────────────────────────────────── */
+
 .image-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -539,15 +731,15 @@ body {
 }
 .image-card-result { margin: 0 0 14px; }
 
-.image-card-fail { border-left: 4px solid var(--fail); }
-.image-card-pass { border-left: 4px solid var(--pass); }
+.image-card-fail    { border-left: 4px solid var(--fail); }
+.image-card-pass    { border-left: 4px solid var(--pass); }
 .image-card-no-text { border-left: 4px solid var(--neutral); }
 
 /* ── Contrast results table ──────────────────────────────────────────────── */
+
 .results-summary-group { margin: 0 0 6px; }
 .results-overall { margin: 0 0 4px; font-size: 0.9rem; color: var(--fg-muted); }
 
-/* External checkers list — two links stacked vertically in the results table */
 .external-checkers-list {
   list-style: none;
   padding: 0;
@@ -586,7 +778,6 @@ body {
 .result-detail > td { padding: 0; background: var(--neutral-bg); }
 .detail-panel { padding: 16px 18px; }
 
-/* Per-check breakdown table inside the expanded detail panel */
 .check-table {
   width: 100%;
   border-collapse: collapse;
@@ -618,12 +809,13 @@ body {
   color: var(--accent);
   background: var(--neutral-bg);
 }
-.check-name { font-weight: 700; white-space: nowrap; }
+.check-name  { font-weight: 700; white-space: nowrap; }
 .check-value { font-variant-numeric: tabular-nums; }
 .check-meaning { color: var(--fg-muted); line-height: 1.45; }
-.check-info { text-decoration: none; }
+.check-info  { text-decoration: none; }
 
-/* Roll-up badges — result cell (stacked) and card result line (inline) */
+/* ── Roll-up badges ──────────────────────────────────────────────────────── */
+
 .row-badges {
   display: flex;
   flex-direction: column;
@@ -662,12 +854,10 @@ body {
   border: 1px solid var(--border);
 }
 
-/* ── Check glossary (on-page "what the checks mean") ─────────────────────── */
-.check-glossary {
-  margin: 0 0 24px;
-}
+/* ── Check glossary ──────────────────────────────────────────────────────── */
 
-/* Outer collapsible wrapper — the h2 toggle that collapses the whole section */
+.check-glossary { margin: 0 0 24px; }
+
 .glossary-outer {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -681,7 +871,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 14px 18px;
-  min-height: 44px; /* WCAG 2.5.8 touch target */
+  min-height: 44px;
 }
 .glossary-outer-summary::-webkit-details-marker { display: none; }
 .glossary-outer-summary::before {
@@ -705,14 +895,13 @@ body {
 .glossary-outer[open] > .glossary-outer-summary {
   border-bottom: 1px solid var(--border);
 }
-/* Inner content padding when expanded */
 .glossary-outer > :not(summary) {
   padding-left: 18px;
   padding-right: 18px;
 }
-.glossary-outer > .glossary-intro { padding-top: 14px; }
+.glossary-outer > .glossary-intro           { padding-top: 14px; }
 .glossary-outer > .glossary-group:first-of-type { margin-top: 8px; }
-.glossary-outer > details:last-child { margin-bottom: 12px; }
+.glossary-outer > details:last-child        { margin-bottom: 12px; }
 
 .check-glossary h2 { font-size: 1.1rem; margin: 0; }
 .glossary-intro { color: var(--fg-muted); font-size: 0.92rem; margin: 0 0 16px; line-height: 1.6; }
@@ -772,6 +961,7 @@ body {
 }
 
 /* ── Colour-blindness simulation ─────────────────────────────────────────── */
+
 .cb-sim-note { margin: 0 0 10px; font-size: 0.9rem; color: var(--fg-muted); }
 .cb-sim-grid {
   display: grid;
@@ -792,6 +982,7 @@ body {
 .cb-sim-caption span { color: var(--fg-muted); }
 
 /* ── Thresholds footer ───────────────────────────────────────────────────── */
+
 .thresholds { margin-top: 24px; }
 
 .thresholds-line {
@@ -804,6 +995,7 @@ body {
 }
 
 /* ── Action bar ──────────────────────────────────────────────────────────── */
+
 .action-bar {
   position: sticky;
   bottom: 0;
@@ -822,6 +1014,7 @@ body {
 }
 
 /* ── Preloader overlay ───────────────────────────────────────────────────── */
+
 .preloader {
   position: fixed;
   inset: 0;
@@ -838,12 +1031,13 @@ body {
 }
 
 .preloader-header {
-  background: #061528;
+  background: var(--bg-card);   /* theme-adaptive (was hardcoded #061528) */
   flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .preloader-app-title {
-  color: #fff;
+  color: var(--fg);
   font-size: 1.5rem;
   font-weight: 800;
   margin: 0 0 4px;
@@ -931,6 +1125,7 @@ body {
 }
 
 /* ── Privacy badge ───────────────────────────────────────────────────────── */
+
 .privacy-badge {
   display: flex;
   align-items: center;
@@ -946,11 +1141,8 @@ body {
   line-height: 1.4;
 }
 
-/* ── Links ───────────────────────────────────────────────────────────────── */
-a { color: var(--accent); }
-a:hover { color: var(--accent-hover); text-decoration: underline; }
-
 /* ── Footer ──────────────────────────────────────────────────────────────── */
+
 .app-footer {
   text-align: center;
   padding: 20px 20px 8px;
@@ -963,67 +1155,15 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 .app-footer a:hover { color: var(--accent); }
 .app-footer .sep { margin: 0 6px; opacity: 0.5; }
 
-/* ── Dark-mode AAA contrast overrides (Carol findings 1–6, 2026-05-23) ─────
- * The orange accent (#FF7C00) passes WCAG 1.4.6 AAA on the navy page
- * background (#061528, 7.10:1) but fails on the lighter card background
- * (#0d2040, 6.27:1) and on other dark-mode surfaces. In dark mode the
- * six selectors below override to --fg-muted (#63D2FF, sky blue):
- *
- *   .glossary-item > p > a      on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .image-card h4              on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .external-checkers-list a   on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .row-toggle                 on #0d2040 (bg-card):   9.40:1 AAA ✓
- *   .queue-stage (in-progress) on ~#2f2d37 (blended):  7.26:1 AAA ✓
- *   .check-group-row th        on #1a3050 (neutral-bg): 7.70:1 AAA ✓
- *
- * Light-mode rendering is unchanged. Do not merge these into the dark-mode
- * token block above — they are targeted selector overrides, not token changes.
- */
-/* OS-level dark preference path (NF-01 fix: split from invalid comma-list) */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .glossary-item > p > a,
-  :root:not([data-theme="light"]) .image-card h4,
-  :root:not([data-theme="light"]) .external-checkers-list a,
-  :root:not([data-theme="light"]) .row-toggle {
-    color: var(--fg-muted); /* #63D2FF, 9.40:1 on #0d2040 AAA */
-  }
-
-  :root:not([data-theme="light"]) .queue-row[data-stage="decoding"] .queue-stage,
-  :root:not([data-theme="light"]) .queue-row[data-stage="ocr"] .queue-stage,
-  :root:not([data-theme="light"]) .queue-row[data-stage="analysing"] .queue-stage {
-    color: var(--fg-muted); /* #63D2FF, 7.26:1 on blended bg AAA */
-  }
-
-  :root:not([data-theme="light"]) .check-group-row th {
-    color: var(--fg-muted); /* #63D2FF, 7.70:1 on #1a3050 AAA */
-  }
-}
-
-/* Manual toggle dark path (NF-01 fix: mirrors block above for toggle-dark users) */
-:root[data-theme="dark"] .glossary-item > p > a,
-:root[data-theme="dark"] .image-card h4,
-:root[data-theme="dark"] .external-checkers-list a,
-:root[data-theme="dark"] .row-toggle {
-  color: var(--fg-muted); /* #63D2FF, 9.40:1 on #0d2040 AAA */
-}
-
-:root[data-theme="dark"] .queue-row[data-stage="decoding"] .queue-stage,
-:root[data-theme="dark"] .queue-row[data-stage="ocr"] .queue-stage,
-:root[data-theme="dark"] .queue-row[data-stage="analysing"] .queue-stage {
-  color: var(--fg-muted); /* #63D2FF, 7.26:1 on blended bg AAA */
-}
-
-:root[data-theme="dark"] .check-group-row th {
-  color: var(--fg-muted); /* #63D2FF, 7.70:1 on #1a3050 AAA */
-}
-
 /* ── Responsive ──────────────────────────────────────────────────────────── */
+
 @media (max-width: 768px) {
   .results-table { font-size: 0.82rem; }
   .results-table .examples { max-width: 140px; }
 }
 
-/* ── Privacy page ──────────────────────────────────────────────────────── */
+/* ── Privacy page ────────────────────────────────────────────────────────── */
+
 .privacy-page {
   max-width: 680px;
   margin: 0 auto;

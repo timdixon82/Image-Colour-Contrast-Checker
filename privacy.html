@@ -7,12 +7,48 @@
     <!-- Privacy-friendly analytics (GoatCounter), self-hosted so it loads
          under cross-origin isolation. Counts one page view via sendBeacon. -->
     <script data-goatcounter="https://iccc.goatcounter.com/count" src="count.js"></script>
+    <!--
+      Tim Dixon Design System theme bootstrap — verbatim from theme.js.
+      Sets data-theme on <html> synchronously before CSS parses.
+    -->
     <script>
       (function () {
-        var t = localStorage.getItem('td-theme');
-        document.documentElement.dataset.theme =
-          t === 'dark' || t === 'light' ? t
-          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        var THEMES = ['light', 'dark', 'muted-light', 'muted-dark'];
+        var root = document.documentElement;
+        function resolve() {
+          var saved = localStorage.getItem('td-theme');
+          if (THEMES.indexOf(saved) !== -1) return saved;
+          return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        function apply(name) {
+          if (THEMES.indexOf(name) === -1) name = 'light';
+          root.dataset.theme = name;
+          return name;
+        }
+        apply(resolve());
+        window.tdTheme = {
+          themes: THEMES,
+          get: function () { return root.dataset.theme || 'light'; },
+          set: function (name) {
+            var applied = apply(name);
+            localStorage.setItem('td-theme', applied);
+            return applied;
+          },
+          toggleMode: function () {
+            var cur = this.get();
+            var next = cur.indexOf('light') !== -1
+              ? cur.replace('light', 'dark')
+              : cur.replace('dark', 'light');
+            return this.set(next);
+          },
+          toggleFamily: function () {
+            var cur = this.get();
+            var next = cur.indexOf('muted') !== -1
+              ? cur.replace('muted-', '')
+              : 'muted-' + cur;
+            return this.set(next);
+          }
+        };
       }());
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -23,29 +59,20 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
+    <a href="#app" class="skip-link">Skip to main content</a>
+    <!-- Branded header — theme-adaptive surface -->
     <header class="app-header">
       <div class="app-header-inner">
         <div class="app-header-text">
           <h1>Image Colour <span class="header-accent">Contrast Checker</span></h1>
           <p class="tagline">Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. Runs entirely in your browser &mdash; nothing is uploaded.</p>
         </div>
-        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle colour theme">
-          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="4"/>
-            <line x1="12" y1="2" x2="12" y2="6"/>
-            <line x1="12" y1="18" x2="12" y2="22"/>
-            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
-            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-            <line x1="2" y1="12" x2="6" y2="12"/>
-            <line x1="18" y1="12" x2="22" y2="12"/>
-            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
-            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-          </svg>
-          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-          <span class="theme-toggle-label" aria-hidden="true"></span>
-        </button>
+        <div class="theme-picker" role="group" aria-label="Colour theme">
+          <button type="button" class="theme-btn" data-theme-value="light"       aria-pressed="false">Light</button>
+          <button type="button" class="theme-btn" data-theme-value="dark"        aria-pressed="false">Dark</button>
+          <button type="button" class="theme-btn" data-theme-value="muted-light" aria-pressed="false">Muted Light</button>
+          <button type="button" class="theme-btn" data-theme-value="muted-dark"  aria-pressed="false">Muted Dark</button>
+        </div>
       </div>
     </header>
 
@@ -71,7 +98,7 @@
 
         <section>
           <h3>Local storage</h3>
-          <p>One value is stored in your browser's <code>localStorage</code>: your chosen colour theme (light or dark). It is used only to restore your preference on your next visit. It is never read by any server.</p>
+          <p>One value is stored in your browser's <code>localStorage</code>: your chosen colour theme (light, dark, muted light, or muted dark). It is used only to restore your preference on your next visit. It is never read by any server.</p>
         </section>
 
         <section>
@@ -133,31 +160,22 @@
         );
       }
 
-      const STORAGE_KEY = 'td-theme';
-      const html = document.documentElement;
-      const toggleBtn = document.getElementById('theme-toggle');
-      const toggleLabel = toggleBtn?.querySelector('.theme-toggle-label');
-
-      function syncToggle() {
-        if (!toggleBtn) return;
-        const isDark = html.dataset.theme === 'dark';
-        toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-        if (toggleLabel) toggleLabel.textContent = isDark ? 'Light' : 'Dark';
+      // Theme picker — window.tdTheme is set by the inline bootstrap script above.
+      function updateThemePicker() {
+        const current = window.tdTheme.get();
+        document.querySelectorAll('.theme-btn').forEach((btn) => {
+          btn.setAttribute('aria-pressed', btn.dataset.themeValue === current ? 'true' : 'false');
+        });
       }
 
-      function setTheme(theme, persist) {
-        html.dataset.theme = theme;
-        if (persist) localStorage.setItem(STORAGE_KEY, theme);
-        syncToggle();
-      }
+      document.querySelectorAll('.theme-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          window.tdTheme.set(btn.dataset.themeValue);
+          updateThemePicker();
+        });
+      });
 
-      syncToggle();
-      toggleBtn?.addEventListener('click', () => {
-        setTheme(html.dataset.theme === 'dark' ? 'light' : 'dark', true);
-      });
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        if (!localStorage.getItem(STORAGE_KEY)) setTheme(e.matches ? 'dark' : 'light', false);
-      });
+      updateThemePicker();
     </script>
   </body>
 </html>

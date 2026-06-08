@@ -272,36 +272,25 @@ if (footerEl) {
   );
 }
 
-// ── Theme toggle ──────────────────────────────────────────────────────────────
-(function initThemeToggle() {
-  const STORAGE_KEY = 'td-theme';
-  const html        = document.documentElement;
-  const toggleBtn   = document.getElementById('theme-toggle');
-  const toggleLabel = toggleBtn?.querySelector('.theme-toggle-label');
-
-  function syncToggle() {
-    if (!toggleBtn) return;
-    const isDark = html.dataset.theme === 'dark';
-    toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-    if (toggleLabel) toggleLabel.textContent = isDark ? 'Light' : 'Dark';
-  }
-
-  function setTheme(theme, persist) {
-    html.dataset.theme = theme;
-    if (persist) localStorage.setItem(STORAGE_KEY, theme);
-    syncToggle();
-  }
-
-  syncToggle();
-
-  toggleBtn?.addEventListener('click', () => {
-    setTheme(html.dataset.theme === 'dark' ? 'light' : 'dark', true);
+// ── Theme picker ──────────────────────────────────────────────────────────────
+// window.tdTheme is set synchronously by the inline bootstrap script in
+// index.html before this module runs. It manages persistence and data-theme.
+document.querySelectorAll('.theme-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    window.tdTheme.set(btn.dataset.themeValue);
+    updateThemePicker();
   });
+});
 
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem(STORAGE_KEY)) setTheme(e.matches ? 'dark' : 'light', false);
+function updateThemePicker() {
+  const current = window.tdTheme.get();
+  document.querySelectorAll('.theme-btn').forEach((btn) => {
+    btn.setAttribute('aria-pressed', btn.dataset.themeValue === current ? 'true' : 'false');
   });
-}());
+}
+
+// Set initial aria-pressed state after the DOM is ready.
+updateThemePicker();
 
 // ── Model download ────────────────────────────────────────────────────────────
 // The page is usable and scrollable while the models download — only the
