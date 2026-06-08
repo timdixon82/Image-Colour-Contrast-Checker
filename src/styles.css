@@ -134,7 +134,7 @@
   --bg:            #061528;
   --bg-card:       #0D2440;
   --fg:            #E2E7EC;
-  --fg-muted:      #9BBCD4;
+  --fg-muted:      #A0C0D7; /* app override: DS #9BBCD4 fails 7:1 on --neutral-bg (#15314F), 6.65:1 */
   --border:        #1C3A5C;
   --accent:        #EB9C52;
   --accent-hover:  #ECBB83;
@@ -160,7 +160,7 @@
   --bg:            #EDF0F3;
   --bg-card:       #FFFFFF;
   --fg:            #2B3138;
-  --fg-muted:      #5A636D;
+  --fg-muted:      #484F59; /* app override: DS #5A636D fails 7:1 on --neutral-bg (#E7EAED), 5.05:1 */
   --border:        #D2D8DE;
   --accent:        #234A73;
   --accent-hover:  #1B3A5C;
@@ -185,7 +185,7 @@
   --bg:            #142536;
   --bg-card:       #1E3147;
   --fg:            #E2E7EC;
-  --fg-muted:      #98C7D7;
+  --fg-muted:      #AACFDE; /* app override: DS #98C7D7 fails 7:1 on --neutral-bg (#283A4E), 6.36:1 */
   --border:        #2C3F54;
   --accent:        #E3C196;
   --accent-hover:  #E8D3BA;
@@ -328,8 +328,9 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 .header-accent { color: var(--accent); }
 
 /* Dark themes: wordmark flips to --warm (approved in design system spec) */
-[data-theme="dark"]       .header-accent,
-[data-theme="muted-dark"] .header-accent { color: var(--warm); }
+[data-theme="dark"]       .header-accent { color: var(--warm); }
+/* muted-dark: --warm (#8EBDE1) fails 7:1 on --bg-card (#1E3147), 6.63:1 — use --accent (7.78:1) instead */
+[data-theme="muted-dark"] .header-accent { color: var(--accent); }
 
 .app-header .tagline,
 .preloader-header .tagline {
