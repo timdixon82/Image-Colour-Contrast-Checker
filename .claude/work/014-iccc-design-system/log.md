@@ -1,0 +1,4 @@
+- [2026-06-08 19:39:59] Tad completed — requirements.md written. Token change tables, component specs, `--warn`/`--warn-bg` unresolved for muted themes (Sean to define and verify with tool).
+- [2026-06-08 19:42:24] Simon completed — prototype `docs/design-system/mockups/014-four-themes.html` built. All four themes. Roboto fonts copied to mockup fonts/.
+- [2026-06-08 19:49:36] Sonja copied Roboto variable fonts from handoff to docs/design-system/mockups/fonts/. Awaiting Tim review before Sean dispatch.
+- [2026-06-08] Open questions for Tim before build: (1) approve --warn/--warn-bg values for muted themes; (2) confirm dark card shadow — DS silent, prototype uses rgba(0,0,0,0.3).

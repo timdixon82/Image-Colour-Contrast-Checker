@@ -1,0 +1,17 @@
+Copy these two files from the design system handoff into this directory:
+
+  Roboto-VariableFont.ttf
+  Roboto-Italic-VariableFont.ttf
+
+Source:
+  /Users/timdixon/Downloads/Tim_Dixon_Design_System_handoff/tim-dixon-design-system/project/fonts/
+
+Terminal command:
+  cp "/Users/timdixon/Downloads/Tim_Dixon_Design_System_handoff/tim-dixon-design-system/project/fonts/Roboto-VariableFont.ttf" \
+     "/Users/timdixon/Code/Github/Image-Colour-Contrast-Checker/docs/design-system/mockups/fonts/"
+  cp "/Users/timdixon/Downloads/Tim_Dixon_Design_System_handoff/tim-dixon-design-system/project/fonts/Roboto-Italic-VariableFont.ttf" \
+     "/Users/timdixon/Code/Github/Image-Colour-Contrast-Checker/docs/design-system/mockups/fonts/"
+
+Without these files the prototype falls back to the system font stack
+(-apple-system / Segoe UI / Helvetica Neue / Arial) which is visually
+acceptable. Copy the fonts for the full Roboto experience.
