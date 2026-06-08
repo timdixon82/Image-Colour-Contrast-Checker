@@ -2,7 +2,7 @@
 
 **Type:** Small feature (type 7)
 **Opened:** 2026-06-08
-**Status:** In progress — mockup phase
+**Status:** Closed — merged PR #30, v0.4.19 live
 **Mockup mode:** A (static HTML prototype, committed to docs/design-system/mockups/)
 
 ## Summary

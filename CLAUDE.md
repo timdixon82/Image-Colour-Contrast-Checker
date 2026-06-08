@@ -172,15 +172,27 @@ The orchestrator is `main.js`. It runs this pipeline for each file and calls the
 
 ## Branding
 
-Tim Dixon brand palette:
-- Navy   `#061528`  — primary background, header
-- Orange `#FF7C00`  — accent, CTAs (7.1:1 on navy — AAA)
-- Blue   `#63D2FF`  — muted text in dark mode (10.6:1 on navy — AAA)
-- White  `#ffffff`  — primary text on dark backgrounds
+Tim Dixon Design System v1.0 (May 2026). All tokens live in `src/styles.css`.
 
-The header (`<header class="app-header">`) is always navy regardless of light/dark mode.
-An orange `::after` line runs along its bottom edge.
-The theme toggle switches between light and dark; OS preference is respected unless the user has made a manual choice (stored in `localStorage` under key `td-theme`).
+**Brand colours (used in logo, wordmark, and large accents):**
+- Brand navy  `#0C3B64` — primary accent in light themes
+- Brand orange `#EB9C52` — primary accent in dark themes (WARN-level, large elements only)
+- Brand sky    `#52C7EB` — secondary accent in dark themes
+
+**Four required themes** — set via `<html data-theme="…">`, managed by the inline `tdTheme` bootstrap in `<head>`:
+
+| Theme | `data-theme` value | Character |
+|---|---|---|
+| Light | `light` | Vivid brand, light surfaces — WCAG AAA, vestibular WARN on accents |
+| Dark | `dark` | Vivid brand, deep navy surfaces — WCAG AAA, vestibular WARN on accents |
+| Muted Light | `muted-light` | Desaturated brand, light — all five checkers SAFE/PASS |
+| Muted Dark | `muted-dark` | Desaturated brand, dark — all five checkers SAFE/PASS |
+
+Every surface, component, and export must support all four themes. Never hardcode hex values — use the semantic tokens (`--bg`, `--fg`, `--accent`, `--warm`, `--pass`, `--fail`, `--warn`, etc.) defined in `src/styles.css`.
+
+**Header** — theme-adaptive (`var(--bg-card)`); "Contrast Checker" wordmark uses `var(--accent)` in light themes, `var(--warm)` in dark themes. Bottom accent line: `linear-gradient(90deg, var(--warm), var(--accent) 70%, transparent)`.
+
+**Theme persistence** — `localStorage["td-theme"]`; default follows OS `prefers-color-scheme`. The `tdTheme` API (set via inline script before CSS loads) exposes `.set()`, `.get()`, `.toggleMode()`, `.toggleFamily()`.
 
 ---
 
@@ -188,14 +200,19 @@ The theme toggle switches between light and dark; OS preference is respected unl
 
 This tool targets **WCAG 2.2 AAA** for its own UI.
 
-Key colour contrast values (all ≥ 7:1 where required):
-- Light mode `--pass: #14532d` / `--fail: #7f1d1d` / `--warn: #663a00` — all ≥ 8:1 on their pill backgrounds ✓
-- Dark mode  `--pass: #4ade80` / `--fail: #fca5a5` / `--warn: #fcd34d` — all ≥ 7.9:1 on their pill backgrounds ✓
-- Status pills use **solid** backgrounds in both themes so contrast is independent of what is behind them.
-- `--fg-muted` is ≥ 7.7:1 on every surface it appears on (card, panel, page) in both themes.
+Key colour contrast values — all ≥ 7:1 (WCAG 2.2 AAA) across all four themes:
 
-When adding a status colour, verify it ≥ 7:1 in **both** light and dark mode — pills and
-muted text appear on the card, on `--neutral-bg` panels, and on the page background.
+| Token | Light | Dark | Muted Light | Muted Dark |
+|---|---|---|---|---|
+| `--pass` | `#15662F` | `#8FD3A2` | `#1E5631` | `#A7D9B5` |
+| `--fail` | `#A12525` | `#F0A6A6` | `#8A2A2A` | `#E6A9A9` |
+| `--warn` | `#544012` | `#DDB84B` | `#4E3C18` | `#DFC686` |
+
+Status pills use **solid** `--pass-bg` / `--fail-bg` / `--warn-bg` backgrounds so contrast is independent of what is behind them.
+
+`--fg-muted` passes ≥ 7:1 on every surface in all four themes — `--bg-card`, `--neutral-bg`, and `--bg`.
+
+When adding a status colour, verify it ≥ 7:1 on **all three surfaces** (`--bg-card`, `--neutral-bg`, `--bg`) in **all four themes**. The `--neutral-bg` panel is typically the tightest surface.
 
 Other requirements already in place:
 - Skip-to-content link at top of `<body>`
@@ -226,7 +243,7 @@ No other files need to change.
 
 Every commit that changes behaviour must bump `package.json` → `version`. `package-lock.json` updates automatically on the next `npm install`. Commit both files together.
 
-Current version: **0.2.21** — bump `package.json` on every behavioural change.
+Current version: **0.4.19** — bump `package.json` on every behavioural change.
 
 ---
 
