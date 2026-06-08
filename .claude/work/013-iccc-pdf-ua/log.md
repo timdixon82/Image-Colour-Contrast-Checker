@@ -428,3 +428,19 @@ Zero non-baseline errors.
 All three targeted fixes verified. All four regression sections pass. PDF has 5 pages
 (target 5-12 for 4 pairs). Handoff to Sonja for merge gate.
 - [2026-06-02 00:55:49] subagent completed
+
+---
+
+## Closed [2026-06-08]
+
+PR #24 merged to main. Deploy to GitHub Pages successful. Version 0.4.18 live at https://image-colour-contrast-checker.timdixon.net.
+
+**Delivered:**
+- ISO 14289-1 (PDF/UA-1) compliant PDF export via PDFKit wrapper (`src/lib/pdf-ua/`)
+- veraPDF compliance verified in CI on every push (106 rules, 0 failures)
+- Keep-together table guard: tables that fit on one page are never split
+- All WCAG 2.2 AAA findings resolved (web UI and PDF): row-group headers, link text, abbreviations, plain-English status labels, canvas aria-hidden, focus management, batch-complete announcement, JAWS heading navigation
+- 0 axe violations on web UI
+- veraPDF SHA-256 pinned in CI (supply-chain integrity)
+
+**Status: CLOSED**
