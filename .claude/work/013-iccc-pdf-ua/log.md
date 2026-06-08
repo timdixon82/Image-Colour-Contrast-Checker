@@ -444,3 +444,4 @@ PR #24 merged to main. Deploy to GitHub Pages successful. Version 0.4.18 live at
 - veraPDF SHA-256 pinned in CI (supply-chain integrity)
 
 **Status: CLOSED**
+- [2026-06-08 10:04:21] subagent completed
