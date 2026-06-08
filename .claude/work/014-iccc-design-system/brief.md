@@ -35,8 +35,16 @@ New brand colours (replaces old hardcoded values):
 - Brand sky: `#52C7EB` (was `#63D2FF`)
 - Plus muted-light and muted-dark desaturated equivalents (see `colors_and_type.css`)
 
-App-specific tokens not in the design system — define in `styles.css` for all four themes:
-- `--warn` / `--warn-bg` — used by WARN-level pill badges (vestibular / cognitive checks)
+App-specific tokens — define in `styles.css` `[data-theme]` scopes (not component CSS). Tim-verified values, all AAA, checker-confirmed:
+
+| Theme | `--warn` | `--warn-bg` | Saturation | Contrast |
+|---|---|---|---|---|
+| Light | `#544012` | `#F6E8C8` | WARN (65) | 8.2 / 9.9 / 9.1 AAA |
+| Dark | `#DDB84B` | `#3A2C0C` | WARN (68) | 7.1 / 8.2 / 9.6 AAA |
+| Muted Light | `#4E3C18` | `#EDE6D2` | SAFE (53) | 8.5 / 10.6 / 9.3 AAA |
+| Muted Dark | `#DFC686` | `#332B12` | SAFE (58) | 7.9 / 7.9 / 9.3 AAA |
+
+Note: Muted Dark `--warn` bumped from `#E8C97A` to `#DFC686` — original fell to 6.6:1 on `--bg-card`.
 
 ### Typography
 - Roboto variable font self-hosted in `public/fonts/` (copy from handoff)
