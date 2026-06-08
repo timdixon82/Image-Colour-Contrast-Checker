@@ -1,344 +1,486 @@
 /**
- * PDF export via pdfmake.
- * Accepts an array of AnalysedEntry (see core/schema.js) plus a timestamp
- * string. Nothing from the app's internal state leaks in here.
+ * PDF export via PDFKit — ISO 14289-1 (PDF/UA-1) compliant.
+ *
+ * Replaces the pdfmake implementation. Uses the `src/lib/pdf-ua/` wrapper
+ * which handles PDFKit 0.18.0 bug workarounds (see ADR 010 and the wrapper's
+ * module-level comment).
+ *
+ * Public API is unchanged:
+ *   downloadPdf(entries, timestamp, filename) — browser download
+ *
+ * Additional export for tests:
+ *   buildPdf(entries, timestamp) — returns Promise<Buffer>
  *
  * @module export/pdf
  */
 
 import {
-  APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
-  VESTIBULAR_CHECKER_URL
+  createDocument,
+  addHeading,
+  addParagraph,
+  addFigure,
+  addLink,
+  addTable,
+  artifact,
+  toBlob,
+  toBuffer,
+} from '../lib/pdf-ua/index.js';
+
+import {
+  APP_NAME,
+  SITE_URL,
+  THRESHOLDS_FOOTER,
+  DISCLAIMER_TEXT,
+  VESTIBULAR_CHECKER_URL,
+  VESTIBULAR_CHECKER_FULL_LABEL,
+  checkInfoUrl,
 } from './strings.js';
-import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
-let pdfMakePromise = null;
+import {
+  pairChecks,
+  wcagLine,
+  advancedLine,
+  pairBadges,
+  statusWord,
+  CHECK_GROUPS,
+} from './checks.js';
 
-async function loadPdfMake() {
-  if (pdfMakePromise) return pdfMakePromise;
-  pdfMakePromise = (async () => {
-    const pdfMake = (await import('pdfmake/build/pdfmake.js')).default;
-    const fonts   = (await import('pdfmake/build/vfs_fonts.js')).default;
-    pdfMake.vfs = fonts.vfs ?? fonts.pdfMake?.vfs ?? fonts;
-    return pdfMake;
-  })();
-  return pdfMakePromise;
+// ── Font loading ─────────────────────────────────────────────────────────────
+// Browser (Vite): fonts are served from /fonts/ by the dev server and
+//   copied to dist/fonts/ by the production build via scripts/copy-models.mjs.
+//   Loaded as ArrayBuffer via fetch() so no Node.js built-ins are needed.
+// Node.js (Vitest): node:url / node:path are available; fonts are read from
+//   node_modules/pdfmake/fonts/ by filesystem path.
+//   The dynamic import('node:url') branch is dead code in browser builds and
+//   tree-shaken by Vite/Rolldown before it can reach the bundler's module
+//   externalization check.
+
+let _fonts = null;
+
+async function loadFonts() {
+  if (_fonts) return _fonts;
+
+  if (typeof window === 'undefined') {
+    // Node.js / Vitest — use filesystem paths so PDFKit reads fonts directly.
+    const { fileURLToPath } = await import('node:url');
+    const { join }          = await import('node:path');
+    const __dirname = fileURLToPath(new URL('.', import.meta.url));
+    const fontDir   = join(__dirname, '../../node_modules/pdfmake/fonts/Roboto');
+    _fonts = {
+      regular: join(fontDir, 'Roboto-Regular.ttf'),
+      medium:  join(fontDir, 'Roboto-Medium.ttf'),
+    };
+  } else {
+    // Browser — fetch fonts from /fonts/ (served by Vite dev and production build).
+    // Pass the raw ArrayBuffer directly: pdfkit's PDFFontFactory.open has an
+    // `instanceof ArrayBuffer` branch that wraps it with `new Uint8Array(src)`
+    // internally before handing it to fontkit.  This avoids any cross-realm
+    // or polyfill issue with `src instanceof Uint8Array` failing on a Buffer
+    // or externally-constructed Uint8Array.
+    const [regBuf, medBuf] = await Promise.all([
+      fetch('/fonts/Roboto-Regular.ttf').then((r) => r.arrayBuffer()),
+      fetch('/fonts/Roboto-Medium.ttf').then((r)  => r.arrayBuffer()),
+    ]);
+    _fonts = {
+      regular: regBuf,
+      medium:  medBuf,
+    };
+  }
+  return _fonts;
 }
 
-/** Map a check status to a pdfmake style name. */
+// Available page width for A4 with 40 pt left/right margins
+const PAGE_W = 515;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 function statusStyle(status) {
   if (status === 'PASS' || status === 'SAFE') return 'pass';
   if (status === 'FAIL' || status === 'HIGH') return 'fail';
-  return 'warn'; // WARN, HARSH
+  return 'warn';
 }
 
-/**
- * Whole-image colour-blindness simulations, two per row.
- * Returns a single unbreakable stack so the heading and image grid stay
- * together on the same page. CVD images are capped at fit:[220,150] so
- * the four-image group fits reliably on a single A4 page.
- */
-function cbSimBlock(cbSimAssets) {
-  if (!cbSimAssets.length) return [];
-  const cell = (a) => a
-    ? { stack: [
-        { image: a.dataUrl, fit: [220, 150] },
-        { text: `${a.label} — ${a.note}`, fontSize: 8, color: '#4b5563', margin: [0, 3, 0, 6] }
-      ] }
-    : {};
-  const rows = [];
-  for (let i = 0; i < cbSimAssets.length; i += 2) {
-    rows.push([cell(cbSimAssets[i]), cell(cbSimAssets[i + 1])]);
-  }
-  return [{
-    stack: [
-      { text: 'Colour-blindness simulation', style: 'h3', margin: [0, 8, 0, 4] },
-      { table: { widths: ['*', '*'], body: rows }, layout: 'noBorders', margin: [0, 0, 0, 10] }
-    ],
-    unbreakable: true
-  }];
-}
-
-/**
- * Build a solid-fill pill cell for a pdfmake table cell.
- * Uses a single-cell table with fillColor so the pill has a visible
- * background in print. All colour pairings are WCAG 2.2 AAA (7:1 minimum).
- */
 function pillCell(status) {
-  const PILL_COLOURS = {
-    pass:    { text: '#14532d', fill: '#dcfce7' }, /* 9.1:1 AAA */
-    fail:    { text: '#7f1d1d', fill: '#fee2e2' }, /* 10:1 AAA */
-    warn:    { text: '#663a00', fill: '#fef3c7' }, /* 8.7:1 AAA */
-    neutral: { text: '#4b5563', fill: '#f0f2f5' }  /* 7.6:1 AAA */
+  const colours = {
+    pass:    { backgroundColor: '#dcfce7', color: '#14532d' },
+    fail:    { backgroundColor: '#fee2e2', color: '#7f1d1d' },
+    warn:    { backgroundColor: '#fef3c7', color: '#663a00' },
+    neutral: { backgroundColor: '#f0f2f5', color: '#4b5563' },
   };
-  const key  = statusStyle(status);
-  const pair = PILL_COLOURS[key] || PILL_COLOURS.neutral;
-  return {
-    table: {
-      widths: ['auto'],
-      body: [[{
-        text: status,
-        bold: true,
-        color: pair.text,
-        fillColor: pair.fill,
-        margin: [6, 2, 6, 2],
-        fontSize: 8
-      }]]
-    },
-    layout: 'noBorders'
-  };
+  const c = colours[statusStyle(status)] || colours.neutral;
+  return { text: statusWord(status), ...c, font: { size: 8 }, padding: [6, 2, 6, 2] };
 }
 
-/** One colour combination: header line, every check, and the cropped region. */
-function pairBlock(p, asset) {
-  const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${p.fgHex.slice(1)}&bcolor=${p.bgHex.slice(1)}`;
-  const out = [];
+/**
+ * Write a paragraph (P structure element) containing multiple inline spans.
+ * Each span can carry a link, colour, fontSize, and font switch.
+ *
+ * @param {import('pdfkit')} doc
+ * @param {Array<{
+ *   text: string,
+ *   link?: string,
+ *   color?: string,
+ *   fontSize?: number,
+ *   font?: string,
+ *   oblique?: boolean,
+ * }>} spans
+ */
+function writeParagraph(doc, spans) {
+  const p = doc.struct('P');
+  doc.addStructure(p);
 
-  const badgeText = pairBadges(p).flatMap((b) => [
-    { text: `${b.short} ${statusWord(b.status)}`, style: statusStyle(b.status), bold: true },
-    { text: '    ' }
+  spans.forEach((span, i) => {
+    const isLast = i === spans.length - 1;
+
+    if (span.link) {
+      addLink(doc, p, span.text, span.link, {
+        font:      span.font,
+        fontSize:  span.fontSize,
+        color:     span.color,
+        continued: !isLast,
+      });
+    } else {
+      p.add(() => {
+        if (span.font)     doc.font(span.font);
+        if (span.fontSize) doc.fontSize(span.fontSize);
+        if (span.color)    doc.fillColor(span.color);
+        doc.text(span.text, {
+          continued: !isLast,
+          link:      null,
+          underline: false,
+          oblique:   !!span.oblique,
+        });
+      });
+    }
+  });
+
+  p.end();
+}
+
+// ── Document builder ─────────────────────────────────────────────────────────
+
+async function buildDocument(entries, timestamp) {
+  const fonts = await loadFonts();
+  const doc   = createDocument({
+    title: 'Audit Report',
+    fonts,
+    lang:    'en',
+    size:    'A4',
+    margins: { top: 50, bottom: 50, left: 40, right: 40 },
+  });
+
+  // ── Branded header ────────────────────────────────────────────────────────
+  const HEADER_H     = 88;
+  const HEADER_PAD_L = 12;
+  const HEADER_TEXT_W = PAGE_W - HEADER_PAD_L * 2;  // 491pt (12pt left + 12pt right inner pad)
+
+  const headerTop = doc.y;
+  artifact(doc, (d) => {
+    d.rect(doc.page.margins.left, headerTop, PAGE_W, HEADER_H).fill('#061528');
+  });
+  doc.y = headerTop + 12;  // top padding inside header
+
+  const h1 = doc.struct('H1');
+  doc.addStructure(h1);
+  h1.add(() => {
+    const x = doc.page.margins.left + HEADER_PAD_L;
+    doc.font('Medium').fontSize(18)
+       .fillColor('#ffffff')
+       .text('Image Colour ', x, doc.y, { continued: true, link: null, underline: false, oblique: false, width: HEADER_TEXT_W })
+       .fillColor('#FF7C00')
+       .text('Contrast Checker', { continued: false, link: null, underline: false, oblique: false });
+  });
+  h1.end();
+
+  // Tagline: write with explicit x to maintain inner padding (addParagraph resets to margin)
+  const taglineStruct = doc.struct('P');
+  doc.addStructure(taglineStruct);
+  taglineStruct.add(() => {
+    const x = doc.page.margins.left + HEADER_PAD_L;
+    doc.font('Regular').fontSize(8.75).fillColor('#63D2FF')
+       .text(
+         'Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. '
+         + 'Runs entirely in your browser — nothing is uploaded.',
+         x, doc.y,
+         { continued: false, link: null, underline: false, oblique: false, width: HEADER_TEXT_W }
+       );
+  });
+  taglineStruct.end();
+
+  doc.y = headerTop + HEADER_H + 12;
+
+  // ── Report title + timestamp ──────────────────────────────────────────────
+  doc.fillColor('#000000');
+  addHeading(doc, 2, 'Audit Report',            { font: 'Medium', fontSize: 14 });
+  addParagraph(doc, `Generated ${timestamp}`,   { fontSize: 9, fillColor: '#4b5563' });
+  writeParagraph(doc, [
+    { text: 'Generated by ',  fontSize: 9, color: '#4b5563' },
+    { text: APP_NAME,         fontSize: 9, color: '#061528', link: SITE_URL },
+  ]);
+  doc.moveDown(0.5);
+
+  // ── Disclaimer ────────────────────────────────────────────────────────────
+  const DISCL_H      = 56;
+  const DISCL_PAD_L  = 10;
+  const DISCL_TEXT_W = PAGE_W - DISCL_PAD_L * 2;  // 495pt
+
+  const disclTop = doc.y;
+  artifact(doc, (d) => {
+    d.roundedRect(doc.page.margins.left, disclTop, PAGE_W, DISCL_H, 4).fill('#fef3c7');
+  });
+  doc.y = disclTop + 10;  // top padding inside block
+
+  const shortDisclaimer = DISCLAIMER_TEXT.replace(
+    'This report is generated automatically to help speed up accessibility review. ', ''
+  );
+  // "Automated analysis only" bold + regular continuation, with inner horizontal padding
+  const disclStruct = doc.struct('P');
+  doc.addStructure(disclStruct);
+  disclStruct.add(() => {
+    const x = doc.page.margins.left + DISCL_PAD_L;
+    doc.font('Medium').fontSize(9).fillColor('#1a1a1a')
+       .text('Automated analysis only', x, doc.y, {
+         continued: true, link: null, underline: false, oblique: false, width: DISCL_TEXT_W,
+       });
+    doc.font('Regular')
+       .text(` — ${shortDisclaimer}`, {
+         continued: false, link: null, underline: false, oblique: false,
+       });
+  });
+  disclStruct.end();
+  doc.y = disclTop + DISCL_H + 12;
+
+  // ── Summary table ─────────────────────────────────────────────────────────
+  doc.fillColor('#000000');
+  addHeading(doc, 2, 'Summary', { font: 'Medium', fontSize: 14 });
+  doc.moveDown(0.3);
+  doc.table({
+    structParent: doc,
+    columnStyles: [{ width: PAGE_W - 100 }, { width: 100 }],
+    defaultStyle: { fontSize: 10 },
+    data: [
+      [
+        { type: 'TH', scope: 'column', text: 'Image',  font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
+        { type: 'TH', scope: 'column', text: 'Result', font: { src: 'Medium' }, backgroundColor: '#f3f4f6' },
+      ],
+      ...entries.map((e) => {
+        const vs = e.report.flag ? 'FAIL' : (e.report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
+        return [{ text: e.filename }, pillCell(vs)];
+      }),
+    ],
+  });
+  doc.moveDown();
+
+  // ── Per-image sections ────────────────────────────────────────────────────
+  entries.forEach((entry, idx) => {
+    if (idx > 0) doc.addPage();
+    doc.fillColor('#000000');
+
+    // Heading + preview
+    addHeading(doc, 2, entry.filename, { font: 'Medium', fontSize: 14 });
+    doc.moveDown(0.3);
+    if (entry.previewDataUrl) {
+      addFigure(doc, entry.previewDataUrl, `Preview of ${entry.filename}`, { fit: [PAGE_W, 480] });
+    }
+
+    // Result line — bold "Result:", coloured verdict word, plain detail
+    const vs = entry.report.flag
+      ? 'FAIL'
+      : (entry.report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
+    const vsColor = { pass: '#14532d', fail: '#7f1d1d', warn: '#663a00' }[statusStyle(vs)] || '#4b5563';
+    doc.fillColor('#000000');
+    writeParagraph(doc, [
+      { text: 'Result: ',              font: 'Medium',  fontSize: 10, color: '#000000' },
+      { text: vs,                      font: 'Medium',  fontSize: 8,  color: vsColor },
+      { text: ` — ${entry.report.detail}`, font: 'Regular', fontSize: 10, color: '#000000' },
+    ]);
+
+    // CVD simulations — 2-column grid matching the reference layout
+    if (entry.cbSimAssets && entry.cbSimAssets.length) {
+      doc.fillColor('#000000');
+      addHeading(doc, 3, 'Colour-blindness simulation', { font: 'Medium', fontSize: 12 });
+      doc.moveDown(0.3);
+
+      const CVD_COLS    = 2;
+      const CVD_GAP     = 15;
+      const CVD_COL_W   = Math.floor((PAGE_W - CVD_GAP) / CVD_COLS);  // ~250pt per column
+      const CVD_IMG     = CVD_COL_W - 5;   // 245pt: max image dimension per cell
+      const CVD_LBL_H   = 20;              // height reserved for label text below image
+      const CVD_ROW_GAP = 12;              // gap between grid rows
+
+      for (let row = 0; row < Math.ceil(entry.cbSimAssets.length / CVD_COLS); row++) {
+        // Bug 1 fix: guard against row overflowing the page bottom.
+        // CVD images are placed at absolute y positions — PDFKit will clip
+        // them silently when rowTop + rowHeight exceeds the page bottom.
+        // Add a page break before the row if it would not fit.
+        const rowContentH = CVD_IMG + CVD_LBL_H;
+        const pageBottom  = doc.page.height - doc.page.margins.bottom;
+        if (doc.y + rowContentH > pageBottom) {
+          doc.addPage();
+          doc.y = doc.page.margins.top;
+        }
+        const rowTop = doc.y;
+
+        // Images row
+        for (let col = 0; col < CVD_COLS; col++) {
+          const idx   = row * CVD_COLS + col;
+          const asset = entry.cbSimAssets[idx];
+          if (!asset) continue;
+
+          const imgX = doc.page.margins.left + col * (CVD_COL_W + CVD_GAP);
+          // addFigure passes all options to doc.image(), so x/y/fit work fine
+          addFigure(doc, asset.dataUrl,
+            `${asset.label} colour vision simulation — ${asset.note}`,
+            { fit: [CVD_IMG, CVD_IMG], x: imgX, y: rowTop }
+          );
+        }
+
+        // Labels row — rendered at fixed y below the image row
+        const labelY = rowTop + CVD_IMG + 4;
+        for (let col = 0; col < CVD_COLS; col++) {
+          const idx   = row * CVD_COLS + col;
+          const asset = entry.cbSimAssets[idx];
+          if (!asset) continue;
+
+          const lblX      = doc.page.margins.left + col * (CVD_COL_W + CVD_GAP);
+          const lblStruct = doc.struct('P');
+          doc.addStructure(lblStruct);
+          lblStruct.add(() => {
+            doc.font('Regular').fontSize(8).fillColor('#4b5563')
+               .text(`${asset.label} — ${asset.note}`, lblX, labelY, {
+                 continued: false, link: null, underline: false, oblique: true, width: CVD_COL_W,
+               });
+          });
+          lblStruct.end();
+        }
+
+        doc.y  = labelY + CVD_LBL_H + CVD_ROW_GAP;
+        doc._x = doc.page.margins.left;  // reset cursor after absolute-positioned grid labels
+      }
+      // Bug 2 fix: explicitly reset x to the left margin after the CVD grid.
+      // Absolute-positioned image rendering can leave doc.x stranded at the
+      // right-column position (e.g. 305pt) when a page overflow occurs mid-loop.
+      doc.x = doc.page.margins.left;
+      doc.moveDown(0.5);
+    }
+
+    // Contrast results + per-pair blocks
+    if (entry.report.hasText && entry.report.colourPairs && entry.report.colourPairs.length) {
+      doc.fillColor('#000000');
+      addHeading(doc, 3, 'Contrast results', { font: 'Medium', fontSize: 12 });
+      doc.moveDown(0.3);
+      addParagraph(doc, wcagLine(entry.report),     { fontSize: 10, fillColor: '#374151', oblique: true });
+      addParagraph(doc, advancedLine(entry.report), { fontSize: 10, fillColor: '#374151', oblique: true });
+
+      const assetMap = new Map((entry.pairAssets || []).map((a) => [a.pair, a]));
+
+      for (const pair of entry.report.colourPairs) {
+        const asset = assetMap.get(pair);
+        doc.moveDown(0.5);
+        doc.fillColor('#000000');
+
+        // 1.9.1 Swatch (decorative) + badge strip + hex pair label
+        if (asset?.swatchDataUrl) {
+          const swatchY = doc.y;
+          artifact(doc, (d) => {
+            d.image(asset.swatchDataUrl, doc.page.margins.left, swatchY, { width: 48, height: 14 });
+          });
+          doc.y = swatchY + 18;
+        }
+        const badges = pairBadges(pair)
+          .map((b) => `${b.short} ${statusWord(b.status)}`)
+          .join('    ');
+        addParagraph(doc,
+          `${badges}    Background ${pair.bgHex}  ·  Foreground ${pair.fgHex}`,
+          { font: 'Regular', fontSize: 10, fillColor: '#000000' }
+        );
+
+        // 1.9.2 Examples + links (with working hyperlinks)
+        const webaim = `https://webaim.org/resources/contrastchecker/?fcolor=${pair.fgHex.slice(1)}&bcolor=${pair.bgHex.slice(1)}`;
+        const exampleSpans = pair.examples && pair.examples.length
+          ? [{ text: pair.examples.map((e) => `"${e}"`).join(', ') + '   ', fontSize: 9, color: '#374151', oblique: true }]
+          : [];
+        writeParagraph(doc, [
+          ...exampleSpans,
+          { text: `Check ${pair.fgHex}/${pair.bgHex} on WebAIM Contrast Checker`, fontSize: 9, color: '#061528', link: webaim },
+          { text: '   ',                             fontSize: 9, color: '#374151' },
+          { text: VESTIBULAR_CHECKER_FULL_LABEL,     fontSize: 9, color: '#061528', link: VESTIBULAR_CHECKER_URL },
+        ]);
+
+        // 1.9.3 Checks table — Check column cells carry hyperlinks (requires addTable)
+        const checks     = pairChecks(pair);
+        const tableData  = [[
+          { type: 'TH', scope: 'column', content: 'Check',         font: 'Medium', fontSize: 9, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', content: 'Value',         font: 'Medium', fontSize: 9, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', content: 'Status',        font: 'Medium', fontSize: 9, backgroundColor: '#f3f4f6' },
+          { type: 'TH', scope: 'column', content: 'What it means', font: 'Medium', fontSize: 9, backgroundColor: '#f3f4f6' },
+        ]];
+
+        for (const grp of CHECK_GROUPS) {
+          tableData.push([
+            { type: 'TH', scope: 'row', content: grp.label,
+              font: 'Medium', fontSize: 8,
+              backgroundColor: '#e5e7eb', color: '#1a1a1a' },
+            { content: '' }, { content: '' }, { content: '' },
+          ]);
+          for (const c of checks.filter((ch) => ch.group === grp.id)) {
+            const pill = pillCell(c.status);
+            tableData.push([
+              { content: [{ text: c.label, link: checkInfoUrl(c.id), color: '#061528', underline: true }] },
+              { content: c.value || '—' },
+              { content: pill.text, backgroundColor: pill.backgroundColor, color: pill.color, fontSize: 8 },
+              { content: c.detail, oblique: true },
+            ]);
+          }
+        }
+
+        doc.moveDown(0.3);
+        addTable(doc, {
+          rows: tableData,
+          columnStyles: [
+            { width: 110 }, { width: 80 }, { width: 80 }, { width: 225 },
+          ],
+        });
+
+        // 1.9.4 Clip image (conditional)
+        if (asset?.clipDataUrl) {
+          addParagraph(doc, 'Where this combination appears:', {
+            fontSize: 9, fillColor: '#374151', oblique: true,
+          });
+          addFigure(doc, asset.clipDataUrl,
+            `Cropped region showing where ${pair.bgHex} background with `
+            + `${pair.fgHex} foreground text appears in the image`,
+            { width: 360 }
+          );
+        }
+      }
+    }
+  });
+
+  // ── Footer ────────────────────────────────────────────────────────────────
+  doc.moveDown();
+  doc.fillColor('#000000');
+  addParagraph(doc, THRESHOLDS_FOOTER, { fontSize: 9, fillColor: '#4b5563', oblique: true });
+  writeParagraph(doc, [
+    { text: 'Generated by ', fontSize: 9, color: '#4b5563' },
+    { text: APP_NAME,        fontSize: 9, color: '#061528', link: SITE_URL },
   ]);
 
-  out.push({
-    columns: [
-      asset?.swatchDataUrl
-        ? { image: asset.swatchDataUrl, width: 48, height: 14, margin: [0, 2, 8, 0] }
-        : { text: '', width: 1 },
-      {
-        width: '*',
-        text: [
-          ...badgeText,
-          { text: `Background ${p.bgHex}  ·  Foreground ${p.fgHex}`, bold: true }
-        ]
-      }
-    ],
-    margin: [0, 10, 0, 2]
-  });
-
-  out.push({
-    text: [
-      p.examples.length ? { text: p.examples.map((e) => `"${e}"`).join(', ') + '   ', style: 'examples' } : '',
-      { text: 'WebAIM', link: webaim, style: 'link' },
-      { text: '   ' },
-      { text: 'Vestibular Accessible Design Checker', link: VESTIBULAR_CHECKER_URL, style: 'link' }
-    ],
-    fontSize: 9,
-    margin: [0, 0, 0, 4]
-  });
-
-  const body = [[
-    { text: 'Check',         style: 'th' },
-    { text: 'Value',         style: 'th' },
-    { text: 'Status',        style: 'th' },
-    { text: 'What it means', style: 'th' }
-  ]];
-  const checks = pairChecks(p);
-  for (const grp of CHECK_GROUPS) {
-    body.push([{ text: grp.label, colSpan: 4, style: 'checkGroup' }, {}, {}, {}]);
-    for (const c of checks.filter((check) => check.group === grp.id)) {
-      body.push([
-        { text: c.label, link: checkInfoUrl(c.id), style: 'link' },
-        c.value || '—',
-        pillCell(c.status),
-        { text: c.detail, style: 'examples' }
-      ]);
-    }
-  }
-  out.push({
-    table: { headerRows: 1, widths: ['auto', 'auto', 'auto', '*'], body },
-    layout: 'lightHorizontalLines',
-    margin: [0, 0, 0, 4]
-  });
-
-  if (asset?.clipDataUrl) {
-    out.push({ text: 'Where this combination appears:', style: 'examples', margin: [0, 2, 0, 3] });
-    out.push({ image: asset.clipDataUrl, width: 360, margin: [0, 0, 0, 6] });
-  }
-  return out;
+  return doc;
 }
 
-/**
- * Build the pdfmake document definition from a batch of analysed entries.
- *
- * @param {import('../core/schema.js').AnalysedEntry[]} entries
- * @param {string} timestamp
- * @returns {Object}  pdfmake docDefinition
- */
-function buildDocDefinition(entries, timestamp) {
-  const content = [];
+// ── Public API ───────────────────────────────────────────────────────────────
 
-  // ── Branded header block + title lines (unbreakable: prevents timestamp orphan) ──
-  content.push({
-    stack: [
-      {
-        table: {
-          widths: ['*'],
-          body: [[{
-            stack: [
-              {
-                text: [
-                  { text: 'Image Colour ',    color: '#ffffff', fontSize: 18, bold: true },
-                  { text: 'Contrast Checker', color: '#FF7C00', fontSize: 18, bold: true }
-                ]
-              },
-              {
-                // Tagline line: sky blue, 87.5% of body font size (10pt × 0.875 ≈ 8.75pt)
-                text: 'Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. Runs entirely in your browser — nothing is uploaded.',
-                color: '#63D2FF',
-                fontSize: 8.75,
-                margin: [0, 4, 0, 0]
-              }
-            ],
-            fillColor: '#061528',
-            margin: [16, 14, 16, 14]
-          }]]
-        },
-        layout: 'noBorders',
-        margin: [0, 0, 0, 12]
-      },
-      { text: 'Audit Report', style: 'h1', margin: [0, 0, 0, 2] },
-      { text: `Generated ${timestamp}`, style: 'timestamp', margin: [0, 0, 0, 4] },
-      {
-        text: [
-          { text: 'Generated by ', style: 'timestamp' },
-          { text: APP_NAME, link: SITE_URL, style: 'link', fontSize: 9 }
-        ],
-        margin: [0, 0, 0, 10]
-      }
-    ],
-    unbreakable: true
-  });
-
-  // ── Disclaimer — brand-adjacent amber fill, near-black text (#1a1a1a, 13.5:1 AAA) ──
-  content.push({
-    table: {
-      widths: ['*'],
-      body: [[{
-        text: [
-          { text: 'Automated analysis only — ', bold: true },
-          { text: DISCLAIMER_TEXT.replace('This report is generated automatically to help speed up accessibility review. ', '') }
-        ],
-        fillColor: '#fef3c7', /* --warn-bg light mode token */
-        color: '#1a1a1a',    /* near-black, 13.5:1 on #fef3c7 AAA */
-        margin: [10, 8, 10, 8],
-        fontSize: 9
-      }]]
-    },
-    layout: 'noBorders',
-    margin: [0, 0, 0, 14]
-  });
-
-  // ── Summary table ────────────────────────────────────────────────────────
-  content.push({ text: 'Summary', style: 'h2', margin: [0, 6, 0, 6] });
-  const summaryBody = [
-    [{ text: 'Image', style: 'th' }, { text: 'Result', style: 'th' }]
-  ];
-  for (const e of entries) {
-    const verdictStatus = e.report.flag ? 'FAIL' : (e.report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
-    summaryBody.push([
-      e.filename,
-      pillCell(verdictStatus)
-    ]);
-  }
-  content.push({
-    table: { headerRows: 1, widths: ['*', 'auto'], body: summaryBody },
-    layout: 'lightHorizontalLines',
-    margin: [0, 0, 0, 12]
-  });
-
-  // ── Per-image detail ─────────────────────────────────────────────────────
-  // Section order matches the web UI: heading → preview → result →
-  // colour-blindness simulation → contrast results.
-  // pageBreak: 'before' only from the second entry onward — avoids a blank
-  // page between the cover/summary page and the first image.
-  entries.forEach((entry, idx) => {
-    const { filename, report, previewDataUrl, pairAssets = [], cbSimAssets = [] } = entry;
-
-    // Unbreakable: heading + preview — keeps them together on the same page.
-    const headingAndPreview = [
-      { text: filename, style: 'h2', ...(idx > 0 ? { pageBreak: 'before' } : {}) }
-    ];
-    if (previewDataUrl) {
-      headingAndPreview.push({ image: previewDataUrl, width: 420, margin: [0, 6, 0, 8] });
-    }
-    content.push({ stack: headingAndPreview, unbreakable: true });
-
-    const verdictStatus = report.flag ? 'FAIL' : (report.verdict === 'PASS' ? 'PASS' : 'NO TEXT');
-
-    // Result line — always shown for every image
-    content.push({
-      columns: [
-        { text: 'Result: ', bold: true, width: 'auto' },
-        { width: 'auto', ...pillCell(verdictStatus) },
-        { text: ` — ${report.detail}`, margin: [4, 2, 0, 0] }
-      ],
-      margin: [0, 0, 0, 8]
-    });
-
-    // Colour-blindness simulation — before contrast results, matching the web UI
-    content.push(...cbSimBlock(cbSimAssets));
-
-    if (report.hasText && report.colourPairs.length) {
-      // Unbreakable: contrast results H3 + WCAG/Advanced summary
-      content.push({
-        stack: [
-          { text: 'Contrast results', style: 'h3', margin: [0, 8, 0, 2] },
-          { text: wcagLine(report), style: 'examples', margin: [0, 0, 0, 1] },
-          { text: advancedLine(report), style: 'examples', margin: [0, 0, 0, 4] }
-        ],
-        unbreakable: true
-      });
-
-      const assetByPair = new Map(pairAssets.map((a) => [a.pair, a]));
-      for (const p of report.colourPairs) {
-        // Unbreakable: each pairBlock stays together — prevents header orphaning.
-        content.push({ stack: pairBlock(p, assetByPair.get(p)), unbreakable: true });
-      }
-    }
-  });
-
-  // ── Footer ───────────────────────────────────────────────────────────────
-  content.push({ text: THRESHOLDS_FOOTER, style: 'footer', italics: true, margin: [0, 16, 0, 4] });
-  content.push({
-    text: [
-      { text: 'Generated by ' },
-      { text: APP_NAME, link: SITE_URL, style: 'link' }
-    ],
-    style: 'footer',
-    margin: [0, 4, 0, 0]
-  });
-
-  return {
-    content,
-    defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.4 },
-    pageMargins: [40, 50, 40, 50],
-    styles: {
-      h1:          { fontSize: 18, bold: true, margin: [0, 0, 0, 4] },
-      h2:          { fontSize: 14, bold: true, margin: [0, 12, 0, 6] },
-      h3:          { fontSize: 12, bold: true },
-      th:          { bold: true, fillColor: '#f3f4f6' },
-      /* checkGroup: #1a1a1a on #e5e7eb — approx 13.8:1 AAA (was #374151, 6.1:1 AA only) */
-      checkGroup:  { bold: true, fillColor: '#e5e7eb', fontSize: 8, color: '#1a1a1a' },
-      pass:        { color: '#14532d', bold: true }, /* used in pairBadges inline text */
-      fail:        { color: '#7f1d1d', bold: true },
-      warn:        { color: '#663a00', bold: true },
-      neutral:     { color: '#4b5563' },
-      timestamp:   { fontSize: 9, color: '#4b5563' },
-      examples:    { italics: true, color: '#374151' },
-      link:        { color: '#061528', decoration: 'underline' }, /* Navy on white 18.33:1 AAA */
-      footer:      { fontSize: 9, color: '#4b5563' }
-    }
-  };
-}
-
-/**
- * Generate and trigger a download of the PDF report.
- *
- * @param {import('../core/schema.js').AnalysedEntry[]} entries
- * @param {string} timestamp
- * @param {string} filename
- */
 export async function downloadPdf(entries, timestamp, filename) {
-  const pdfMake = await loadPdfMake();
-  pdfMake.createPdf(buildDocDefinition(entries, timestamp)).download(filename);
+  const blob = await toBlob(await buildDocument(entries, timestamp));
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function buildPdf(entries, timestamp) {
+  return toBuffer(await buildDocument(entries, timestamp));
 }

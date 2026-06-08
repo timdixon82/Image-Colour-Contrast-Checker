@@ -41,6 +41,20 @@ if (existsSync(ortSrc)) {
   console.warn('[copy-models] onnxruntime-web/dist not found — ORT WASM will not be served');
 }
 
+// Copy Roboto TTF fonts used by the PDFKit PDF export into public/fonts/ so
+// they can be fetched by the browser at runtime. The fonts live in pdfmake's
+// package so they are available wherever pdfmake is installed.
+const fontDst = join(repoRoot, 'public', 'fonts');
+mkdirSync(fontDst, { recursive: true });
+const fontSrc = join(repoRoot, 'node_modules', 'pdfmake', 'fonts', 'Roboto');
+if (existsSync(fontSrc)) {
+  for (const name of ['Roboto-Regular.ttf', 'Roboto-Medium.ttf']) {
+    copyFileSync(join(fontSrc, name), join(fontDst, name));
+  }
+} else {
+  console.warn('[copy-models] pdfmake Roboto fonts not found — PDF export font will be missing');
+}
+
 // Cross-origin isolation is handled by the hand-written public/sw.js, which
 // also caches these model + runtime files — nothing to copy for it.
 

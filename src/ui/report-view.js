@@ -329,6 +329,7 @@ function renderContrastResults(card, entry) {
     toggleCell.append(toggle);
 
     swatch.canvas.className = 'swatch-canvas';
+    swatch.canvas.setAttribute('aria-hidden', 'true');
     const swatchCell = document.createElement('td');
     swatchCell.append(swatch.canvas);
 
@@ -360,6 +361,7 @@ function renderContrastResults(card, entry) {
     hdr.append(toggleCell, swatchCell, wcagCell, advCell, bgCell, fgCell, checkCell, textCell);
 
     // ── Expandable detail row ──
+    clip.canvas.setAttribute('aria-hidden', 'true');
     const det = document.createElement('tr');
     det.className = 'result-detail';
     det.id = detailId;
@@ -420,7 +422,7 @@ function buildDetailPanel(p, clipCanvas) {
     groupRow.className = 'check-group-row';
     const gh = document.createElement('th');
     gh.colSpan     = 4;
-    gh.scope       = 'colgroup';
+    gh.scope       = 'rowgroup';
     gh.textContent = grp.label;
     groupRow.append(gh);
     tbody.append(groupRow);
@@ -459,7 +461,7 @@ function checkRow(c) {
   valueCell.textContent = c.value || '—';
 
   const statusCell = document.createElement('td');
-  statusCell.append(pill(c.status, c.status));
+  statusCell.append(pill(statusWord(c.status), c.status));
 
   const meaningCell = document.createElement('td');
   meaningCell.className   = 'check-meaning';
@@ -520,6 +522,10 @@ function webaimLink(fgHex, bgHex) {
   arrow.setAttribute('aria-hidden', 'true');
   arrow.textContent = ' ↗';
   a.append(arrow);
+  const srNote = document.createElement('span');
+  srNote.className = 'sr-only';
+  srNote.textContent = ' (opens in new window)';
+  a.append(srNote);
   return a;
 }
 
@@ -601,10 +607,12 @@ initChecksNav();
 export function summaryItemFromEntry(entry, sourceCanvas) {
   const report  = entry.report;
   const hasText = report.hasText && report.colourPairs.length > 0;
+  const thumbCanvas = sourceCanvas ? makeThumb(sourceCanvas, 40).canvas : null;
+  if (thumbCanvas) thumbCanvas.setAttribute('aria-hidden', 'true');
   return {
     id:       entry.id,
     filename: entry.filename,
-    thumb:    sourceCanvas ? makeThumb(sourceCanvas, 40).canvas : null,
+    thumb:    thumbCanvas,
     hasText,
     badges:   hasText ? imageBadges(report) : null
   };

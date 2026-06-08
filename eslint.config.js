@@ -26,4 +26,24 @@ export default [
       'no-new-func': 'error',
     },
   },
+  {
+    // The pdf-ua wrapper, the PDF export module, and all test files run in
+    // Node.js (Vitest) as well as in the browser (via Vite polyfills). Include
+    // Node globals so that Buffer, process, etc. are recognised without
+    // triggering no-undef.
+    files: ['src/lib/pdf-ua/**/*.js', 'src/export/pdf.js', 'src/**/*.test.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { ...globals.browser, ...globals.node },
+    },
+    rules: {
+      'no-unused-vars': ['error', { caughtErrorsIgnorePattern: '^_' }],
+      'no-undef': 'error',
+      'eqeqeq': 'error',
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-new-func': 'error',
+    },
+  },
 ];

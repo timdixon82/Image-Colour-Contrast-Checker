@@ -183,6 +183,11 @@ function finishBatch() {
     actionBar.hidden  = false;
     landing.hidden    = true;
     processing.hidden = true;
+    const appStatus = document.getElementById('app-status');
+    if (appStatus) {
+      const n = state.entries.size;
+      appStatus.textContent = `Analysis complete. ${n} ${n === 1 ? 'image' : 'images'} processed. Download PDF and Markdown reports are ready.`;
+    }
   } else {
     // Nothing succeeded — keep the queue (with its error messages) and the
     // dropzone on screen so the failure is visible and the user can retry.
@@ -200,15 +205,22 @@ function entriesForExport() {
 
 // ── Exports ───────────────────────────────────────────────────────────────────
 downloadPdfBtn.addEventListener('click', async () => {
+  if (downloadPdfBtn.getAttribute('aria-disabled') === 'true') return;
   const entries = entriesForExport();
   if (!entries.length) return;
-  downloadPdfBtn.disabled = true;
+  const appStatus = document.getElementById('app-status');
+  downloadPdfBtn.setAttribute('aria-disabled', 'true');
+  downloadPdfBtn.style.pointerEvents = 'none';
+  if (appStatus) appStatus.textContent = 'Generating PDF report…';
   try {
     await downloadPdf(entries, state.batchTimestamp, `contrast-audit-${stamp()}.pdf`);
-  } catch (err) {
-    alert(`PDF export failed: ${err.message}`);
+    if (appStatus) appStatus.textContent = 'PDF report ready — downloading.';
+  } catch (e) {
+    if (appStatus) appStatus.textContent = '';
+    alert(`Could not generate PDF: ${e.message}`);
   } finally {
-    downloadPdfBtn.disabled = false;
+    downloadPdfBtn.removeAttribute('aria-disabled');
+    downloadPdfBtn.style.pointerEvents = '';
   }
 });
 
@@ -219,6 +231,8 @@ downloadMdBtn.addEventListener('click', () => {
 });
 
 resetBtn.addEventListener('click', () => {
+  const chooseFiles = document.getElementById('choose-files');
+  if (chooseFiles) chooseFiles.focus();
   state.queue = [];
   state.entries.clear();
   state.busy           = false;
@@ -297,7 +311,6 @@ if (footerEl) {
 function activateDropzone() {
   dropzoneEl.classList.remove('is-loading');
   dropzoneEl.removeAttribute('aria-disabled');
-  dropzoneEl.setAttribute('tabindex', '0');
 }
 
 preloadModels(({ pct, label, fileIndex, fileCount, done }) => {
