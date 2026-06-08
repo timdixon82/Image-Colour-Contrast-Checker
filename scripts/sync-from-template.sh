@@ -416,8 +416,12 @@ fi
 
 # ── Pass 2: agent CORE sections ───────────────────────────────────────────────
 #
-# Walks .claude/agents/*.md (the eight core agents) and any subdirectory agent
-# files that carry a <!-- BEGIN CORE --> block (e.g. .claude/agents/accessibility/).
+# Walks .claude/agents/*.md (all agents — core and specialist) and any subdirectory
+# agent files that carry a <!-- BEGIN CORE --> block. All accessibility specialist
+# agents (aria-specialist, contrast-master, forms-specialist, keyboard-navigator,
+# screen-reader-lab, wcag-aaa) now live at the top level of .claude/agents/ so
+# Claude Code discovers them automatically. The subdirectory loop below is kept
+# for extensibility but currently finds no files.
 # Files without a CORE block are skipped with a warning, so non-CORE specialist
 # files (plain markdown, manifests, LICENCE) are never accidentally modified.
 
@@ -480,7 +484,8 @@ for tfile in "$template"/.claude/agents/*.md; do
   _update_core "$tfile" "$pfile" ".claude/agents/$name"
 done
 
-# Specialist agents in subdirectories of .claude/agents/ (e.g. accessibility/).
+# Specialist agents in subdirectories of .claude/agents/ (kept for extensibility;
+# no subdirectory agents exist since accessibility agents were flattened in v1.5.7).
 # Only .md files that contain a CORE block are processed; the helper skips
 # those without one, so plain manifests, LICENCE files, and README files
 # in subdirectories are never touched.
