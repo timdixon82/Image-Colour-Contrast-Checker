@@ -55,6 +55,18 @@ if (existsSync(fontSrc)) {
   console.warn('[copy-models] pdfmake Roboto fonts not found — PDF export font will be missing');
 }
 
+// Copy Roboto variable fonts (self-hosted; source committed to src/fonts/).
+// These are served by the browser for the app UI typeface (not for PDF).
+const varFontSrc = join(repoRoot, 'src', 'fonts');
+for (const name of ['Roboto-VariableFont.ttf', 'Roboto-Italic-VariableFont.ttf']) {
+  const src = join(varFontSrc, name);
+  if (existsSync(src)) {
+    copyFileSync(src, join(fontDst, name));
+  } else {
+    console.warn(`[copy-models] Roboto variable font not found: ${src}`);
+  }
+}
+
 // Cross-origin isolation is handled by the hand-written public/sw.js, which
 // also caches these model + runtime files — nothing to copy for it.
 
