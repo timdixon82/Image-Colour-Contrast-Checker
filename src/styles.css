@@ -134,7 +134,7 @@
   --bg:            #061528;
   --bg-card:       #0D2440;
   --fg:            #E2E7EC;
-  --fg-muted:      #A0C0D7; /* app override: DS #9BBCD4 fails 7:1 on --neutral-bg (#15314F), 6.65:1 */
+  --fg-muted:      #A3C3DA; /* app override: 7.18:1 on --neutral-bg (#15314F); 8.47:1 on --bg-card (#0D2440) — both AAA */
   --border:        #1C3A5C;
   --accent:        #EB9C52;
   --accent-hover:  #ECBB83;
@@ -160,7 +160,7 @@
   --bg:            #EDF0F3;
   --bg-card:       #FFFFFF;
   --fg:            #2B3138;
-  --fg-muted:      #484F59; /* app override: DS #5A636D fails 7:1 on --neutral-bg (#E7EAED), 5.05:1 */
+  --fg-muted:      #444B55; /* app override: 7.30:1 on --neutral-bg (#E7EAED); 8.81:1 on --bg-card (#FFFFFF) — both AAA */
   --border:        #D2D8DE;
   --accent:        #234A73;
   --accent-hover:  #1B3A5C;
