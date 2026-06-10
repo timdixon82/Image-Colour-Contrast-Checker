@@ -74,11 +74,14 @@
           <h1>Image Colour <span class="header-accent">Contrast Checker</span></h1>
           <p class="tagline">Drop in images for WCAG 2.2 AA / AAA compliance and advanced perceptual checks. Runs entirely in your browser &mdash; nothing is uploaded.</p>
         </div>
-        <div class="theme-picker" role="group" aria-label="Colour theme">
-          <button type="button" class="theme-btn" data-theme-value="light"       aria-pressed="false">Light</button>
-          <button type="button" class="theme-btn" data-theme-value="dark"        aria-pressed="false">Dark</button>
-          <button type="button" class="theme-btn" data-theme-value="muted-light" aria-pressed="false">Muted Light</button>
-          <button type="button" class="theme-btn" data-theme-value="muted-dark"  aria-pressed="false">Muted Dark</button>
+        <div class="theme-picker">
+          <label for="theme-select" class="theme-label">Colour theme</label>
+          <select id="theme-select" class="theme-select">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="muted-light">Muted Light</option>
+            <option value="muted-dark">Muted Dark</option>
+          </select>
         </div>
       </div>
     </header>

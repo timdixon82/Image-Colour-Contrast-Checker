@@ -275,21 +275,17 @@ if (footerEl) {
 // ── Theme picker ──────────────────────────────────────────────────────────────
 // window.tdTheme is set synchronously by the inline bootstrap script in
 // index.html before this module runs. It manages persistence and data-theme.
-document.querySelectorAll('.theme-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    window.tdTheme.set(btn.dataset.themeValue);
-    updateThemePicker();
-  });
+const themeSelect = document.getElementById('theme-select');
+
+themeSelect.addEventListener('change', () => {
+  window.tdTheme.set(themeSelect.value);
 });
 
 function updateThemePicker() {
-  const current = window.tdTheme.get();
-  document.querySelectorAll('.theme-btn').forEach((btn) => {
-    btn.setAttribute('aria-pressed', btn.dataset.themeValue === current ? 'true' : 'false');
-  });
+  themeSelect.value = window.tdTheme.get();
 }
 
-// Set initial aria-pressed state after the DOM is ready.
+// Sync the select to the current theme on load.
 updateThemePicker();
 
 // ── Model download ────────────────────────────────────────────────────────────

@@ -345,51 +345,36 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 
 .theme-picker {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   align-items: center;
   flex-shrink: 0;
-  flex-wrap: wrap;
 }
 
-.theme-btn {
-  appearance: none;
-  background: transparent;
-  border: 1.5px solid var(--border);
+.theme-label {
   color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.theme-select {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  cursor: pointer;
   font: inherit;
   font-size: 0.8rem;
   font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
   min-height: 44px; /* WCAG 2.5.8 touch target */
+  padding: 6px 12px;
   white-space: nowrap;
-  transition: background 120ms, border-color 120ms, color 120ms;
+  transition: border-color 120ms;
 }
 
-.theme-btn:hover {
+.theme-select:hover {
   border-color: var(--accent);
-  background: var(--accent-subtle);
-}
-
-.theme-btn[aria-pressed="true"] {
-  background: var(--accent);
-  color: var(--accent-text);
-  border-color: var(--accent);
-}
-
-/* Dark themes: ghost buttons need --fg for legibility */
-[data-theme="dark"]       .theme-btn:not([aria-pressed="true"]),
-[data-theme="muted-dark"] .theme-btn:not([aria-pressed="true"]) {
-  color: var(--fg);
-}
-
-/* Compact buttons on narrow screens; 44px height preserved */
-@media (max-width: 480px) {
-  .theme-btn {
-    font-size: 0.7rem;
-    padding: 6px 8px;
-  }
 }
 
 /* ── i. Landing ──────────────────────────────────────────────────────────── */
