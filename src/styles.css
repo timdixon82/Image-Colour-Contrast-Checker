@@ -1172,3 +1172,25 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   .results-table { font-size: 0.78rem; }
   .results-table .examples { max-width: 100px; }
 }
+
+@media (width < 640px) {
+  /* Force the theme picker onto its own flex row so the title and tagline
+     above it can use the full available width. Without this, flex-shrink: 0
+     on .theme-picker squeezes .app-header-text to ~165 px at 375 px. */
+  .theme-picker {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Hide the label visually — the select options are self-labelling at this
+     size — but keep it in the accessibility tree via the sr-only pattern. */
+  .theme-label {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
