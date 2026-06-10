@@ -1171,7 +1171,9 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   .app-header h1 { font-size: 1.2rem; }
   .results-table { font-size: 0.78rem; }
   .results-table .examples { max-width: 100px; }
+}
 
+@media (width < 640px) {
   /* Force the theme picker onto its own flex row so the title and tagline
      above it can use the full available width. Without this, flex-shrink: 0
      on .theme-picker squeezes .app-header-text to ~165 px at 375 px. */
