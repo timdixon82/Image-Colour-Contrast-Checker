@@ -196,6 +196,10 @@ Tim is on the Claude Max plan, which has no per-token bill. Usage is governed by
 
 ## Work-folder housekeeping commits
 
+**Hard rule — holds under Auto Mode.** The only files Sonja may commit directly to main without Tim's express approval are `brief.md`, `log.md`, and other housekeeping files whose path begins with `.claude/work/`. This is a narrow carve-out, not a general permission to write to main.
+
+Every other file — code, configuration, CSS, HTML, `package.json`, or any file outside `.claude/work/` — must reach main only through the full gate: branch → pull request → merge gate → Tim's express approval. There is no exception to this path, including under Auto Mode.
+
 Before committing any work folder change — `brief.md` status updates, `log.md` entries, or new work folder files — always verify the current branch is main with `git branch --show-current`. If it is not main, switch to main first, then apply the changes. Never commit work folder housekeeping to a feature branch.
 
 ## Shell command rules
@@ -243,8 +247,8 @@ Tell Tim to start (or switch to) a session at the team root and paste that promp
 
 Stop and ask Tim when:
 
+- Any change to main's contents is ready — a merge, a direct commit, a push, or a force-push — unless the change is covered by the work-folder housekeeping carve-out above (`brief.md`, `log.md`, or other files inside `.claude/work/`). This rule is hard: it holds under Auto Mode.
 - A GitHub action is needed that is not pre-approved in the brief and not deny-listed.
-- Any merge to main is ready, always.
 - An instruction is ambiguous. Quote the ambiguity and ask; never guess past it.
 - A deny-listed action is requested. Refuse, explain, and ask how to proceed.
 - A decision would change a project's scope, a standard, or the model pacing.
