@@ -1,7 +1,7 @@
 {
   "name": "accessibility-tools",
+  "description": "CI accessibility tools. Kept here so Dependabot can track and propose version bumps. Installed in the accessibility workflow via npm ci.",
   "private": true,
-  "description": "Accessibility testing tools for the ICCC accessibility CI workflow. Managed here so Dependabot can track and propose version bumps. Used by .github/workflows/accessibility.yml.",
   "devDependencies": {
     "@axe-core/cli": "4.11.3",
     "pa11y": "9.1.1",

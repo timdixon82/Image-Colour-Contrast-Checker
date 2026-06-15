@@ -1,12 +1,7 @@
 # Security checks: Semgrep, Trivy, and dependency review.
 #
-# Runs on every pull request and weekly on Monday morning. dependency-review
-# runs only on pull requests. ICCC is a public repository, so dependency-review
-# is free; it does not require GitHub Advanced Security.
-#
-# Security note: no untrusted GitHub context variables are used in any run step.
-#
-# Action versions are pinned to commit SHAs verified on 2026-05-30.
+# Action versions were verified against GitHub and pinned to commit SHAs
+# on 2026-05-21. The version tag is in the trailing comment.
 
 name: Security
 on:
@@ -19,7 +14,6 @@ permissions:
 
 jobs:
   semgrep:
-    name: Semgrep
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -32,7 +26,6 @@ jobs:
           semgrep scan --config p/default --error
 
   trivy:
-    name: Trivy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -44,9 +37,11 @@ jobs:
           exit-code: '1'
 
   dependency-review:
-    name: Dependency review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
+
+  # Note for PHP projects: CodeQL does not support PHP. Add a PHP static
+  # analysis job here, for example PHPStan or Psalm, in place of CodeQL.
