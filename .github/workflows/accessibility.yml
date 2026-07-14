@@ -29,6 +29,10 @@
 # testing is Carol's responsibility in her manual test pass.
 #
 # Adapt the "Serve the site" step and URLs to this project's stack.
+#
+# This project (static-app archetype) is a Vite build: the entry point's
+# ES module imports only resolve once bundled, so the site is built first
+# and dist/ is served, not the raw repository root.
 
 name: Accessibility
 on:
@@ -36,6 +40,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   accessibility:
@@ -65,27 +73,37 @@ jobs:
         with:
           install-chromedriver: true
 
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Build the app
+        run: npm run build
+
       - name: Serve the site in the background
-        # Adapt this step to the project's stack.
-        # For a static site: python3 -m http.server 8080 &
-        # For a Node project: npm start & or npm run dev &
-        run: python3 -m http.server 8080 &
+        # Adapted for this project's stack: a Vite build. The built output
+        # in dist/ is served, not the raw repository root, so ES module
+        # imports resolve.
+        run: python3 -m http.server 8080 --directory dist &
 
       - name: Wait for the server to be ready
         run: wait-on http://localhost:8080 --timeout 15000
 
       - name: Pa11y at WCAG 2.2 AAA
-        # Adapt the URL to match the project's entry point.
+        # Adapted for this project's built entry point.
         env:
           PUPPETEER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: pa11y --standard WCAG2AAA http://localhost:8080/index.html
 
       - name: axe-core at WCAG 2.2 AAA
-        # Adapt the URL to match the project's entry point.
+        # Adapted for this project's built entry point.
         # --chrome-path overrides ChromeDriver's hardcoded binary lookup with the
         # action-installed Chrome, ensuring version parity with --chromedriver-path.
         # env: pattern used so no ${{ }} expression appears in a run: command.
+        # --exit (pinned @axe-core/cli 4.11.3 supports -q/--exit) makes the CLI
+        # itself exit 1 when any violation is found. Without it axe always exits
+        # 0, so this step would report violations in the log but still pass the
+        # job — a false-green gate.
         env:
           CHROMEDRIVER_PATH: ${{ steps.chrome.outputs.chromedriver-path }}
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
-        run: axe http://localhost:8080/index.html --tags wcag2a,wcag2aa,wcag2aaa,wcag22aa,wcag22aaa --chrome-options="no-sandbox" --chromedriver-path "$CHROMEDRIVER_PATH" --chrome-path "$CHROME_PATH"
+        run: axe http://localhost:8080/index.html --tags wcag2a,wcag2aa,wcag2aaa,wcag22aa,wcag22aaa --chrome-options="no-sandbox" --chromedriver-path "$CHROMEDRIVER_PATH" --chrome-path "$CHROME_PATH" --exit
