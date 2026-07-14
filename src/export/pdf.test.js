@@ -9,16 +9,18 @@
  *
  * Test data is specified in `.claude/work/013-iccc-pdf-ua/tad-requirements.md`
  * sections 5.2–5.5.
+ *
+ * veraPDF is an external tool, not an npm dependency — see
+ * `src/lib/pdf-ua/verapdf-test-utils.js` for how availability is detected and
+ * how the veraPDF-dependent test below is skipped (not failed) when it is
+ * absent, such as on CI.
  */
 
 import { describe, it, expect } from 'vitest';
-import { spawnSync } from 'node:child_process';
-import { writeFileSync, unlinkSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join }   from 'node:path';
 import { deflateSync } from 'node:zlib';
 
 import { buildPdf } from './pdf.js';
+import { veraPdfAvailable, verapdfXml } from '../lib/pdf-ua/verapdf-test-utils.js';
 
 /**
  * Create a minimal valid N×N black RGB PNG as a Buffer.
@@ -147,36 +149,11 @@ const entries = [
   },
 ];
 
-/** Path to the veraPDF binary. Honour VERAPDF_PATH if set; fall back to PATH lookup. */
-const VERAPDF = process.env.VERAPDF_PATH ?? 'verapdf';
-
-// ── Helper ────────────────────────────────────────────────────────────────
-
-/**
- * Run veraPDF against a Buffer. Returns the XML output.
- * Uses spawnSync with an explicit argument array (no shell).
- */
-function verapdfXml(pdfBuffer) {
-  const tmpFile = join(
-    tmpdir(),
-    `pdf-export-test-${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`
-  );
-  writeFileSync(tmpFile, pdfBuffer);
-  try {
-    const result = spawnSync(
-      VERAPDF,
-      ['--flavour', 'ua1', tmpFile],
-      { encoding: 'utf8' }
-    );
-    return result.stdout || '';
-  } finally {
-    try { unlinkSync(tmpFile); } catch { /* ignore */ }
-  }
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────────
+// Skipped (not failed) when veraPDF is not available — e.g. on CI. See
+// ../lib/pdf-ua/verapdf-test-utils.js.
 
-describe('pdf export — veraPDF PDF/UA-1 compliance', () => {
+describe.skipIf(!veraPdfAvailable)('pdf export — veraPDF PDF/UA-1 compliance', () => {
   it('produces a compliant PDF from a full mock AnalysedEntry array', async () => {
     const buffer = await buildPdf(entries, '1 June 2026 at 10:00');
 
@@ -185,8 +162,8 @@ describe('pdf export — veraPDF PDF/UA-1 compliance', () => {
     expect(buffer.slice(0, 4).toString()).toBe('%PDF');
 
     // veraPDF PDF/UA-1 validation
-    const xml = verapdfXml(buffer);
-    expect(xml, 'veraPDF XML should be non-empty — is verapdf installed at /opt/homebrew/bin/verapdf?')
+    const xml = verapdfXml(buffer, 'pdf-export-test');
+    expect(xml, 'veraPDF XML should be non-empty — is verapdf on PATH (or VERAPDF_PATH set)?')
       .toBeTruthy();
     expect(xml).toContain('isCompliant="true"');
     expect(xml).toContain('profileName="PDF/UA-1 validation profile"');

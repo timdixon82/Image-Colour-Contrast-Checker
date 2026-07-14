@@ -3,19 +3,21 @@
  *
  * Tests PDF/UA-1 compliance using veraPDF. Each test generates a PDF via the
  * wrapper, writes it to a temp file, and validates it with:
- *   /opt/homebrew/bin/verapdf --flavour ua1 <file>
+ *   verapdf --flavour ua1 <file>
+ *
+ * veraPDF is an external tool, not an npm dependency — see
+ * `verapdf-test-utils.js` for how availability is detected and how the
+ * veraPDF-dependent tests below are skipped (not failed) when it is absent,
+ * such as on CI.
  *
  * veraPDF exit codes: 0 = compliant, 1 = non-compliant (but still outputs XML).
  * We capture stdout from both cases and assert on the XML directly.
  */
 
 import { describe, it, expect } from 'vitest';
-import { spawnSync } from 'node:child_process';
-import { writeFileSync, unlinkSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
+import { join } from 'node:path';
 
 import {
   createDocument,
@@ -27,6 +29,7 @@ import {
   artifact,
   toBuffer,
 } from './index.js';
+import { veraPdfAvailable, verapdfXml } from './verapdf-test-utils.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const FONT_DIR   = join(__dirname, '../../../node_modules/pdfmake/fonts/Roboto');
@@ -75,36 +78,11 @@ function makeTestPng(size = 4) {
 // Minimal 4×4 black PNG for Figure tests — generated via deflateSync (guaranteed valid)
 const RED_PNG = makeTestPng(4);
 
-/** Path to the veraPDF binary. Honour VERAPDF_PATH if set; fall back to PATH lookup. */
-const VERAPDF = process.env.VERAPDF_PATH ?? 'verapdf';
-
-/**
- * Run verapdf against a Buffer. Returns the XML output string.
- * Uses spawnSync with an argument array (no shell) to avoid any injection risk.
- * @param {Buffer} pdfBuffer
- * @returns {string}
- */
-function verapdfXml(pdfBuffer) {
-  const tmpFile = join(tmpdir(), `pdf-ua-test-${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`);
-  writeFileSync(tmpFile, pdfBuffer);
-  try {
-    // spawnSync with explicit argument array: no shell, no interpolation risk.
-    const result = spawnSync(
-      VERAPDF,
-      ['--flavour', 'ua1', tmpFile],
-      { encoding: 'utf8' }
-    );
-    // veraPDF exits 1 when the PDF is non-compliant but still emits valid XML.
-    // Capture stdout regardless of exit code.
-    return result.stdout || '';
-  } finally {
-    try { unlinkSync(tmpFile); } catch { /* ignore cleanup errors */ }
-  }
-}
-
 // ── veraPDF compliance test ─────────────────────────────────────────────────
+// Skipped (not failed) when veraPDF is not available — e.g. on CI. See
+// verapdf-test-utils.js.
 
-describe('pdf-ua wrapper — veraPDF PDF/UA-1 compliance', () => {
+describe.skipIf(!veraPdfAvailable)('pdf-ua wrapper — veraPDF PDF/UA-1 compliance', () => {
   it('produces a compliant document with heading, paragraph, artifact, table, and figure', async () => {
     const doc = createDocument({ title: 'Unit Test Document', fonts: FONTS });
 
@@ -170,8 +148,10 @@ describe('pdf-ua wrapper — veraPDF PDF/UA-1 compliance', () => {
 });
 
 // ── addTable — veraPDF compliance ────────────────────────────────────────────
+// Skipped (not failed) when veraPDF is not available — e.g. on CI. See
+// verapdf-test-utils.js.
 
-describe('pdf-ua wrapper — addTable veraPDF PDF/UA-1 compliance', () => {
+describe.skipIf(!veraPdfAvailable)('pdf-ua wrapper — addTable veraPDF PDF/UA-1 compliance', () => {
   it('produces a compliant table with TH headers, row-scope TH, plain TD, linked TD, and mixed spans', async () => {
     const doc = createDocument({ title: 'addTable Test', fonts: FONTS });
 
