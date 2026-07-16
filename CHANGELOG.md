@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.5.0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.4.0...v0.5.0) (2026-07-14)
+
+
+### Features
+
+* **014:** design system update — four themes and new brand palette ([010c450](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/010c4506fe60a745edf0711a9828a3dc626a41c5))
+* **014:** design system update — four themes and new brand palette ([010c450](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/010c4506fe60a745edf0711a9828a3dc626a41c5))
+* **014:** design system update — four themes, new brand palette ([ecad71b](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/ecad71bc9e76cf267315ba980eec28f2223fffc6))
+* **pdf-ua:** add addTable with PDF/UA-1 compliant inline links ([8108f5f](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/8108f5f80bc3664d89391fd446d79efe82747621))
+* **pdf:** add check-info links to per-pair checks table ([2f8c133](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/2f8c1331150258d045cf8186b5062f8359d8cc5c))
+* **pdf:** add working hyperlinks to PDF export ([c496ba8](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/c496ba8d267fef012c9d4a6b9bc5c28c2e82a6fd))
+* **pdf:** PDF/UA-1 compliant export via PDFKit wrapper (ACC-ICCC-005) ([94ecc61](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/94ecc616d9eb3adfd3886901f3b744da101f8d24))
+* **pdf:** PDF/UA-1 compliant export via PDFKit wrapper (ACC-ICCC-005) ([e9cd8ae](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/e9cd8ae94532042e49a0ad9f3104f9bad043a6f9))
+* replace theme toggle buttons with a dropdown select ([0a4fc26](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/0a4fc26865766cccd58da7bd7bfa3560d20d1b43))
+
+
+### Bug Fixes
+
+* **014:** tighten muted-light and dark --fg-muted for --neutral-bg AAA ([7ebf110](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/7ebf11091fc522dc05f58c13a4c1db7ba9d95233))
+* **014:** WCAG AAA colour fixes from Carol's review ([26d53df](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/26d53dfcdc1372a7824e6b184f4d7039c07b3aa8))
+* **a11y:** close ACC-ICCC-001, ACC-ICCC-002, ACC-ICCC-003 — accessibility phase ([d723936](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/d7239367c5287e95b36034d26cac279f9b98897c))
+* **a11y:** close ACC-ICCC-001, ACC-ICCC-002, ACC-ICCC-003 — accessibility phase ([d723936](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/d7239367c5287e95b36034d26cac279f9b98897c))
+* **a11y:** close ACC-ICCC-001, ACC-ICCC-002, ACC-ICCC-003 — accessibility phase ([692cf51](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/692cf51026c2f8eed3b9d3c5af7a0f85c7db035a))
+* **a11y:** resolve all merge-gate accessibility findings ([f29a791](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/f29a7913d640aa79bcb1b537533d2a9b6c41aec5))
+* add dependabot cooldown block to satisfy semgrep dependabot-missing-cooldown rule ([#38](https://github.com/timdixon82/Image-Colour-Contrast-Checker/issues/38)) ([35ca5f5](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/35ca5f5118f892dbe7001896f966adb0a1fbd4c7))
+* bump protobufjs to resolve CVE-2026-48712 ([#39](https://github.com/timdixon82/Image-Colour-Contrast-Checker/issues/39)) ([46e8e82](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/46e8e8296dcdb60e0d090562cf032560e89a5f6c))
+* **ci:** correct veraPDF SHA-256 pin; add hash debug line ([ebaea4d](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/ebaea4d0df2c90cef24fd8687f86100bf80c77f8))
+* **ci:** install veraPDF on Ubuntu runner; make verapdf path configurable ([4c630f3](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/4c630f3ace16dd1bb5d22daddcf8cc55820176d8))
+* **ci:** pin veraPDF installer to SHA-256 hash (supply-chain integrity) ([8bf1546](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/8bf15461330c52e0aa888f828334d4c4cf1f635d))
+* **lint:** strict equality in pdf-ua index.js (eqeqeq) ([4356af4](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/4356af46cb46d1bd333b063087921aa784083096))
+* **lint:** stylelint — modern rgb() notation, unquoted [@font-face](https://github.com/font-face), lowercase font-stack names ([a5763aa](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/a5763aa97ea283078d84798621be4b544945c989))
+* **pdf:** add structParent:doc to table calls; remove link annotations ([77eb7b1](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/77eb7b1e36f95b27b946240868504a690cc1294e))
+* **pdf:** browser-compatible font loading via public/fonts/ ([b06681d](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/b06681d67f191750241dbec7061679358f3d2264))
+* **pdf:** constrain header and disclaimer blocks — prevent content bleed ([68276a7](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/68276a76c79bf3c498e1c28fa5839493791cba39))
+* **pdf:** CVD grid cursor reset, addLink wrapper, clean up link workaround ([0747538](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/0747538f307411642f971f876a81cfe9f6a53f86))
+* **pdf:** CVD grid overflow, cursor reset, addTable page breaks ([7a27da0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/7a27da040ccaf017e87f9b711669589e645b7024))
+* **pdf:** fix image rendering (Uint8Array to Buffer) and remove non-functional table cell links ([840d58d](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/840d58d66c59cb3c38609f19dba3484eb950d90f))
+* **pdf:** fix margins and browser text/image rendering in PDFKit wrapper ([4ddb81b](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/4ddb81b608e781b992e36fb8bbe897a3355e7c20))
+* **pdf:** fix visual layout — header/disclaimer positioning, section margins, CVD grid, styled result line ([45f3737](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/45f3737514eacf4627043053468cfff73ffe37d9))
+* **pdf:** inner padding, link structs, image fit, CVD 2-column grid ([7c3cbab](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/7c3cbabe6cf4981aefc202d01e77f9264f4aba55))
+* **pdf:** keep table on one page unless taller than a full page ([9067f35](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/9067f358d404438d280bb95859fa48472bf7cffb))
+* **pdf:** partial browser compatibility fixes for PDF export ([20d6039](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/20d6039a77de4fa829ba0824c16025b7e48bb45c))
+* **pdf:** pass link:null to doc.image() inside markStructureContent to fix browser rendering ([643aa50](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/643aa5037c23b6f645fc75603d4eb435a532c3af))
+* **pdf:** revert Sean's layout breakage; restore v0.4.3 base with safe spacing fixes ([0548838](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/054883895b0e1fe58c57264d34a67eb27269f4bf))
+* **pdf:** use registered font name in table cells to survive pdfkit deepClone ([e54ff62](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/e54ff62518147cc2daefde02680f090b74ae4973))
+* **pdf:** use struct.add(closure) not markStructureContent(tag, closure) ([73505c1](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/73505c1d0baf71eef4cbe89b6786577f3aaf0a92))
+* theme picker label and mobile header layout ([#015](https://github.com/timdixon82/Image-Colour-Contrast-Checker/issues/015)) ([66271a1](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/66271a1107d8679f42e07ae1e7bfd1c7b4863465))
+* use strict &lt; 640px breakpoint for theme picker wrap ([#015](https://github.com/timdixon82/Image-Colour-Contrast-Checker/issues/015)) ([9554458](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/95544584fe57c95bb8530b7429f9342f17c0f910))
+* **vite:** exclude blob-stream and js-clipper from dep pre-bundling ([055fec8](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/055fec823c950ffb8a6d5ad981eaeceecc0b3f1e))
+
 ## [0.4.19](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.4.18...v0.4.19) (2026-06-08)
 
 
