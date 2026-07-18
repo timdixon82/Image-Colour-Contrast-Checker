@@ -28,6 +28,15 @@
 # Pa11y and axe-core run against the served HTML; full rendered-interface
 # testing is Carol's responsibility in her manual test pass.
 #
+# axe-core render settle delay. The axe-core CLI step below passes
+# --load-delay 1000, so axe waits one second after page load before
+# auditing. Without it, axe's default 0ms delay races render on
+# CDN-loaded/React/Babel apps and webfont swap, producing non-deterministic
+# color-contrast-enhanced false failures on elements that genuinely meet
+# 7:1. --load-delay is confirmed to exist on the pinned @axe-core/cli
+# version via `axe --help`; it only adds a settle wait and does not change
+# which rules run or weaken --exit.
+#
 # Serving is archetype-aware, gated on manifest presence (mirrors the
 # hashFiles('package.json') pattern in ci.yml and security.yml; hashFiles is
 # step-level only, not valid at job level):
@@ -76,7 +85,7 @@ jobs:
     name: Pa11y and axe at WCAG 2.2 AAA
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Check the CI archetype
         # Reads .github/ci-archetype, trimmed of surrounding whitespace and
@@ -166,11 +175,19 @@ jobs:
         # itself exit 1 when any violation is found. Without it axe always exits
         # 0, so this step would report violations in the log but still pass the
         # job — a false-green gate.
+        # --load-delay 1000 (pinned @axe-core/cli 4.11.3, confirmed via `axe
+        # --help`) waits one second after page load before auditing. The
+        # default is 0ms, which races render on CDN-loaded/React/Babel apps
+        # and webfont swap, and was observed to produce non-deterministic
+        # color-contrast-enhanced false failures on elements that actually
+        # meet 7:1 (identical-commit rerun on SWOT Builder went from 9
+        # violations to 0). --load-delay is a settle delay only; it does not
+        # change which rules run or weaken --exit.
         if: steps.archetype.outputs.is_browser_extension != 'true'
         env:
           CHROMEDRIVER_PATH: ${{ steps.chrome.outputs.chromedriver-path }}
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
-        run: axe http://localhost:8080/index.html --tags wcag2a,wcag2aa,wcag2aaa,wcag22aa,wcag22aaa --chrome-options="no-sandbox" --chromedriver-path "$CHROMEDRIVER_PATH" --chrome-path "$CHROME_PATH" --exit
+        run: axe http://localhost:8080/index.html --tags wcag2a,wcag2aa,wcag2aaa,wcag22aa,wcag22aaa --chrome-options="no-sandbox" --chromedriver-path "$CHROMEDRIVER_PATH" --chrome-path "$CHROME_PATH" --load-delay 1000 --exit
 
       - name: Note that Playwright carries the accessibility gate for browser-extension
         if: steps.archetype.outputs.is_browser_extension == 'true'
