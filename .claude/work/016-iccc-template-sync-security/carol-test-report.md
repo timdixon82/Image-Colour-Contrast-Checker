@@ -58,3 +58,54 @@ Not applicable — this PR is not a Tad or Simon draft.
 4. Once green, re-run this test pass quickly to confirm the rebased head still builds/tests/smokes clean (expected to be a formality given the underlying change is the same audit-fix + adm-zip override + workflow sync).
 
 Sean is best placed to do the rebase since he has the context on both the dependency fixes and the workflow review; Jed's approval of the substance of the changes still stands and shouldn't need re-review unless the rebase changes the dependency resolution materially.
+
+---
+
+## Re-check — 2026-07-18 — PR #42 after merge-from-main (head `376a7bd`)
+
+**BLUF: PASS.** The staleness/unmergeable finding from my prior report is resolved. This was a targeted re-check, not a full re-run — the functional/accessibility/visual passes from the original report still hold since no product code changed.
+
+### 1. Mergeability and CI (my prior blocking finding)
+
+- `gh api .../pulls/42 -q .mergeable_state`: first read `unstable` (Pa11y/axe job still `pending` on a just-pushed commit); polled and it settled to **`clean`** within ~15s. `mergeable: true`.
+- `gh pr checks 42` on head `376a7bd` (the current PR head — confirmed via `.head.sha`, not a stale commit): **all 7 checks pass** — build, Pa11y and axe at WCAG 2.2 AAA, Playwright tests, dependency-review, lint, semgrep, trivy.
+- This resolves DoD item "`.github/workflows/*` … pass CI on the branch" and the release-checklist "CI/Accessibility/Security checks green" rows that failed last time.
+
+### 2. protobufjs override and npm audit
+
+- `package.json` on this branch contains `"overrides": { "protobufjs": "^7.6.1" }` — the PR #39 CVE-2026-48712 fix is present, not dropped.
+- `npm install` + `npm audit --json` on this branch: `{"critical":0,"high":0,"moderate":0,"low":6}`. The 6 low findings are the previously-reviewed `elliptic` → `vite-plugin-node-polyfills` dev-only path (Jed cleared this in his original review; out of scope per brief, force-fix only).
+- `.github/accessibility-tools/package.json` still carries `"overrides": {"adm-zip": "^0.6.0"}`, merged in cleanly per Sean's log entry.
+
+### 3. Version number
+
+- `package.json` → `"version": "0.5.1"`. Confirmed forward from main's already-released 0.5.0, not a regression (my prior report's blocking version-regression finding — 0.4.22 behind 0.5.0 — no longer applies).
+
+### 4. Workflow diff vs current main — nothing silently dropped
+
+- `git diff origin/main..HEAD --stat -- .github/workflows/`: only `accessibility.yml`, `ci.yml`, `deploy.yml`, `playwright.yml` differ from main (codeql.yml, lint.yml, security.yml are identical to main — no conflict surface there at all).
+- `accessibility.yml`: the branch adds archetype-awareness (`is_browser_extension` gating) on top of main's PR #40 baseline. For this repo (`static-app` archetype) every added conditional evaluates to the same `false` branch main already takes — this is a behavioural superset, not a divergent version. Confirmed the core Pa11y/axe/serve steps present on main are all still present and unconditional-equivalent for this project.
+- `ci.yml`: the only change is reordering — "Build (npm)" now runs before "Run unit tests (npm)" instead of after, matching Sean's log note that some archetypes' tests read built output. No step removed.
+- `deploy.yml`: diff is comment/example reorganisation for other archetypes (UNBUNDLED rsync example lines refactored) plus generalising `npm run build` to `npm run build --if-present`. Confirmed `actions/upload-pages-artifact` step and `path: dist` are both still present and unchanged in effect.
+- `playwright.yml`: net-new file (76 lines), matches Sean's original finding that the Playwright scaffold is present but appropriately not yet wired to fail the build until tests exist — consistent with the "Playwright tests" check above passing (no-op pass).
+- Conclusion: PR #40's static-app hand-adaptations are fully retained; the merge added template 1.7.0's archetype-awareness on top without deleting any of main's existing behaviour.
+
+### 5. Definition of Done — re-verified
+
+| Item | Status |
+|---|---|
+| Workflows match synced 1.7.0 template versions, pass CI on branch | **Met** — 7/7 checks green on current head |
+| `.claude/template-version` reads 1.7.0 | **Met** |
+| `npm audit` root: 0 critical/high | **Met** — 0 critical/high/moderate, 6 low (reviewed, out of scope) |
+| `adm-zip` alert resolved in `.github/accessibility-tools` | **Met** (unchanged from prior check, re-confirmed present) |
+| Jed's review, no unresolved findings | **Met** — Jed's approval stands; nothing in the merge changed the dependency resolution materially enough to require re-review (protobufjs and adm-zip overrides both carried through untouched) |
+| Carol's functional/accessibility/visual passes green | **Met** — functional pass from prior report still holds (no product code touched by the main-merge); this re-check adds the CI/mergeability/version/workflow confirmation |
+| Tim's approval | Still pending — outside Carol's remit |
+
+### 6. Test coverage
+
+- `npm run test`: 6/6 passing, 2 files — same count as the prior check and as current `main`. No new interactive UI surface introduced by this PR (dependency/workflow-only change), so no new-surface-test requirement is triggered.
+
+### Verdict
+
+**Release-ready from Carol's side, pending Tim's approval.** All items that failed in my prior report — stale/dirty mergeable state, zero CI runs, dropped protobufjs override, version regression — are resolved on the current head (`376a7bd`). No new blocking findings from this re-check.

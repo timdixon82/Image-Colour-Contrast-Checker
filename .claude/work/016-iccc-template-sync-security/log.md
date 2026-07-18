@@ -47,3 +47,12 @@
   - `src/export/pdf.test.js`, `src/lib/pdf-ua/pdf-ua.test.js`, `src/lib/pdf-ua/verapdf-test-utils.js`, `CHANGELOG.md`, `.release-please-manifest.json`, `.github/dependabot.yml` merged in cleanly from main with no conflicts.
   Verified after merge: `npm run build` succeeds, `npm run lint` clean, `npm run test` 6/6 passing. Pushed the merge commit with a normal `git push` (no force-push). CI ran fresh on head commit 412c4aa: all 8 checks pass (build, lint, Pa11y/axe WCAG 2.2 AAA, Playwright, semgrep, trivy, dependency-review, dependabot.yml validation). `gh api .../pulls/42 -q .mergeable_state` now reports `clean` (`mergeable: true`), resolving Carol's blocking finding.
 - [2026-07-18 14:35:41] subagent completed
+- [2026-07-18 14:35:57] subagent completed
+- [2026-07-18 14:36:48] subagent completed
+- [2026-07-18 14:37:20] subagent completed
+- [2026-07-18 14:37:53] subagent completed
+- [2026-07-18 14:38:25] subagent completed
+- 2026-07-18: Carol re-checked PR #42 (head 376a7bd) — PASS. `mergeable_state: clean`, all 7 checks green; `protobufjs` override and `adm-zip` override both present; `npm audit` 0 critical/high/moderate (6 low, reviewed); version 0.5.1 forward from 0.5.0; workflow diff vs main confirmed additive only, nothing dropped from PR #40. Release-ready pending Tim's approval. Full report: `.claude/work/016-iccc-template-sync-security/carol-test-report.md`.
+- [2026-07-18 14:38:57] subagent completed
+- [2026-07-18 14:39:04] subagent completed
+- [2026-07-18 14:42:19] subagent completed
