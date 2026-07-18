@@ -24,3 +24,15 @@
 - [2026-07-18 14:23:52] subagent completed
 - 2026-07-18: Carol tested PR #42 — FAIL. Local build/test/functional smoke all pass (6/6 tests, no coverage regression, OCR/analysis/PDF/Markdown pipeline works end to end), but the PR is stale against `main` (`mergeable_state: dirty`) and has zero CI check-runs on its head commit. Merging as-is would revert the `protobufjs` CVE fix from PR #39 and regress `package.json` from the already-released 0.5.0 to 0.4.22, plus downgrade several deps main already moved past. Needs rebase onto current main and a real CI run before release. Full report: `.claude/work/016-iccc-template-sync-security/carol-test-report.md`.
 - [2026-07-18 14:24:23] subagent completed
+- [2026-07-18 14:25:54] subagent completed
+- [2026-07-18 14:26:26] subagent completed
+- [2026-07-18 14:26:58] subagent completed
+- [2026-07-18 14:27:30] subagent completed
+- [2026-07-18 14:28:06] subagent completed
+- [2026-07-18 14:28:38] subagent completed
+- [2026-07-18 14:29:11] subagent completed
+- [2026-07-18 14:31:15] subagent completed
+- [2026-07-18 14:31:47] subagent completed
+- [2026-07-18 14:32:19] subagent completed
+- [2026-07-18 14:32:51] subagent completed
+- [2026-07-18 14:33:24] subagent completed
