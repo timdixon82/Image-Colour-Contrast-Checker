@@ -9,10 +9,11 @@
 - 2026-07-18: Sean ran `npm audit fix` (non-force) at repo root. Before: 1 critical (vitest), 2 high (adm-zip N/A here — root manifest, vite), 1 moderate (vite/launch-editor), 6 low = 11 total (npm audit metadata: critical 1, high 2, moderate 1, low 7). After: critical 0, high 0, moderate 0, low 6. Bumps: vite 8.0.14 → 8.1.5, vitest 3.2.4 → 3.2.7, esbuild 0.27.7 → 0.28.1 (transitive). Remaining 6 low findings all trace to `elliptic` via `vite-plugin-node-polyfills`; only fix path is `--force` (breaking downgrade of vite-plugin-node-polyfills), left as out of scope per brief. Bumped `package.json` to 0.4.22 (patch, maintenance/security). Committed (7cd0b5a).
 - 2026-07-18: Sean fixed the adm-zip alert (GHSA-xcpc-8h2w-3j85, high) in `.github/accessibility-tools`. Added `"overrides": {"adm-zip": "^0.6.0"}` to `.github/accessibility-tools/package.json`, ran `npm install` there. Verified `npm ls adm-zip` shows `0.6.0 overridden` and `npm ls chromedriver` still resolves cleanly at 149.0.1; `npm audit` in that directory reports 0 vulnerabilities. Committed (33fc28b).
 - 2026-07-18: Sean ran `npm run build` and `npm run test` at repo root — both passed (6 tests, 2 test files, no failures; build produced dist/ with only pre-existing warnings, no new ones).
-- 2026-07-18: Sean pushed branch and opened PR (see PR URL below). Handing off to Jed for security review per the routing plan.
+- 2026-07-18: Sean pushed branch and opened PR https://github.com/timdixon82/Image-Colour-Contrast-Checker/pull/42. Handing off to Jed for security review per the routing plan.
 - [2026-07-18 14:13:32] subagent completed
 - [2026-07-18 14:14:04] subagent completed
 - [2026-07-18 14:14:36] subagent completed
 - [2026-07-18 14:15:09] subagent completed
 - [2026-07-18 14:15:41] subagent completed
 - [2026-07-18 14:16:13] subagent completed
+- [2026-07-18 14:16:45] subagent completed
