@@ -17,3 +17,10 @@
 - [2026-07-18 14:15:41] subagent completed
 - [2026-07-18 14:16:13] subagent completed
 - [2026-07-18 14:16:45] subagent completed
+- 2026-07-18: Jed reviewed PR #42 (dependency bumps, adm-zip override, synced workflows) — approved, no blocking findings. Confirmed elliptic/crypto-browserify path is dev-only and absent from the built bundle. Noted (non-blocking) that the synced `codeql.yml` now triggers on push-to-main + weekly rather than per-PR, matching the upstream template verbatim; flagged as a task for template-level awareness, not a defect in this PR. Full report: `.claude/work/016-iccc-template-sync-security/jed-security-review.md`.
+- [2026-07-18 14:21:48] subagent completed
+- [2026-07-18 14:21:53] subagent completed
+- [2026-07-18 14:23:20] subagent completed
+- [2026-07-18 14:23:52] subagent completed
+- 2026-07-18: Carol tested PR #42 — FAIL. Local build/test/functional smoke all pass (6/6 tests, no coverage regression, OCR/analysis/PDF/Markdown pipeline works end to end), but the PR is stale against `main` (`mergeable_state: dirty`) and has zero CI check-runs on its head commit. Merging as-is would revert the `protobufjs` CVE fix from PR #39 and regress `package.json` from the already-released 0.5.0 to 0.4.22, plus downgrade several deps main already moved past. Needs rebase onto current main and a real CI run before release. Full report: `.claude/work/016-iccc-template-sync-security/carol-test-report.md`.
+- [2026-07-18 14:24:23] subagent completed
