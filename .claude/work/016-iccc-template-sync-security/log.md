@@ -36,3 +36,14 @@
 - [2026-07-18 14:32:19] subagent completed
 - [2026-07-18 14:32:51] subagent completed
 - [2026-07-18 14:33:24] subagent completed
+- [2026-07-18 14:33:57] subagent completed
+- [2026-07-18 14:34:36] subagent completed
+- [2026-07-18 14:35:09] subagent completed
+- 2026-07-18: Sean merged `origin/main` into `chore/template-sync-and-security` (merge commit 412c4aa) to bring the branch up to date after PR #40 (CI archetype hand-adaptation), PR #39 (protobufjs override), and PR #23 (0.5.0 release) landed on main. Conflict resolution:
+  - `accessibility.yml`/`ci.yml`: kept the archetype-aware 1.7.0 template structure (Sean's sync commit a8cf359 is dated 2026-07-18, chronologically after PR #40's 2026-07-14 template pull), since it is a behavioural superset for this static-app project (all `is_browser_extension` conditions evaluate false against the now-present `.github/ci-archetype` file declaring `static-app`, matching PR #40's hardcoded Vite-specific behaviour exactly). Re-applied the two dependabot action-version bumps that landed on main after PR #40 (`actions/checkout` v7.0.0, `shivammathur/setup-php` v2.37.2) on top.
+  - `package.json`: only the `version` field conflicted (protobufjs override was already present on both sides). Bumped to 0.5.1, forward from main's released 0.5.0, not from this branch's stale 0.4.22.
+  - `package-lock.json`: took main's lockfile as the base (0.5.0 dependency tree) and ran `npm install` then `npm audit fix` (non-force) to re-apply the vite/vitest/esbuild security bumps on top of the new baseline. Confirmed via `npm audit`: 0 critical/high/moderate; 6 low-severity findings remain, all in the pre-existing elliptic → vite-plugin-node-polyfills dev-only path Jed already reviewed and cleared.
+  - `.github/accessibility-tools/package.json` adm-zip override merged in cleanly (no conflict); re-verified `npm audit` in that directory reports 0 vulnerabilities.
+  - `src/export/pdf.test.js`, `src/lib/pdf-ua/pdf-ua.test.js`, `src/lib/pdf-ua/verapdf-test-utils.js`, `CHANGELOG.md`, `.release-please-manifest.json`, `.github/dependabot.yml` merged in cleanly from main with no conflicts.
+  Verified after merge: `npm run build` succeeds, `npm run lint` clean, `npm run test` 6/6 passing. Pushed the merge commit with a normal `git push` (no force-push). CI ran fresh on head commit 412c4aa: all 8 checks pass (build, lint, Pa11y/axe WCAG 2.2 AAA, Playwright, semgrep, trivy, dependency-review, dependabot.yml validation). `gh api .../pulls/42 -q .mergeable_state` now reports `clean` (`mergeable: true`), resolving Carol's blocking finding.
+- [2026-07-18 14:35:41] subagent completed
