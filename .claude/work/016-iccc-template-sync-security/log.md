@@ -1,0 +1,49 @@
+# Log: 016-iccc-template-sync-security
+
+- 2026-07-18: Sonja ran `scripts/sync-from-template.sh` on Tim's confirmation. Template version 1.6.3 → 1.7.0. Changed: `.github/workflows/accessibility.yml`, `ci.yml`, `codeql.yml`, `deploy.yml`, `lint.yml`, `security.yml` (new: `playwright.yml`), `.claude/template-version`. PROJECT OVERLAY and docs wiki untouched. Parity self-test passed.
+- 2026-07-18: Sonja checked GitHub security surfaces: 6 open Dependabot alerts (1 critical: vitest; 2 high: adm-zip, vite; 1 medium: vite/launch-editor; 2 low: esbuild, elliptic). No open code-scanning or secret-scanning alerts.
+- 2026-07-18: Sonja checked Dependabot alerts across Tim's other repos for `adm-zip` specifically — open in at least 18 repos, traced to `chromedriver` inside the shared `.github/accessibility-tools` scaffold that ships from the team template. This is out of scope for a single-project session; flagged to Tim as a template-level fix.
+- 2026-07-18: Work folder opened, brief readiness sections filled. Dispatching Sean to fix dependencies and review workflows; Jed to review security-sensitive changes (escalated per conformance check); Carol to test.
+- 2026-07-18: Sean created branch `chore/template-sync-and-security` off main.
+- 2026-07-18: Sean reviewed all seven synced workflow files (accessibility.yml, ci.yml, codeql.yml, deploy.yml, lint.yml, security.yml, playwright.yml) for YAML validity and stack fit. Confirmed valid YAML, no leftover placeholder tokens, and correct archetype branches for this repo (npm/Vite, public repo with dist/ build output — BUNDLED deploy job, CodeQL and dependency-review kept, Playwright scaffold correctly left commented out since no Playwright tests exist yet). No defects found; committed as-is (a8cf359).
+- 2026-07-18: Sean ran `npm audit fix` (non-force) at repo root. Before: 1 critical (vitest), 2 high (adm-zip N/A here — root manifest, vite), 1 moderate (vite/launch-editor), 6 low = 11 total (npm audit metadata: critical 1, high 2, moderate 1, low 7). After: critical 0, high 0, moderate 0, low 6. Bumps: vite 8.0.14 → 8.1.5, vitest 3.2.4 → 3.2.7, esbuild 0.27.7 → 0.28.1 (transitive). Remaining 6 low findings all trace to `elliptic` via `vite-plugin-node-polyfills`; only fix path is `--force` (breaking downgrade of vite-plugin-node-polyfills), left as out of scope per brief. Bumped `package.json` to 0.4.22 (patch, maintenance/security). Committed (7cd0b5a).
+- 2026-07-18: Sean fixed the adm-zip alert (GHSA-xcpc-8h2w-3j85, high) in `.github/accessibility-tools`. Added `"overrides": {"adm-zip": "^0.6.0"}` to `.github/accessibility-tools/package.json`, ran `npm install` there. Verified `npm ls adm-zip` shows `0.6.0 overridden` and `npm ls chromedriver` still resolves cleanly at 149.0.1; `npm audit` in that directory reports 0 vulnerabilities. Committed (33fc28b).
+- 2026-07-18: Sean ran `npm run build` and `npm run test` at repo root — both passed (6 tests, 2 test files, no failures; build produced dist/ with only pre-existing warnings, no new ones).
+- 2026-07-18: Sean pushed branch and opened PR https://github.com/timdixon82/Image-Colour-Contrast-Checker/pull/42. Handing off to Jed for security review per the routing plan.
+- [2026-07-18 14:13:32] subagent completed
+- [2026-07-18 14:14:04] subagent completed
+- [2026-07-18 14:14:36] subagent completed
+- [2026-07-18 14:15:09] subagent completed
+- [2026-07-18 14:15:41] subagent completed
+- [2026-07-18 14:16:13] subagent completed
+- [2026-07-18 14:16:45] subagent completed
+- 2026-07-18: Jed reviewed PR #42 (dependency bumps, adm-zip override, synced workflows) — approved, no blocking findings. Confirmed elliptic/crypto-browserify path is dev-only and absent from the built bundle. Noted (non-blocking) that the synced `codeql.yml` now triggers on push-to-main + weekly rather than per-PR, matching the upstream template verbatim; flagged as a task for template-level awareness, not a defect in this PR. Full report: `.claude/work/016-iccc-template-sync-security/jed-security-review.md`.
+- [2026-07-18 14:21:48] subagent completed
+- [2026-07-18 14:21:53] subagent completed
+- [2026-07-18 14:23:20] subagent completed
+- [2026-07-18 14:23:52] subagent completed
+- 2026-07-18: Carol tested PR #42 — FAIL. Local build/test/functional smoke all pass (6/6 tests, no coverage regression, OCR/analysis/PDF/Markdown pipeline works end to end), but the PR is stale against `main` (`mergeable_state: dirty`) and has zero CI check-runs on its head commit. Merging as-is would revert the `protobufjs` CVE fix from PR #39 and regress `package.json` from the already-released 0.5.0 to 0.4.22, plus downgrade several deps main already moved past. Needs rebase onto current main and a real CI run before release. Full report: `.claude/work/016-iccc-template-sync-security/carol-test-report.md`.
+- [2026-07-18 14:24:23] subagent completed
+- [2026-07-18 14:25:54] subagent completed
+- [2026-07-18 14:26:26] subagent completed
+- [2026-07-18 14:26:58] subagent completed
+- [2026-07-18 14:27:30] subagent completed
+- [2026-07-18 14:28:06] subagent completed
+- [2026-07-18 14:28:38] subagent completed
+- [2026-07-18 14:29:11] subagent completed
+- [2026-07-18 14:31:15] subagent completed
+- [2026-07-18 14:31:47] subagent completed
+- [2026-07-18 14:32:19] subagent completed
+- [2026-07-18 14:32:51] subagent completed
+- [2026-07-18 14:33:24] subagent completed
+- [2026-07-18 14:33:57] subagent completed
+- [2026-07-18 14:34:36] subagent completed
+- [2026-07-18 14:35:09] subagent completed
+- 2026-07-18: Sean merged `origin/main` into `chore/template-sync-and-security` (merge commit 412c4aa) to bring the branch up to date after PR #40 (CI archetype hand-adaptation), PR #39 (protobufjs override), and PR #23 (0.5.0 release) landed on main. Conflict resolution:
+  - `accessibility.yml`/`ci.yml`: kept the archetype-aware 1.7.0 template structure (Sean's sync commit a8cf359 is dated 2026-07-18, chronologically after PR #40's 2026-07-14 template pull), since it is a behavioural superset for this static-app project (all `is_browser_extension` conditions evaluate false against the now-present `.github/ci-archetype` file declaring `static-app`, matching PR #40's hardcoded Vite-specific behaviour exactly). Re-applied the two dependabot action-version bumps that landed on main after PR #40 (`actions/checkout` v7.0.0, `shivammathur/setup-php` v2.37.2) on top.
+  - `package.json`: only the `version` field conflicted (protobufjs override was already present on both sides). Bumped to 0.5.1, forward from main's released 0.5.0, not from this branch's stale 0.4.22.
+  - `package-lock.json`: took main's lockfile as the base (0.5.0 dependency tree) and ran `npm install` then `npm audit fix` (non-force) to re-apply the vite/vitest/esbuild security bumps on top of the new baseline. Confirmed via `npm audit`: 0 critical/high/moderate; 6 low-severity findings remain, all in the pre-existing elliptic → vite-plugin-node-polyfills dev-only path Jed already reviewed and cleared.
+  - `.github/accessibility-tools/package.json` adm-zip override merged in cleanly (no conflict); re-verified `npm audit` in that directory reports 0 vulnerabilities.
+  - `src/export/pdf.test.js`, `src/lib/pdf-ua/pdf-ua.test.js`, `src/lib/pdf-ua/verapdf-test-utils.js`, `CHANGELOG.md`, `.release-please-manifest.json`, `.github/dependabot.yml` merged in cleanly from main with no conflicts.
+  Verified after merge: `npm run build` succeeds, `npm run lint` clean, `npm run test` 6/6 passing. Pushed the merge commit with a normal `git push` (no force-push). CI ran fresh on head commit 412c4aa: all 8 checks pass (build, lint, Pa11y/axe WCAG 2.2 AAA, Playwright, semgrep, trivy, dependency-review, dependabot.yml validation). `gh api .../pulls/42 -q .mergeable_state` now reports `clean` (`mergeable: true`), resolving Carol's blocking finding.
+- [2026-07-18 14:35:41] subagent completed
