@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.5.0...v0.5.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* pin adm-zip to 0.6.0 in accessibility-tools scaffold ([33fc28b](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/33fc28b4d80fa4ba0eb9734b7e8e0fbe209500b9))
+* resolve npm audit critical/high/moderate vulnerabilities ([7cd0b5a](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/7cd0b5ad61a02ae0477734c8dae376ce75cde151))
+
 ## [0.5.0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.4.0...v0.5.0) (2026-07-14)
 
 
