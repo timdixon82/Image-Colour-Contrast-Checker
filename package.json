@@ -26,20 +26,20 @@
   "dependencies": {
     "@gutenye/ocr-browser": "^1.4.8",
     "blob-stream": "^0.1.3",
-    "onnxruntime-web": "^1.27.0",
-    "pdfkit": "^0.19.1",
+    "onnxruntime-web": "^1.29.0",
+    "pdfkit": "^0.20.2",
     "pdfmake": "^0.3.11"
   },
   "devDependencies": {
     "@gutenye/ocr-models": "^1.4.2",
-    "eslint": "^10.8.0",
-    "globals": "^17.9.0",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
     "htmlhint": "^1.5.0",
     "stylelint": "^17.14.1",
     "stylelint-config-standard": "^40.0.0",
-    "vite": "^8.2.0",
+    "vite": "^8.2.2",
     "vite-plugin-node-polyfills": "^0.28.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "protobufjs": "^7.6.1"
