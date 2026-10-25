@@ -37,3 +37,15 @@ Grid of 144 boxes per fixture (shifted and trimmed), main vs branch: no box got 
 - Residual: the rule can drop a real text strip whose neighbours are same-pair partial glyphs (seen five times on btn2026, harmless there). If every text-like strip is dropped the code falls back to the whole box, as before.
 - Not solved: a near-vertical thin line; a thin line passing the shape test on 3 or more adjacent strips with identical orientation.
 - A grey chevron could be meaningful content with its own non-text contrast requirement (WCAG 1.4.11). Out of scope here; a question for Tim.
+
+## Rework after the real-browser test (Carol, PR 75)
+
+The first strip rule (`continuesLine` alone) fixed Tim's cases but was worse than main on the 019 fixtures in shifted or scaled boxes: it dropped genuine text strips whose neighbours were same-pair partial glyphs, so the pair came from boundary strips (card against ribbon) or from a brighter word.
+
+New tests: `src/core/contrast.sweep.test.js` with `__fixtures__/box-sweep.js` (crop x scale x box offset, no browser). Each 019 fixture must never be worse than `worstStripContrast(..., { dropRibbonLines: false })` (the pre-020 behaviour) in any variant; Tim's two full screenshots must report real text at 8 scales x 4 crops.
+
+Rule now: a text-like strip is dropped only if (1) at least two strips within three of it are "thin bright lines" (ink lighter than background, covering at most 25 % of the strip) with the same pair either way round, none vouched for by a real text strip (text-like, not thin bright, same orientation, not itself a line slice), and (2) `continuesLine` still holds.
+
+Tried and rejected on the way: the same-pair rule alone (the first rule: 738 of 3240 boxes worse than main on kwh_grid2, 194 on batte154, 240 on pct2469); requiring only darker ink (misses Tim's dark-gap strips in tall boxes); counting one thin strip as enough (a pill edge next to "GRID" dropped the GRID strip, 5 boxes).
+
+Sweep over 3240 boxes per fixture (9 fixtures), old rule vs new rule vs main, in the scratch results reported on the PR. Trade-offs: fewer ribbon fixes on the 019 set than the first rule (kwh_grid 33 to 0, mwh_kwh 6 to 0, s105 7 to 0, pct2469 31 to 20); none worse than main.
