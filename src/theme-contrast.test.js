@@ -148,17 +148,18 @@ describe('light themes keep brand navy out of control fills', () => {
   });
 });
 
-describe('VADChecker: surfaces stay under 60% HSL saturation (Vestibular SAFE)', () => {
-  it.each([
-    ['dark', '--bg'],
-    ['dark', '--bg-card'],
-    ['dark', '--neutral-bg'],
-    ['dark', '--warn-bg'],
-    ['light', '--warn-bg'],
-  ])('%s %s', (theme, tok) => {
+describe.each(THEMES)('%s theme: VADChecker, surfaces stay under 60%% HSL saturation (Vestibular SAFE)', (theme) => {
+  // Dark's button fills are brand orange (79% / 73%): the documented brand accent
+  // fill exception. Every other surface and button fill, in every theme, is held.
+  const BRAND_ACCENT_FILLS = theme === 'dark' ? ['--button-bg', '--button-bg-hover'] : [];
+  const SURFACES = ['--bg', '--bg-card', '--neutral-bg', '--code-bg', '--warn-bg', '--pass-bg', '--fail-bg', '--button-bg', '--button-bg-hover'];
+
+  it.each(SURFACES.filter((k) => !BRAND_ACCENT_FILLS.includes(k)))('%s', (tok) => {
     expect(hslSaturation(tokens(theme)[tok]), `${theme} ${tok}`).toBeLessThan(60);
   });
+});
 
+describe('VADChecker: light text', () => {
   it('light --fg is not so bright against white that APCA flags it (Lc over 105)', () => {
     // #1A1A1A on white is Lc 109 (HARSH); #2A2A2A is Lc 104.
     expect(tokens('light')['--fg']).not.toBe('#1A1A1A');
