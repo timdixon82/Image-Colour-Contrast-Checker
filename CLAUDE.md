@@ -247,17 +247,25 @@ Current version: **0.4.19** — bump `package.json` on every behavioural change.
 
 ---
 
-## Service worker (`public/sw.js`)
+## Service worker (`scripts/sw.template.js` -> `public/sw.js`)
 
 A single hand-written service worker, registered by `<script src="sw.js">` in
-`index.html`, does two things:
+`index.html`, does two things. The hand-written source is
+`scripts/sw.template.js`; `scripts/copy-models.mjs` writes the shipped
+`public/sw.js` (gitignored) from it, filling in the runtime folder and cache
+name from the installed package versions:
 
 1. **Cross-origin isolation** — injects COOP/COEP headers (the `coi-serviceworker`
    logic) so `crossOriginIsolated` is true and multi-threaded WASM works.
-2. **Model caching** — cache-first for any `/models/` or `/ort/` request, stored
-   in Cache Storage (`icc-model-cache-v*`). iOS Safari evicts large files from
-   its HTTP cache between visits; Cache Storage is durable, so the ~30 MB of
-   models download once. Bump `MODEL_CACHE` when the runtime/model files change.
+2. **Model caching** — cache-first for any `/models/` or `/ort-<onnxruntime-web
+   version>/` request, stored in Cache Storage (`icc-model-cache-ort<ort
+   version>-models<ocr-models version>`, derived at build time, so it cannot be
+   forgotten on an upgrade). iOS Safari evicts large files from its HTTP cache
+   between visits; Cache Storage is durable, so the ~30 MB of models download
+   once. The runtime folder is versioned (`public/ort-<version>/`, page code
+   gets it as `__ORT_DIR__`) so a returning visitor's older worker, which only
+   matches `/ort/`, cannot serve old runtime files to the new page. See
+   `scripts/runtime-version.mjs`.
 
 There can only be one service worker per scope, so both jobs live in this file.
 

@@ -1,6 +1,10 @@
 /*!
  * Service worker for Image Colour Contrast Checker.
  *
+ * This is the hand-written TEMPLATE. scripts/copy-models.mjs (run on install,
+ * dev and build) fills in __MODEL_CACHE__ and __ORT_DIR__ from the installed
+ * package versions and writes the result to public/sw.js, which is what ships.
+ *
  * Two jobs:
  *  1. Cross-origin isolation — injects COOP/COEP response headers so the page
  *     is crossOriginIsolated (required for SharedArrayBuffer / multi-threaded
@@ -14,10 +18,16 @@
 
 let coepCredentialless = false;
 
-// Cache for the model + runtime files. Bump the version suffix whenever the
-// ONNX runtime or model files change, so stale bytes are not served.
-const MODEL_CACHE = 'icc-model-cache-v2';
-const CACHEABLE_PATH = /\/(?:models|ort)\//;
+// Cache for the model + runtime files. Both values are filled in at build time
+// by scripts/copy-models.mjs from the installed package versions, so they
+// cannot be forgotten on an upgrade. The runtime folder is versioned
+// (ort-<onnxruntime-web version>) so a worker from an earlier release, which
+// only matches /ort/ and the older cache names, never serves old runtime bytes
+// to a newer page.
+const MODEL_CACHE = '__MODEL_CACHE__';
+const ORT_DIR = '__ORT_DIR__';
+const CACHEABLE_PATH = new RegExp(
+  '/(?:models|' + ORT_DIR.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')/');
 
 if (typeof window === 'undefined') {
   // ─── Service worker context ──────────────────────────────────────────────
@@ -25,7 +35,7 @@ if (typeof window === 'undefined') {
   self.addEventListener('install', () => self.skipWaiting());
 
   self.addEventListener('activate', (event) => event.waitUntil((async () => {
-    // Remove superseded model caches.
+    // Remove superseded model caches (including the earlier v1 and v2 names).
     const keys = await caches.keys();
     await Promise.all(
       keys.filter((k) => k.startsWith('icc-model-cache-') && k !== MODEL_CACHE)

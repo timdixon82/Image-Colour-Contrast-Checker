@@ -1,6 +1,11 @@
 import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { runtimeInfo } from './scripts/runtime-version.mjs';
+
+// Versioned OCR runtime folder, e.g. ort-1.30.0 (see scripts/runtime-version.mjs).
+const { ortDir } = runtimeInfo(fileURLToPath(new URL('.', import.meta.url)));
 
 export default defineConfig({
   base: './',
@@ -14,6 +19,7 @@ export default defineConfig({
   define: {
     __dirname: JSON.stringify(''),
     __filename: JSON.stringify(''),
+    __ORT_DIR__: JSON.stringify(ortDir),
   },
   plugins: [
     // Polyfill Node.js built-ins required by PDFKit for browser use.

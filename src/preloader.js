@@ -19,12 +19,12 @@ function getFiles() {
     { label: 'Text recognition model',path: 'models/ch_PP-OCRv4_rec_infer.onnx',                               approxBytes: 10_500_000 },
     {
       label: useWebGpu ? 'OCR runtime (WebGPU)' : 'OCR runtime',
-      path:  useWebGpu ? 'ort/ort-wasm-simd-threaded.jsep.wasm' : 'ort/ort-wasm-simd-threaded.wasm',
+      path:  `${__ORT_DIR__}/` + (useWebGpu ? 'ort-wasm-simd-threaded.jsep.wasm' : 'ort-wasm-simd-threaded.wasm'),
       approxBytes: useWebGpu ? 26_000_000 : 12_600_000
     },
     {
       label: 'OCR runtime module',
-      path:  useWebGpu ? 'ort/ort-wasm-simd-threaded.jsep.mjs' : 'ort/ort-wasm-simd-threaded.mjs',
+      path:  `${__ORT_DIR__}/` + (useWebGpu ? 'ort-wasm-simd-threaded.jsep.mjs' : 'ort-wasm-simd-threaded.mjs'),
       approxBytes: useWebGpu ? 46_000 : 24_000
     },
     { label: 'Character dictionary',  path: 'models/ppocr_keys_v1.txt',                                        approxBytes: 26_000     },

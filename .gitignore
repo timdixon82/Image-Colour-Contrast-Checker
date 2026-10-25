@@ -41,6 +41,9 @@ build/
 # they are regenerated from devDependencies on every install.
 public/models/
 public/ort/
+public/ort-*/
+# Generated from scripts/sw.template.js by scripts/copy-models.mjs.
+public/sw.js
 public/fonts/
 
 # Claude Code local settings — local to this machine, not shared
