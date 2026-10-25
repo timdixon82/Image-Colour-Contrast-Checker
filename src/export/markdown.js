@@ -7,7 +7,8 @@
 
 import {
   APP_NAME, SITE_URL, THRESHOLDS_FOOTER, DISCLAIMER_TEXT, checkInfoUrl,
-  VESTIBULAR_CHECKER_URL
+  vestibularCheckerUrl,
+  VESTIBULAR_CHECKER_BRAND_LABEL
 } from './strings.js';
 import { pairChecks, wcagLine, advancedLine, pairBadges, statusWord, CHECK_GROUPS } from './checks.js';
 
@@ -125,7 +126,7 @@ export function buildMarkdown(entries, timestamp) {
         lines.push('');
         lines.push(`[Check this pair on WebAIM](${webaim})`);
         lines.push('');
-        lines.push(`[Vestibular Accessible Design Checker](${VESTIBULAR_CHECKER_URL})`);
+        lines.push(`[${VESTIBULAR_CHECKER_BRAND_LABEL}](${vestibularCheckerUrl(p.fgHex, p.bgHex)})`);
         lines.push('');
         lines.push('| Check | Value | Status | What it means |');
         lines.push('|-------|-------|--------|---------------|');

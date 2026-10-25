@@ -8,7 +8,7 @@
 import { makeSwatch, makeClip, makePreview, makeThumb, makeCbSim } from '../render/canvas.js';
 import {
   THRESHOLDS_FOOTER, DISCLAIMER_TEXT, CVD_TYPES,
-  VESTIBULAR_CHECKER_URL, VESTIBULAR_CHECKER_FULL_LABEL
+  vestibularCheckerUrl, VESTIBULAR_CHECKER_FULL_LABEL, VESTIBULAR_CHECKER_BRAND_LABEL
 }                                                                   from '../export/strings.js';
 import {
   pairChecks, wcagLine, advancedLine,
@@ -350,7 +350,7 @@ function renderContrastResults(card, entry) {
     const liWebaim = document.createElement('li');
     liWebaim.append(webaimLink(p.fgHex, p.bgHex));
     const liVestibular = document.createElement('li');
-    liVestibular.append(vestibularLink());
+    liVestibular.append(vestibularLink(p));
     ul.append(liWebaim, liVestibular);
     checkCell.append(ul);
 
@@ -529,13 +529,13 @@ function webaimLink(fgHex, bgHex) {
   return a;
 }
 
-function vestibularLink() {
+function vestibularLink(pair) {
   const a = document.createElement('a');
-  a.href   = VESTIBULAR_CHECKER_URL;
+  a.href   = vestibularCheckerUrl(pair.fgHex, pair.bgHex);
   a.target = '_blank';
   a.rel    = 'noopener noreferrer';
   a.setAttribute('aria-label', VESTIBULAR_CHECKER_FULL_LABEL);
-  a.textContent = 'Vestibular Accessible Design Checker';
+  a.textContent = VESTIBULAR_CHECKER_BRAND_LABEL;
   const arrow = document.createElement('span');
   arrow.setAttribute('aria-hidden', 'true');
   arrow.textContent = ' ↗';

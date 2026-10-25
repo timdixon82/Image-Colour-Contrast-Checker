@@ -31,7 +31,7 @@ import {
   SITE_URL,
   THRESHOLDS_FOOTER,
   DISCLAIMER_TEXT,
-  VESTIBULAR_CHECKER_URL,
+  vestibularCheckerUrl,
   VESTIBULAR_CHECKER_FULL_LABEL,
   checkInfoUrl,
 } from './strings.js';
@@ -405,7 +405,7 @@ async function buildDocument(entries, timestamp) {
           ...exampleSpans,
           { text: `Check ${pair.fgHex}/${pair.bgHex} on WebAIM Contrast Checker`, fontSize: 9, color: '#234A73', link: webaim }, /* Muted Light --accent */
           { text: '   ',                             fontSize: 9, color: '#5A636D' },
-          { text: VESTIBULAR_CHECKER_FULL_LABEL,     fontSize: 9, color: '#234A73', link: VESTIBULAR_CHECKER_URL },
+          { text: VESTIBULAR_CHECKER_FULL_LABEL,     fontSize: 9, color: '#234A73', link: vestibularCheckerUrl(pair.fgHex, pair.bgHex) },
         ]);
 
         // 1.9.3 Checks table — Check column cells carry hyperlinks (requires addTable)
