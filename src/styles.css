@@ -333,11 +333,34 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 
 .app-header-text { flex: 1; min-width: 0; }
 
+/* Decorative brand mark beside the title; wraps with the title, never shrinks */
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 4px;
+}
+
+.app-header-logo {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+/* Dark themes: the logo tile (#061528) is nearly the same as --bg-card, so
+   outline it. outline adds no box size (no layout shift); radius matches the
+   tile's rx 6 of 32 at 2.5rem. --fg-muted is >= 3:1 on --bg-card and the tile. */
+[data-theme="dark"]       .app-header-logo,
+[data-theme="muted-dark"] .app-header-logo {
+  outline: 1px solid var(--fg-muted);
+  border-radius: 0.47rem;
+}
+
 .app-header h1 {
   color: var(--fg);
   font-size: clamp(1.05rem, 2.5vw, var(--text-2xl));
   font-weight: 800;
-  margin: 0 0 4px;
+  margin: 0;
   letter-spacing: -0.3px;
 }
 
@@ -1058,7 +1081,7 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   color: var(--fg);
   font-size: 1.5rem;
   font-weight: 800;
-  margin: 0 0 4px;
+  margin: 0;
   letter-spacing: -0.3px;
 }
 
