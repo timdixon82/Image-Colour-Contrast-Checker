@@ -374,17 +374,18 @@ export function worstStripContrast(imageData, x, y, w, h) {
   const stripW    = Math.max(4, Math.floor(h * 0.6));
   const nStrips   = Math.max(3, Math.round(w / stripW));
   const actualW   = w / nStrips;
-  const all       = [];
-  const textual   = [];
+  const strips    = [];
 
   for (let s = 0; s < nStrips; s++) {
     const sx = x + Math.round(s * actualW);
     const sw = Math.max(4, Math.round(actualW));
-    const m  = measureRegion(imageData, sx, y, sw, h, true);
-    if (!m) continue;
-    all.push(m.result);
-    if (m.textLike) textual.push(m.result);
+    strips.push(measureRegion(imageData, sx, y, sw, h, true));
   }
+
+  const all     = strips.filter(Boolean).map((m) => m.result);
+  const textual = strips
+    .filter((m, s) => m && m.textLike && !continuesLine(strips, s))
+    .map((m) => m.result);
 
   const lowest = (list) =>
     list.reduce((worst, r) => (r.contrast < worst.contrast ? r : worst), list[0]);
@@ -393,6 +394,45 @@ export function worstStripContrast(imageData, x, y, w, h) {
   const whole = regionContrast(imageData, x, y, w, h);
   if (whole) return whole;
   return all.length ? lowest(all) : null;
+}
+
+// LINE_SAME is the largest RGB distance (0..255 scale) at which two strips'
+// colours count as the same pair. It is not a tuned value: ribbon strips in the
+// fixtures differ by under 25, and a different pair differs by 50 or more.
+const LINE_SAME = 30;
+
+const rgbDist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+
+/** How two strips' colour pairs relate: 'same', 'swapped' (ink and background trade places) or null. */
+function pairRelation(a, b) {
+  if (rgbDist(a.fgRgb, b.fgRgb) <= LINE_SAME && rgbDist(a.bgRgb, b.bgRgb) <= LINE_SAME) return 'same';
+  if (rgbDist(a.fgRgb, b.bgRgb) <= LINE_SAME && rgbDist(a.bgRgb, b.fgRgb) <= LINE_SAME) return 'swapped';
+  return null;
+}
+
+/**
+ * Is a text-like strip really one slice of a long thin line (a ribbon edge
+ * running across the box)? A thin line crossing at a shallow slope passes the
+ * shape test on the odd strip where it happens to be steep. What gives it away
+ * is its neighbours, which hold the same two colours but either do not look
+ * like text, or have ink and background the other way round (the line is the
+ * minority in one strip and the majority in the next). A glyph has bare
+ * background (a gap), a text-like strip with the same ink, or different colours
+ * beside it. A strip with no coloured neighbour at all is kept, so a lone
+ * character is never dropped.
+ *
+ * @param {({ result: RegionResult, textLike: boolean }|null)[]} strips
+ * @param {number} s  index of a text-like strip
+ */
+function continuesLine(strips, s) {
+  let line = 0;
+  for (const n of [strips[s - 1], strips[s + 1]]) {
+    if (!n) continue;
+    const rel = pairRelation(n.result, strips[s].result);
+    if (!rel || (n.textLike && rel === 'same')) return false;
+    line++;
+  }
+  return line > 0;
 }
 
 /**
