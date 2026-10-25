@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.6.0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.5.1...v0.6.0) (2026-10-25)
+
+
+### Features
+
+* combined release (VADChecker links, swatch detection fix, dependency updates) ([1d6e2a9](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/1d6e2a9dbfc2b09abdc1763360fd482d40824f4b))
+* pass pair colours to VADChecker links in report, PDF and Markdown ([f137e39](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/f137e3950a3c0e158920aadc1cb918dd03654764))
+
+
+### Bug Fixes
+
+* **a11y:** desaturate dark and light surfaces to satisfy VADChecker Vestibular Strain ([67f195d](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/67f195dcfc5f1e5cb889a05a2ea340ac211d3d02))
+* **a11y:** lift dark and muted-dark info icon and queue stage text to WCAG AAA 7:1 ([d45718e](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/d45718ec5729a5cb9cd3270bf3500ba08c5a84e0))
+* **a11y:** raise --neutral to 7:1 on every surface in Dark and Muted Light ([486f8c5](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/486f8c5536a8770bfaf31eb1ecd09ccabd94aeaf))
+* **a11y:** raise status pill and group-label contrast to AAA 7:1 in all themes ([57ba211](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/57ba2113b411e2f943c6801ba922ac38ecd17495))
+* **a11y:** restore the focus ring on the dropzone ([b4efbf2](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/b4efbf2de35cb45e0e5e2705cfec910920b2fa56))
+* **a11y:** underline the check info links so they do not rely on colour alone ([1f09bfc](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/1f09bfc32f561dbf8670baf749c1dff4fd1a2698))
+* **a11y:** use --accent-small for the check-group label on --neutral-bg ([1d2ff96](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/1d2ff96f121da4d5c3b3e15d66c7e8c6d1f2df70))
+* **a11y:** use a softer navy fill for primary button and skip link in Light ([49349f5](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/49349f5659a956b61aa70b9de26544f2317aa7ab))
+* **build:** fail the production build if dist/sw.js is missing or unfilled ([35166ff](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/35166ffeb1cb80d587e1cf5b5f69085fbd5606e5))
+* **contrast:** reject a thin shallow ribbon edge line as text in strip selection ([0c004a5](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/0c004a508c3397b5d4c6a848918c25d03b7aa08f))
+* **deps:** clear in-range audit advisories (brace-expansion, fast-uri, js-yaml, pbkdf2, qs) ([59b4600](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/59b46001be533c55576f60f0071468e7e0d0cdd0))
+* ignore text-free strips when choosing the worst contrast strip ([b4f44a7](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/b4f44a7e860505d1023f80e5469faee9e9a9ddf5))
+* make external checker links 44 px high touch targets ([cd7618b](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/cd7618b40b00e9f2083e104253b03c95ac75dd0b))
+* **pdf:** raise PDF palette text pairs to WCAG AAA 7:1 ([ad22b20](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/ad22b20c60246a40b54123cc20177b02810f1488))
+* reject gradient ribbon strips in the text-likeness test ([37749f2](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/37749f215990c2f2c1625f445e26685e7e45f235))
+* **runtime:** load ORT from a versioned path so a stale service worker cannot serve old files ([d1901a3](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/d1901a3c52aa01fa650478e3dbe68e8218a8df8b))
+
 ## [0.5.1](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.5.0...v0.5.1) (2026-07-18)
 
 
