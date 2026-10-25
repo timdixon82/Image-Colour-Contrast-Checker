@@ -49,3 +49,24 @@ Rule now: a text-like strip is dropped only if (1) at least two strips within th
 Tried and rejected on the way: the same-pair rule alone (the first rule: 738 of 3240 boxes worse than main on kwh_grid2, 194 on batte154, 240 on pct2469); requiring only darker ink (misses Tim's dark-gap strips in tall boxes); counting one thin strip as enough (a pill edge next to "GRID" dropped the GRID strip, 5 boxes).
 
 Sweep over 3240 boxes per fixture (9 fixtures), old rule vs new rule vs main, in the scratch results reported on the PR. Trade-offs: fewer ribbon fixes on the 019 set than the first rule (kwh_grid 33 to 0, mwh_kwh 6 to 0, s105 7 to 0, pct2469 31 to 20); none worse than main.
+
+## Follow-up: the two failures left open after PR 75 (branch fix/swatch-remaining-ribbons)
+
+Cause of each, from per-strip dumps:
+
+- A (kwh_grid, ribbon at 1.25x to 3x): one thin bright ribbon edge passes the shape test on a single strip. Its neighbours are not text, so the existing rule (needs two thin bright strips) never fires, and 1.8 to 1.9 beats the real text at 2.8 and above.
+- B (24.69% / 63.33 kWh at 0.75x to 0.8x): the OCR box reaches 6 px or more below the card into the dark gap. Every strip then holds three colours, so no strip looks like text, and the whole-box fallback pairs the card with the gap (about 2.6).
+
+Changes in `src/core/contrast.js`:
+
+- `dropLoneLines`: a text-like strip is dropped when it is a thin bright line, no other kept strip holds its pair, other kept strips do hold a pair together, and the strips beside it are all non-text.
+- Band retry: when no strip in the box is text-like, the box is retried as three overlapping bands (60 % of the height, starting at 0, 20 % and 40 %) before the whole-box fallback.
+
+Tried and rejected (counts are boxes made worse than main, over 3 600 swept boxes):
+
+- Dropping any lone text-like strip with no same-pair partner (no thin-bright test): 46 worse (a real faint glyph strip next to half-covered neighbours was dropped).
+- Same, requiring neighbours of a different pair: 8 worse (batte154: a real strip whose neighbours have ink and background swapped).
+- Running the band retry on every box and merging: 348 worse (ribbon edges and card edges win inside the bands).
+- Running it when under 25 % or 40 % of the strips look like text: 40 to 170 worse.
+
+Known residue: when the full box holds some text-like strips (for example "24.69%") but not the faint one, the retry does not run, so the lowest text can still be missed (a real text pair is reported, not a non-text one).

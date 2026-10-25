@@ -304,3 +304,35 @@ describe('worstStripContrast: a thin line crossing the gap between text items', 
     expect(near(r.fgHex, faint, 12)).toBe(true);
   });
 });
+
+describe('worstStripContrast: a box that reaches below the card into a darker gap', () => {
+  const CARD = [78, 82, 179];
+  const GAP = [57, 60, 72];
+  const INK = [43, 51, 96];     // about 1.6:1 on CARD
+  const CW = 300;
+  const CH = 44;                // card rows 0..27, gap rows 28..43
+
+  const image = (gap = true) => makeImage(CW, CH, (x, y) => {
+    if (y >= 28 && gap) return GAP;
+    const glyph = x % 8 < 2 && y >= 5 && y < 19 && (x < 56 || x >= 240);
+    return glyph ? INK : CARD;
+  });
+
+  it('reports the ink on the card, not the card against the gap', () => {
+    const r = worstStripContrast(image(), 0, 0, CW, CH);
+    expect(near(r.fgHex, INK, 20)).toBe(true);
+    expect(near(r.bgHex, CARD, 20)).toBe(true);
+    expect(r.contrast).toBeLessThan(2);
+  });
+
+  it('is the same result as a box that stops at the card', () => {
+    const tall = worstStripContrast(image(), 0, 0, CW, CH);
+    const tight = worstStripContrast(image(false), 0, 0, CW, 28);
+    expect(tall.contrast).toBeCloseTo(tight.contrast, 0);
+  });
+
+  it('keeps the old result when bands are turned off (the card against the gap)', () => {
+    const r = worstStripContrast(image(), 0, 0, CW, CH, { bands: false });
+    expect(near(r.bgHex, GAP, 20) || near(r.fgHex, GAP, 20)).toBe(true);
+  });
+});

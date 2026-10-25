@@ -363,8 +363,10 @@ function measureRegion(imageData, x, y, w, h, checkShape) {
  * This ensures each letter in a word is individually sampled.
  *
  * Only strips that look like text (see isTextLike) compete, so a stretch of
- * plain background between words cannot win. If no strip looks like text it
- * falls back to the whole box, then to the lowest of all strips, so a real
+ * plain background between words cannot win. If no strip looks like text, the
+ * box is retried as three overlapping horizontal bands (see BAND_HEIGHT), so
+ * text with a card edge or a gap under it is still found; if that finds none
+ * it falls back to the whole box, then to the lowest of all strips, so a real
  * failure is never silenced.
  *
  * @param {ImageData} imageData
@@ -372,16 +374,56 @@ function measureRegion(imageData, x, y, w, h, checkShape) {
  * @param {number} y
  * @param {number} w
  * @param {number} h
- * @param {{ dropRibbonLines?: boolean }} [options]  `dropRibbonLines: false`
- *        keeps every text-like strip, which is how this behaved before work
- *        item 020. Tests use it as the baseline a change must not make worse.
+ * @param {{ dropRibbonLines?: boolean, bands?: boolean }} [options]
+ *        `dropRibbonLines: false` keeps every text-like strip, and
+ *        `bands: false` skips the band retry. Together they give the behaviour
+ *        before work item 020 follow-up; tests use that as the baseline a
+ *        change must not make worse.
  * @returns {RegionResult|null}
  */
-export function worstStripContrast(imageData, x, y, w, h, { dropRibbonLines = true } = {}) {
-  const stripW    = Math.max(4, Math.floor(h * 0.6));
-  const nStrips   = Math.max(3, Math.round(w / stripW));
-  const actualW   = w / nStrips;
-  const strips    = [];
+export function worstStripContrast(imageData, x, y, w, h, { dropRibbonLines = true, bands = true } = {}) {
+  const lowest = (list) =>
+    list.reduce((worst, r) => (r.contrast < worst.contrast ? r : worst), list[0]);
+
+  const first = textStrips(imageData, x, y, w, h, dropRibbonLines);
+  if (first.text.length) return lowest(first.text);
+
+  const bandH = Math.round(h * BAND_HEIGHT);
+  if (bands && bandH >= MIN_BAND) {
+    const found = [];
+    for (const start of BAND_STARTS) {
+      const by = y + Math.round(h * start);
+      found.push(...textStrips(imageData, x, by, w, Math.min(bandH, y + h - by), dropRibbonLines).text);
+    }
+    if (found.length) return lowest(found);
+  }
+
+  const whole = regionContrast(imageData, x, y, w, h);
+  if (whole) return whole;
+  return first.all.length ? lowest(first.all) : null;
+}
+
+// A box that reaches past the text (below a card into the gap, or up over its
+// edge) puts three colours in every strip, so no strip looks like text. The
+// retry looks at BAND_HEIGHT of the box at each of BAND_STARTS (top, middle,
+// bottom), so the band holding the text is free of what lies beyond it. The
+// numbers are not tuned finely: 0.5 to 0.7 of the height, with three or four
+// starts, gave the same result within 3 % on the sweep fixtures. MIN_BAND keeps
+// a band from shrinking below a readable glyph.
+const BAND_HEIGHT = 0.6;
+const BAND_STARTS = [0, 0.2, 0.4];
+const MIN_BAND = 8;
+
+/**
+ * Measure one box as vertical strips.
+ * @returns {{ text: RegionResult[], all: RegionResult[] }}  the text-like strips
+ *          that survive the ribbon rules, and every strip that was measured
+ */
+function textStrips(imageData, x, y, w, h, dropRibbonLines) {
+  const stripW  = Math.max(4, Math.floor(h * 0.6));
+  const nStrips = Math.max(3, Math.round(w / stripW));
+  const actualW = w / nStrips;
+  const strips  = [];
 
   for (let s = 0; s < nStrips; s++) {
     const sx = x + Math.round(s * actualW);
@@ -389,19 +431,14 @@ export function worstStripContrast(imageData, x, y, w, h, { dropRibbonLines = tr
     strips.push(measureRegion(imageData, sx, y, sw, h, true));
   }
 
-  const lines   = dropRibbonLines ? thinBrightLines(strips) : [];
-  const all     = strips.filter(Boolean).map((m) => m.result);
-  const textual = strips
-    .filter((m, s) => m && m.textLike && !(lines.length && isRibbonLine(strips, s, lines)))
-    .map((m) => m.result);
+  const lines = dropRibbonLines ? thinBrightLines(strips) : [];
+  const kept = strips.map((m, s) => !!(m && m.textLike && !(lines.length && isRibbonLine(strips, s, lines))));
+  if (dropRibbonLines) dropLoneLines(strips, kept);
 
-  const lowest = (list) =>
-    list.reduce((worst, r) => (r.contrast < worst.contrast ? r : worst), list[0]);
-
-  if (textual.length) return lowest(textual);
-  const whole = regionContrast(imageData, x, y, w, h);
-  if (whole) return whole;
-  return all.length ? lowest(all) : null;
+  return {
+    text: strips.filter((m, s) => kept[s]).map((m) => m.result),
+    all: strips.filter(Boolean).map((m) => m.result)
+  };
 }
 
 // LINE_SAME is the largest RGB distance (0..255 scale) at which two strips'
@@ -491,6 +528,33 @@ function continuesLine(strips, s) {
     line++;
   }
   return line > 0;
+}
+
+/**
+ * Drop a lone thin bright line from the text-like strips (in place). Where a
+ * ribbon edge crosses a gap it passes the shape test on one strip where it is
+ * steep, and the strips either side are not text, so it is a strip of its own
+ * pair; isRibbonLine does not see it because it needs two such strips. A word
+ * has several strips of one pair, so a text-like strip is dropped only when
+ * all hold:
+ *   1. it is a thin bright line (see isThinBright);
+ *   2. no other kept strip has its pair (so it is not part of a word);
+ *   3. other kept strips do hold a pair together (so there is real text to
+ *      report instead, and a box with a single odd strip is left alone);
+ *   4. the strips beside it that hold anything are all non-text.
+ *
+ * @param {({ result: RegionResult, textLike: boolean, inkShare: number, inkLighter: boolean }|null)[]} strips
+ * @param {boolean[]} kept  one flag per strip; entries are cleared when dropped
+ */
+function dropLoneLines(strips, kept) {
+  const paired = kept.map((k, s) => k && kept.some((other, j) =>
+    other && j !== s && pairRelation(strips[j].result, strips[s].result) === 'same'));
+  if (!paired.some(Boolean)) return;
+  kept.forEach((k, s) => {
+    if (!k || paired[s] || !isThinBright(strips[s])) return;
+    const beside = [strips[s - 1], strips[s + 1]].filter(Boolean);
+    if (beside.length && beside.every((n) => !n.textLike)) kept[s] = false;
+  });
 }
 
 /**

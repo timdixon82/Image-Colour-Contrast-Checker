@@ -56,7 +56,7 @@ describe('worstStripContrast: 019 fixtures over cropped, scaled and shifted boxe
       const ok = REAL(c);
       const worse = [];
       sweepBoxes(load(c.name), (img, x, y, w, h) => ({
-        base: worstStripContrast(img, x, y, w, h, { dropRibbonLines: false }),
+        base: worstStripContrast(img, x, y, w, h, { dropRibbonLines: false, bands: false }),
         now: worstStripContrast(img, x, y, w, h)
       }), { offsets: OFFSETS }).forEach(({ label, result }) => {
         if (ok(result.base) && !ok(result.now)) worse.push(`${label}: ${describe_(result.base)} -> ${describe_(result.now)}`);
@@ -87,4 +87,43 @@ describe("worstStripContrast: Tim's screenshots over crops and scales", () => {
       expect(bad).toEqual([]);
     });
   }
+});
+
+// Work item 020, follow-up: two failures that were left open after PR 75.
+//
+// A. kwh_grid: one thin ribbon edge over the dark gap passes the shape test on
+//    a single strip, so it is the only strip of its pair and sits between
+//    ribbon strips that are not text. On main this reported the ribbon (about
+//    1.8 to 1.9) at 1.25x to 3x in 46 of the variants swept here, instead of
+//    the real text (2.8 and above).
+describe('worstStripContrast: a lone ribbon-edge strip never beats the real text (kwh_grid)', () => {
+  it('reports the real text in every variant at 1x to 3x', () => {
+    const c = CASES.find((x) => x.name === 'kwh_grid');
+    const ok = REAL(c);
+    const bad = sweepBoxes(load('kwh_grid'), worstStripContrast, { offsets: OFFSETS })
+      .filter(({ result: r }) => !ok(r))
+      .map(({ label, result: r }) => `${label}: ${describe_(r)}`);
+    expect(bad).toEqual([]);
+  });
+});
+
+// B. energy_card_gap: a crop of Tim's energy screenshot (the "24.69%" and
+//    "63.33 kWh" row). When the OCR box reaches 6 px or more below the card
+//    into the dark gap, every strip holds three colours and none looks like
+//    text, so the whole box was measured: periwinkle card against the gap,
+//    about 2.6 (non-text). The real lowest pair is navy on indigo, about 1.6.
+//    Crop origin in the screenshot is (30, 930); the box is the text line,
+//    grown downwards by 0 to 21 px and moved or trimmed on the left.
+describe("worstStripContrast: a box that reaches below the card into the gap (Tim's energy screenshot)", () => {
+  const NAVY_ON_INDIGO = [[[43, 51, 96], [78, 82, 179]]];
+  const OFFS = [];
+  for (const l of [0, 10, -4]) for (const b of [0, 5, 11, 15, 21]) OFFS.push([l, 0, 0, b]);
+
+  it('reports navy on indigo, 1.5 to 2.0, at 0.75x to 1.5x', () => {
+    const bad = sweepBoxes(load('energy_card_gap'), worstStripContrast, {
+      scales: [0.75, 0.8, 1, 1.5], crops: [[0, 0]], offsets: OFFS, box: [26, 21, 489, 34]
+    }).filter(({ result: r }) => !(r && isRealText(r, NAVY_ON_INDIGO) && r.contrast >= 1.5 && r.contrast <= 2.0))
+      .map(({ label, result: r }) => `${label}: ${describe_(r)}`);
+    expect(bad).toEqual([]);
+  });
 });
