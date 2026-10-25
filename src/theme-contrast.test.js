@@ -102,6 +102,22 @@ describe('small text on --neutral-bg never uses --accent', () => {
   });
 });
 
+describe('dropzone keeps the global focus ring (WCAG 2.4.13)', () => {
+  it('.dropzone:focus-visible draws a 3px --accent outline with 3px offset', () => {
+    const m = css.match(/\.dropzone:focus-visible\s*\{([^}]*)\}/);
+    expect(m, 'rule exists').not.toBeNull();
+    expect(m[1]).toMatch(/outline:\s*3px solid var\(--accent\)/);
+    expect(m[1]).toMatch(/outline-offset:\s*3px/);
+  });
+
+  it.each(THEMES)('%s: the ring is at least 3:1 on the page and the card', (theme) => {
+    const t = tokens(theme);
+    for (const s of ['--bg', '--bg-card']) {
+      expect(ratio(t['--accent'], t[s]), s).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
+
 describe.each(THEMES)('%s theme: filled controls (primary button, skip link) are AAA', (theme) => {
   const t = tokens(theme);
 
