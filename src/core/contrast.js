@@ -415,11 +415,20 @@ export function worstStripContrast(imageData, x, y, w, h, { dropRibbonLines = tr
   const whole = measureRegion(imageData, x, y, w, h, false, true);
   const bandH = Math.round(h * BAND_HEIGHT);
   if (bands && whole && isSolidBlob(whole, w, h) && bandH >= MIN_BAND) {
-    const found = [];
-    for (const start of BAND_STARTS) {
+    const seen = [];
+    BAND_STARTS.forEach((start, band) => {
       const by = y + Math.round(h * start);
-      found.push(...textStrips(imageData, x, by, w, Math.min(bandH, y + h - by), dropRibbonLines, true).text);
-    }
+      for (const r of textStrips(imageData, x, by, w, Math.min(bandH, y + h - by), dropRibbonLines, true).text) {
+        seen.push({ r, band });
+      }
+    });
+    // A pair that shows only in the lowest band is the top edge of text that
+    // lies mostly below the box (a box set a few pixels high at reduced scale),
+    // not text in the box: leave that to the box that holds it.
+    const last = BAND_STARTS.length - 1;
+    const found = seen
+      .filter(({ r, band }) => band < last || seen.some((o) => o.band < last && pairRelation(o.r, r)))
+      .map(({ r }) => r);
     if (found.length && lowest(found).contrast < whole.result.contrast) return lowest(found);
   }
 

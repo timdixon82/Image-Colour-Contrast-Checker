@@ -19,19 +19,23 @@
  *   box    [x, y, w, h] the OCR box, in the pixels of that final image
  *   label  the text OCR read
  *   main   what the code before PR 80 reports on these exact pixels
- *   ref    what the same label reports at 1x, where there is one; for a box
- *          that includes the faint "63.33 kWh" it is that text's 1.65 (note)
+ *   ref    what the same label reports at 1x, where there is one; for the
+ *          wide "24.69% ... 63.33 kWh" box it is the faint text's 1.65 (note)
  *   real   the contrast the real browser run gave on main and on PR 80
+ *   want   (some cases) the reading the box must reach, here "atMost 2.0": the
+ *          wide "24.69% ... 63.33 kWh" box holds the faint 63.33 kWh (1.65)
  *
- * Every case here is a box where PR 80 as first written reported a LOWER
- * contrast than main. The rule: a result is never lower than main's unless it
+ * Every case without `want` is a box where PR 80 as first written reported a
+ * LOWER contrast than main. The rule: a result is never lower than main's unless it
  * lands within REF_TOL of the 1x value or closer to it than main was (then the
- * lower figure is the real one, and main was over-reporting). The causes it guards against:
+ * lower figure is the real one, and main was over-reporting). It guards against:
  *   - the band retry reaching the dark gap and reporting dark grey on darker
  *     grey (1.3 to 1.4) for a wide "kWh ... GRID" box;
  *   - the band retry on a box of plain text on one background, where cutting
  *     the box into bands leaves only half-covered strokes: a lighter ink than
- *     the real one, so a pass reads as a fail ("43.69%" 6.2 to 3.7).
+ *     the real one, so a pass reads as a fail ("43.69%" 6.2 to 3.7);
+ *   - the band retry reading the top edge of the faint "63.33 kWh" through a
+ *     box set a few pixels high ("kWh GRID", 2.4 to 1.5).
  *
  * The F5 cases read the screenshot from the work folder, where it is
  * committed; all other inputs are in __fixtures__.
@@ -68,6 +72,14 @@ function imageFor({ src, k, crop, fit }) {
 }
 
 describe('worstStripContrast: real OCR boxes at reduced and increased scale', () => {
+  it.each(CASES.filter((c) => c.want).map((c) => [`${c.src} x${c.k} crop ${c.crop} "${c.label}" box ${c.box}`, c]))(
+    '%s still finds the faint text',
+    (name, c) => {
+      const r = worstStripContrast(imageFor(c), ...c.box);
+      expect(r.contrast).toBeLessThanOrEqual(c.want.atMost);
+    }
+  );
+
   it.each(CASES.map((c) => [`${c.src} x${c.k} crop ${c.crop} "${c.label}" box ${c.box}`, c]))(
     '%s is not read lower than before',
     (name, c) => {
