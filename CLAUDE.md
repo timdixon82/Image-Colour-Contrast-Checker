@@ -204,9 +204,16 @@ Key colour contrast values — all ≥ 7:1 (WCAG 2.2 AAA) across all four themes
 
 | Token | Light | Dark | Muted Light | Muted Dark |
 |---|---|---|---|---|
+| `--fg` | `#2A2A2A` | `#E2E7EC` | `#2B3138` | `#E2E7EC` |
+| `--fg-muted` | `#46505E` | `#A3C3DA` | `#444B55` | `#AACFDE` |
 | `--pass` | `#125929` | `#8FD3A2` | `#1E5631` | `#A7D9B5` |
 | `--fail` | `#8C2020` | `#F1ABAB` | `#822727` | `#ECBEBE` |
 | `--warn` | `#544012` | `#DDB94D` | `#4E3C18` | `#DFC787` |
+| `--accent-small` | `#0C3B64` | `#F8C48F` | `#234A73` | `#F5E4CE` |
+
+Surfaces: Dark `--bg` `#0A1525`, `--bg-card` `#11233E`, `--neutral-bg` `#15314F`, `--warn-bg` `#3A2C10`. Light `--warn-bg` `#F0E8C8`. Dark and Light surfaces are kept under 60% HSL saturation (apart from the brand accent fills) so VADChecker's Vestibular Strain check reads SAFE; `src/theme-contrast.test.js` guards this and the 7:1 ratios.
+
+`--accent-small` is for small accent text (info icon, queue stage). In the dark themes `--accent` is brand orange or sand, for large elements and for text on `--bg` and `--bg-card` only (not 7:1 on `--neutral-bg`), so small accent text on tinted or neutral surfaces uses `--accent-small`.
 
 Status pills use **solid** `--pass-bg` / `--fail-bg` / `--warn-bg` backgrounds so contrast is independent of what is behind them.
 

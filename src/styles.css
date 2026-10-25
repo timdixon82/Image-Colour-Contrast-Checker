@@ -34,7 +34,7 @@
   /* ── Theme 1 · Light (default) ──────────────────────────────────────── */
   --bg:            #F4F6F8;
   --bg-card:       #FFFFFF;
-  --fg:            #1A1A1A;
+  --fg:            #2A2A2A;
   --fg-muted:      #46505E;
   --border:        #D1D5DB;
   --accent:        #0C3B64;
@@ -55,7 +55,7 @@
 
   /* ── App-specific warn tokens (not in DS; Tim-verified AAA) ─────────── */
   --warn:          #544012;   /* 8.2:1 on warn-bg, 9.1:1 on neutral-bg   */
-  --warn-bg:       #F6E8C8;
+  --warn-bg:       #F0E8C8;
 
   /* ── Structural ─────────────────────────────────────────────────────── */
   --shadow:        0 1px 3px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.05);
@@ -109,7 +109,7 @@
 [data-theme="light"] {
   --bg:            #F4F6F8;
   --bg-card:       #FFFFFF;
-  --fg:            #1A1A1A;
+  --fg:            #2A2A2A;
   --fg-muted:      #46505E;
   --border:        #D1D5DB;
   --accent:        #0C3B64;
@@ -128,15 +128,15 @@
   --neutral-bg:    #ECEEF1;
   --code-bg:       #ECEEF1;
   --warn:          #544012;
-  --warn-bg:       #F6E8C8;
+  --warn-bg:       #F0E8C8;
 }
 
 /* ── Theme 2 · Dark ─────────────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --bg:            #061528;
-  --bg-card:       #0D2440;
+  --bg:            #0A1525;
+  --bg-card:       #11233E;
   --fg:            #E2E7EC;
-  --fg-muted:      #A3C3DA; /* app override: 7.18:1 on --neutral-bg (#15314F); 8.47:1 on --bg-card (#0D2440) — both AAA */
+  --fg-muted:      #A3C3DA; /* app override: 7.18:1 on --neutral-bg (#15314F); 8.53:1 on --bg-card (#11233E) — both AAA */
   --border:        #1C3A5C;
   --accent:        #EB9C52;
   --accent-hover:  #ECBB83;
@@ -155,7 +155,7 @@
   --fail:          #F1ABAB;
   --fail-bg:       #3A1A1A;
   --warn:          #DDB94D;
-  --warn-bg:       #3A2C0C;
+  --warn-bg:       #3A2C10;
 }
 
 /* ── Theme 3 · Muted Light ──────────────────────────────────────────────── */

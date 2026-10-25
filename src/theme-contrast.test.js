@@ -45,3 +45,57 @@ describe.each(THEMES)('%s theme: small accent text reaches AAA on its real surfa
     expect(ratio(t['--accent-small'], tint)).toBeGreaterThanOrEqual(7);
   });
 });
+
+const hslSaturation = (hex) => {
+  const [r, g, b] = hexToRgb(hex).map((v) => v / 255);
+  const mx = Math.max(r, g, b);
+  const mn = Math.min(r, g, b);
+  if (mx === mn) return 0;
+  const l = (mx + mn) / 2;
+  const d = mx - mn;
+  return (l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn)) * 100;
+};
+
+describe.each(THEMES)('%s theme: text tokens stay AAA on every surface', (theme) => {
+  const t = tokens(theme);
+  const surfaces = ['--bg', '--bg-card', '--neutral-bg'];
+  const texts = ['--fg', '--fg-muted', '--pass', '--fail', '--warn'];
+
+  it.each(texts)('%s is at least 7:1 on every surface', (tok) => {
+    for (const s of surfaces) {
+      expect(ratio(t[tok], t[s]), `${tok} on ${s}`).toBeGreaterThanOrEqual(7);
+    }
+  });
+
+  // --accent is brand orange or sand in the dark themes (large elements and
+  // links on the page and card); small text on --neutral-bg uses --accent-small.
+  it('--accent is at least 7:1 on --bg and --bg-card', () => {
+    for (const s of ['--bg', '--bg-card']) {
+      expect(ratio(t['--accent'], t[s]), `--accent on ${s}`).toBeGreaterThanOrEqual(7);
+    }
+  });
+
+  it('status text is at least 7:1 on its own pill background', () => {
+    for (const k of ['pass', 'fail', 'warn']) {
+      expect(ratio(t[`--${k}`], t[`--${k}-bg`]), k).toBeGreaterThanOrEqual(7);
+    }
+  });
+});
+
+describe('VADChecker: surfaces stay under 60% HSL saturation (Vestibular SAFE)', () => {
+  it.each([
+    ['dark', '--bg'],
+    ['dark', '--bg-card'],
+    ['dark', '--neutral-bg'],
+    ['dark', '--warn-bg'],
+    ['light', '--warn-bg'],
+  ])('%s %s', (theme, tok) => {
+    expect(hslSaturation(tokens(theme)[tok]), `${theme} ${tok}`).toBeLessThan(60);
+  });
+
+  it('light --fg is not so bright against white that APCA flags it (Lc over 105)', () => {
+    // #1A1A1A on white is Lc 109 (HARSH); #2A2A2A is Lc 104.
+    expect(tokens('light')['--fg']).not.toBe('#1A1A1A');
+    expect(ratio(tokens('light')['--fg'], '#FFFFFF')).toBeGreaterThanOrEqual(14);
+  });
+});
