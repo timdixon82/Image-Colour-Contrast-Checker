@@ -83,6 +83,36 @@ describe.each(THEMES)('%s theme: text tokens stay AAA on every surface', (theme)
   });
 });
 
+describe.each(THEMES)('%s theme: filled controls (primary button, skip link) are AAA', (theme) => {
+  const t = tokens(theme);
+
+  it('text on the button fill is at least 7:1 at rest and on hover', () => {
+    expect(ratio(t['--accent-text'], t['--button-bg']), 'rest').toBeGreaterThanOrEqual(7);
+    expect(ratio(t['--accent-text'], t['--button-bg-hover']), 'hover').toBeGreaterThanOrEqual(7);
+  });
+
+  it('the button fill is distinct from the page and card (non-text 3:1)', () => {
+    for (const s of ['--bg', '--bg-card']) {
+      expect(ratio(t['--button-bg'], t[s]), s).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
+
+describe('light themes keep brand navy out of control fills', () => {
+  it('Light uses the softer button fill, not brand navy, so VADChecker reads SAFE', () => {
+    const t = tokens('light');
+    expect(t['--button-bg']).toBe('#234A73');
+    expect(t['--button-bg-hover']).toBe('#1B3A5C');
+    expect(t['--accent']).toBe('#0C3B64'); // text and accent use is unchanged
+  });
+
+  it('the primary button and skip link fills use the button tokens', () => {
+    expect(css).toMatch(/\.skip-link\s*\{[^}]*background:\s*var\(--button-bg\)/);
+    expect(css).toMatch(/\.button-primary\s*\{[^}]*background:\s*var\(--button-bg\)/);
+    expect(css).toMatch(/\.button-primary:hover\s*\{[^}]*background:\s*var\(--button-bg-hover\)/);
+  });
+});
+
 describe('VADChecker: surfaces stay under 60% HSL saturation (Vestibular SAFE)', () => {
   it.each([
     ['dark', '--bg'],

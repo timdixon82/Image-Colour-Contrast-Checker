@@ -175,7 +175,7 @@ The orchestrator is `main.js`. It runs this pipeline for each file and calls the
 Tim Dixon Design System v1.0 (May 2026). All tokens live in `src/styles.css`.
 
 **Brand colours (used in logo, wordmark, and large accents):**
-- Brand navy  `#0C3B64` — primary accent in light themes
+- Brand navy  `#0C3B64` — primary accent in light themes (logo, wordmark, text, accents). Filled controls with light text in the Light theme use `--button-bg` `#234A73` (hover `#1B3A5C`) instead, because white on pure navy reads HARSH in VADChecker; white on `#234A73` is 9.14:1 and on the hover 11.63:1
 - Brand orange `#EB9C52` — primary accent in dark themes (WARN-level, large elements only)
 - Brand sky    `#52C7EB` — secondary accent in dark themes
 
@@ -211,6 +211,8 @@ Key colour contrast values — all ≥ 7:1 (WCAG 2.2 AAA) across all four themes
 | `--fail` | `#8C2020` | `#F1ABAB` | `#822727` | `#ECBEBE` |
 | `--warn` | `#544012` | `#DDB94D` | `#4E3C18` | `#DFC787` |
 | `--accent-small` | `#0C3B64` | `#F8C48F` | `#234A73` | `#F5E4CE` |
+| `--button-bg` (primary button, skip link fill) | `#234A73` | `#EB9C52` | `#234A73` | `#E3C196` |
+| `--button-bg-hover` | `#1B3A5C` | `#ECBB83` | `#1B3A5C` | `#E8D3BA` |
 
 Surfaces: Dark `--bg` `#0A1525`, `--bg-card` `#11233E`, `--neutral-bg` `#15314F`, `--warn-bg` `#3A2C10`. Light `--warn-bg` `#F0E8C8`. Dark and Light surfaces are kept under 60% HSL saturation (apart from the brand accent fills) so VADChecker's Vestibular Strain check reads SAFE; `src/theme-contrast.test.js` guards this and the 7:1 ratios.
 

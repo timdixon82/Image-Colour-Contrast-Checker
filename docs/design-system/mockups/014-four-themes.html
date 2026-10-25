@@ -98,6 +98,8 @@
   --accent-hover:  #0A3052;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgba(12,59,100,0.08);
+  --button-bg:     #234A73;
+  --button-bg-hover: #1B3A5C;
   --warm:          #EB9C52;
   --warm-hover:    #E88E38;
   --warm-text:     #1A1A1A;
@@ -152,6 +154,8 @@
   --accent-hover:  #0A3052;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgba(12,59,100,0.08);
+  --button-bg:     #234A73;
+  --button-bg-hover: #1B3A5C;
   --warm:          #EB9C52;
   --warm-hover:    #E88E38;
   --warm-text:     #1A1A1A;
@@ -177,6 +181,8 @@
   --accent-hover:  #ECBB83;
   --accent-text:   #061528;
   --accent-subtle: rgba(235,156,82,0.16);
+  --button-bg:     #EB9C52;
+  --button-bg-hover: #ECBB83;
   --warm:          #52C7EB;
   --warm-hover:    #6AC5E7;
   --warm-text:     #061528;
@@ -203,6 +209,8 @@
   --accent-hover:  #1B3A5C;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgba(35,74,115,0.08);
+  --button-bg:     #234A73;
+  --button-bg-hover: #1B3A5C;
   --warm:          #703D1F;
   --warm-hover:    #5E331A;
   --warm-text:     #FFFFFF;
@@ -228,6 +236,8 @@
   --accent-hover:  #E8D3BA;
   --accent-text:   #142536;
   --accent-subtle: rgba(227,193,150,0.16);
+  --button-bg:     #E3C196;
+  --button-bg-hover: #E8D3BA;
   --warm:          #8EBDE1;
   --warm-hover:    #A6CBE8;
   --warm-text:     #142536;
@@ -295,7 +305,7 @@ a:hover { color: var(--accent-hover); }
   top: -100px;
   left: var(--space-4);
   z-index: 9999;
-  background: var(--accent);
+  background: var(--button-bg);
   color: var(--accent-text);
   padding: var(--space-2) var(--space-4);
   border-radius: 0 0 8px 8px;
@@ -404,7 +414,7 @@ a:hover { color: var(--accent-hover); }
 /* Active state — filled accent */
 /* Ref: components-buttons.html ".btn-primary { background: var(--accent); color: var(--accent-text) }" */
 .theme-btn[aria-pressed="true"] {
-  background: var(--accent);
+  background: var(--button-bg);
   color: var(--accent-text);
   border-color: var(--accent);
 }
@@ -490,7 +500,7 @@ a:hover { color: var(--accent-hover); }
 }
 .dz-btn {
   appearance: none;
-  background: var(--accent);
+  background: var(--button-bg);
   color: var(--accent-text);
   border: none;
   padding: 0 var(--space-5);
@@ -719,7 +729,7 @@ a:hover { color: var(--accent-hover); }
 /* Ref: components-buttons.html ".btn-primary { background: var(--accent) }" */
 .export-btn {
   appearance: none;
-  background: var(--accent);
+  background: var(--button-bg);
   color: var(--accent-text);
   border: none;
   padding: 0 var(--space-5);

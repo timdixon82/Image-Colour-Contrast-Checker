@@ -42,6 +42,8 @@
   --accent-small:  #0C3B64;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgb(12 59 100 / 0.08);
+  --button-bg:     #234A73; /* filled controls: softer than brand navy so white text reads SAFE in VADChecker (9.14:1 rest, 11.63:1 hover) */
+  --button-bg-hover: #1B3A5C;
   --warm:          #EB9C52;
   --warm-hover:    #E88E38;
   --warm-text:     #1A1A1A;
@@ -117,6 +119,8 @@
   --accent-small:  #0C3B64;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgb(12 59 100 / 0.08);
+  --button-bg:     #234A73; /* filled controls: softer than brand navy so white text reads SAFE in VADChecker (9.14:1 rest, 11.63:1 hover) */
+  --button-bg-hover: #1B3A5C;
   --warm:          #EB9C52;
   --warm-hover:    #E88E38;
   --warm-text:     #1A1A1A;
@@ -143,6 +147,8 @@
   --accent-small:  #F8C48F; /* small text: 8.39:1 on --neutral-bg, 7.56:1 on the queue-stage tint */
   --accent-text:   #061528;
   --accent-subtle: rgb(235 156 82 / 0.16);
+  --button-bg:     #EB9C52;
+  --button-bg-hover: #ECBB83;
   --warm:          #52C7EB;
   --warm-hover:    #6AC5E7;
   --warm-text:     #061528;
@@ -170,6 +176,8 @@
   --accent-small:  #234A73;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgb(35 74 115 / 0.08);
+  --button-bg:     #234A73;
+  --button-bg-hover: #1B3A5C;
   --warm:          #703D1F;
   --warm-hover:    #5E331A;
   --warm-text:     #FFFFFF;
@@ -196,6 +204,8 @@
   --accent-small:  #F5E4CE; /* small text: 9.34:1 on --neutral-bg, 7.47:1 on the queue-stage tint */
   --accent-text:   #142536;
   --accent-subtle: rgb(227 193 150 / 0.16);
+  --button-bg:     #E3C196;
+  --button-bg-hover: #E8D3BA;
   --warm:          #8EBDE1;
   --warm-hover:    #A6CBE8;
   --warm-text:     #142536;
@@ -250,9 +260,11 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   position: absolute;
   top: -50px;
   left: 16px;
-  background: var(--accent);
+  background: var(--button-bg);
   color: var(--accent-text);
   padding: 10px 16px;
+  min-height: 44px; /* WCAG 2.5.8 */
+  box-sizing: border-box;
   border-radius: 0 0 8px 8px;
   font-weight: 700;
   z-index: 9999;
@@ -534,8 +546,8 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 }
 .button:hover { border-color: var(--accent); }
 .button:active { transform: translateY(1px); }
-.button-primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-.button-primary:hover { background: var(--accent-hover); }
+.button-primary { background: var(--button-bg); color: var(--accent-text); border-color: var(--button-bg); }
+.button-primary:hover { background: var(--button-bg-hover); border-color: var(--button-bg-hover); }
 .button-ghost { background: transparent; }
 .button:disabled { opacity: 0.6; cursor: not-allowed; }
 
