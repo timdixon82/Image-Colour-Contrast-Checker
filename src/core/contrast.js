@@ -289,7 +289,7 @@ export function regionContrast(imageData, x, y, w, h) {
  * whether the region's two clusters are arranged like text (see isTextLike).
  * The flag stays internal so RegionResult keeps its shape.
  *
- * @returns {{ result: RegionResult, textLike: boolean }|null}
+ * @returns {{ result: RegionResult, textLike: boolean, inkShare: number, inkLighter: boolean }|null}
  */
 function measureRegion(imageData, x, y, w, h, checkShape) {
   const W = imageData.width, H = imageData.height;
@@ -349,7 +349,11 @@ function measureRegion(imageData, x, y, w, h, checkShape) {
 
   return {
     result: { contrast, fgHex, bgHex, fgRgb, bgRgb },
-    textLike: checkShape ? isTextLike(lums, rw, rh, cDark, cLight) : false
+    textLike: checkShape ? isTextLike(lums, rw, rh, cDark, cLight) : false,
+    // Share of the region the minority (ink) cluster covers, and whether that
+    // ink is the lighter of the two clusters. Used by thinBrightLine.
+    inkShare: Math.min(n0, n1) / (n0 + n1),
+    inkLighter: n1 < n0
   };
 }
 
@@ -368,23 +372,28 @@ function measureRegion(imageData, x, y, w, h, checkShape) {
  * @param {number} y
  * @param {number} w
  * @param {number} h
+ * @param {{ dropRibbonLines?: boolean }} [options]  `dropRibbonLines: false`
+ *        keeps every text-like strip, which is how this behaved before work
+ *        item 020. Tests use it as the baseline a change must not make worse.
  * @returns {RegionResult|null}
  */
-export function worstStripContrast(imageData, x, y, w, h) {
+export function worstStripContrast(imageData, x, y, w, h, { dropRibbonLines = true } = {}) {
   const stripW    = Math.max(4, Math.floor(h * 0.6));
   const nStrips   = Math.max(3, Math.round(w / stripW));
   const actualW   = w / nStrips;
-  const all       = [];
-  const textual   = [];
+  const strips    = [];
 
   for (let s = 0; s < nStrips; s++) {
     const sx = x + Math.round(s * actualW);
     const sw = Math.max(4, Math.round(actualW));
-    const m  = measureRegion(imageData, sx, y, sw, h, true);
-    if (!m) continue;
-    all.push(m.result);
-    if (m.textLike) textual.push(m.result);
+    strips.push(measureRegion(imageData, sx, y, sw, h, true));
   }
+
+  const lines   = dropRibbonLines ? thinBrightLines(strips) : [];
+  const all     = strips.filter(Boolean).map((m) => m.result);
+  const textual = strips
+    .filter((m, s) => m && m.textLike && !(lines.length && isRibbonLine(strips, s, lines)))
+    .map((m) => m.result);
 
   const lowest = (list) =>
     list.reduce((worst, r) => (r.contrast < worst.contrast ? r : worst), list[0]);
@@ -393,6 +402,95 @@ export function worstStripContrast(imageData, x, y, w, h) {
   const whole = regionContrast(imageData, x, y, w, h);
   if (whole) return whole;
   return all.length ? lowest(all) : null;
+}
+
+// LINE_SAME is the largest RGB distance (0..255 scale) at which two strips'
+// colours count as the same pair. It is not a tuned value: ribbon strips in the
+// fixtures differ by under 25, and a different pair differs by 50 or more.
+const LINE_SAME = 30;
+
+// THIN_INK is the largest share of a strip a bright line covers. It is measured
+// on the fixtures, not derived: ribbon and chevron edges cover 4 to 28 % of a
+// strip, the light text of a pill on a dark panel covers 36 % or more.
+const THIN_INK = 0.25;
+
+const rgbDist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+
+/** How two strips' colour pairs relate: 'same', 'swapped' (ink and background trade places) or null. */
+function pairRelation(a, b) {
+  if (rgbDist(a.fgRgb, b.fgRgb) <= LINE_SAME && rgbDist(a.bgRgb, b.bgRgb) <= LINE_SAME) return 'same';
+  if (rgbDist(a.fgRgb, b.bgRgb) <= LINE_SAME && rgbDist(a.bgRgb, b.fgRgb) <= LINE_SAME) return 'swapped';
+  return null;
+}
+
+/** A strip whose ink is the lighter colour and covers little of it: a thin bright line. */
+const isThinBright = (m) => m.inkLighter && m.inkShare <= THIN_INK;
+
+/**
+ * The thin bright line strips: the slices of a ribbon edge or chevron, whether
+ * or not they pass the shape test. A thin bright strip only
+ * counts as a line if no strip of real text vouches for its pair. A strip vouches
+ * when it is text-like, is not a thin bright line itself, holds the same pair
+ * with ink and background the same way round, and does not itself look like a
+ * slice of a line (continuesLine). A word has several such strips; the steep
+ * spots of a line only have each other.
+ *
+ * @param {({ result: RegionResult, textLike: boolean, inkShare: number, inkLighter: boolean }|null)[]} strips
+ */
+function thinBrightLines(strips) {
+  return strips.filter((m, s) =>
+    m && isThinBright(m) &&
+    !strips.some((q, j) =>
+      j !== s && q && q.textLike && !isThinBright(q) && pairRelation(q.result, m.result) === 'same' &&
+      !continuesLine(strips, j)));
+}
+
+/**
+ * Is a text-like strip really one slice of a long thin bright line (a ribbon
+ * edge or a chevron over a darker panel)? Such a line passes the shape test on
+ * the odd strip where it is steep, and where it covers half a strip the roles
+ * swap: the dark panel becomes the minority. Dropping a real text strip is
+ * worse than keeping a line, because the pair then comes from boundary strips
+ * between two backgrounds or from a brighter word, so a strip is dropped only
+ * when both hold:
+ *   1. at least two strips within three of it (itself included) are uncorroborated
+ *      thin bright line strips (see thinBrightLines) with the same pair either
+ *      way round, so one bright sliver, such as the edge of a pill, is not
+ *      enough;
+ *   2. its neighbours show it is a slice of a longer line (see continuesLine).
+ *
+ * @param {({ result: RegionResult, textLike: boolean, inkShare: number, inkLighter: boolean }|null)[]} strips
+ * @param {number} s  index of a text-like strip
+ * @param {typeof strips} lines  the result of thinBrightLines(strips)
+ */
+function isRibbonLine(strips, s, lines) {
+  const onLine = [-3, -2, -1, 0, 1, 2, 3].filter((d) => {
+    const n = strips[s + d];
+    return n && lines.includes(n) && pairRelation(n.result, strips[s].result);
+  }).length >= 2;
+  return onLine && continuesLine(strips, s);
+}
+
+/**
+ * Do a strip's neighbours show it is part of a longer line? They hold the same
+ * two colours but either do not look like text, or have ink and background the
+ * other way round (the line is the minority in one strip and the majority in
+ * the next). A glyph has bare background (a gap), a text-like strip with the
+ * same ink, or different colours beside it. A strip with no coloured neighbour
+ * at all is kept, so a lone character is never dropped.
+ *
+ * @param {({ result: RegionResult, textLike: boolean }|null)[]} strips
+ * @param {number} s  index of a text-like strip
+ */
+function continuesLine(strips, s) {
+  let line = 0;
+  for (const n of [strips[s - 1], strips[s + 1]]) {
+    if (!n) continue;
+    const rel = pairRelation(n.result, strips[s].result);
+    if (!rel || (n.textLike && rel === 'same')) return false;
+    line++;
+  }
+  return line > 0;
 }
 
 /**

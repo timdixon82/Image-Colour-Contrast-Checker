@@ -241,3 +241,66 @@ describe('analyseImage: wide OCR box over text and a gap', () => {
     expect(near(p.fgHex, WHITE, 25)).toBe(true);
   });
 });
+
+// ── 5. A thin ribbon edge across a dark gap between two text items ───────────
+// Work item 020. The line crosses at a shallow slope but kinks steeply in one
+// place, so exactly the strip over the kink looks like a glyph. Its neighbours
+// hold the same two colours and do not look like text.
+
+describe('worstStripContrast: a thin line crossing the gap between text items', () => {
+  const GAP_BG = [58, 61, 72];
+  const LINE = [78, 94, 131];       // about 1.7:1 on GAP_BG
+  const TEXT = [240, 240, 244];
+  const LW = 300;
+  const LH = 28;
+
+  // Rows the line occupies at column x: a slow slope with a steep kink at x 140..142.
+  const lineRows = (x) => {
+    if (x >= 140 && x < 143) return [6, 22];
+    const y = 8 + Math.round((x - 60) / 10);
+    return [y, y + 1];
+  };
+
+  function image({ line = true, text = true } = {}) {
+    return makeImage(LW, LH, (x, y) => {
+      if (text && (x < 48 || x >= 252) && isStroke(x, y, LH)) return TEXT;
+      if (line && x >= 60 && x < 240) {
+        const [a, b] = lineRows(x);
+        if (y >= a && y <= b) return LINE;
+      }
+      return GAP_BG;
+    });
+  }
+
+  it('reports the text, not the line', () => {
+    const r = worstStripContrast(image(), 0, 4, LW, 20);
+    expect(near(r.fgHex, TEXT, 25)).toBe(true);
+    expect(r.contrast).toBeGreaterThan(8);
+  });
+
+  it('is the same result as the box without the line', () => {
+    const withLine = worstStripContrast(image(), 0, 4, LW, 20);
+    const without = worstStripContrast(image({ line: false }), 0, 4, LW, 20);
+    expect(withLine.contrast).toBeCloseTo(without.contrast, 6);
+  });
+
+  it('a lone faint glyph group among bare background is still reported', () => {
+    const faint = [100, 100, 112]; // about 1.5:1 on GAP_BG
+    const img = makeImage(LW, LH, (x, y) => (x < 24 && isStroke(x, y, LH) ? faint : GAP_BG));
+    const r = worstStripContrast(img, 0, 4, LW, 20);
+    expect(r).not.toBeNull();
+    expect(near(r.fgHex, faint, 12)).toBe(true);
+    expect(r.contrast).toBeLessThan(2);
+  });
+
+  it('faint real text is not mistaken for a line: strokes keep the lowest result', () => {
+    const faint = [100, 100, 112];
+    const img = makeImage(LW, LH, (x, y) => {
+      if (x < 48 && isStroke(x, y, LH)) return faint;
+      if (x >= 252 && isStroke(x, y, LH)) return TEXT;
+      return GAP_BG;
+    });
+    const r = worstStripContrast(img, 0, 4, LW, 20);
+    expect(near(r.fgHex, faint, 12)).toBe(true);
+  });
+});
