@@ -178,6 +178,26 @@ describe('isTextLike', () => {
     const s = labelled(img, 4, 2, 24, 24);
     expect(isTextLike(s.lums, s.w, s.h, s.cDark, s.cLight)).toBe(true);
   });
+
+  it('is false for a faint thin line crossing a dark panel at a shallow slope', () => {
+    // 3 px thick line, one row down per 0.8 column: crosses most rows and
+    // columns of the strip, is one solid colour and has no core, but no
+    // vertical run longer than 3 px in a 29 px strip (the "kWh GRID" ribbon).
+    const PANEL = [57, 60, 70];
+    const LINE = [78, 95, 127];
+    const img = makeImage(20, 29, (x, y) => (Math.abs(y - (x * 1.25 + 3)) < 1.5 ? LINE : PANEL));
+    const s = labelled(img, 0, 0, 20, 29);
+    expect(isTextLike(s.lums, s.w, s.h, s.cDark, s.cLight)).toBe(false);
+  });
+
+  it('is true for a colon: short marks that are one compact blob each', () => {
+    // Two 3 x 3 dots in a 14 x 14 strip: the longest run (3) is under a
+    // quarter of the strip but fills the rows the marks occupy.
+    const dot = (x, y) => x >= 5 && x < 8 && ((y >= 2 && y < 5) || (y >= 8 && y < 11));
+    const img = makeImage(14, 14, (x, y) => (dot(x, y) ? [0, 0, 0] : WHITE));
+    const s = labelled(img, 0, 0, 14, 14);
+    expect(isTextLike(s.lums, s.w, s.h, s.cDark, s.cLight)).toBe(true);
+  });
 });
 
 // ── 5. Low-contrast text must not be hidden ──────────────────────────────────

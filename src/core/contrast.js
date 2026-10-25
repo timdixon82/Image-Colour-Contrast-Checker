@@ -105,6 +105,14 @@ export function kmeans2(values) {
 //                      ribbon is a wide blob.
 //   MAX_SPREAD   0.40  std dev of the minority cluster's luminance as a share
 //                      of the separation. A stroke is one solid colour.
+//   MIN_RUN      0.25  longest unbroken vertical run of minority pixels, as a
+//                      share of the strip height: a glyph has a stem or a
+//                      curve at least this tall ...
+//   COMPACT      0.50  ... or the run is at least this share of the rows the
+//                      minority pixels occupy at all: a full stop or comma is
+//                      short but is one compact blob, whereas a thin line
+//                      crossing at a slope touches many rows with a short run
+//                      in each.
 //
 // Why each rule exists, from per-strip numbers on a real chart screenshot
 // (dark labels on flat panels, gradient ribbons between them; fixtures in
@@ -119,6 +127,19 @@ export function kmeans2(values) {
 //     MAX_CORE (real strips reach 0.29, so that margin is small).
 //   - a hard panel edge plus gradient (spread 0.52 to 0.53): rejected by
 //     MAX_SPREAD; the minority "cluster" is a mixture, not one colour.
+// Second round, same chart, boxes "kWh GRID" and "24.69% 63.33 kWh": a thin
+// (2 to 3 px) ribbon edge line crossing the dark gap between panels, faint
+// (separation 0.05 to 0.08) but with crossings on both axes, one solid colour
+// and no core, so every rule above accepted it (1.71 and 1.56 reported). What
+// separates it is its direction: it runs across the strip at a shallow slope,
+// so its longest vertical run is 0.10 to 0.21 of the strip height and only
+// 0.20 to 0.36 of the rows it occupies. Real text strips (including the
+// genuinely faint "63.33 kWh" at separation 0.06) have a longest run of 0.30
+// to 1.00 of the strip height. Dots and commas fail the height test but their
+// run fills their own rows (ratio near 1), so the COMPACT alternative keeps
+// them: a first version without it made a punctuation-only box pass in 40 more
+// steep-ramp sweep cases. Not hardened further: a near-vertical edge line
+// would still pass.
 // Sharpness of steps relative to the separation was measured too and did not
 // separate them (ribbon edges are as crisp as glyph edges), so it is not used.
 const BAND = 0.15;
@@ -128,6 +149,8 @@ const MIN_MINORITY = 0.02;
 const MAX_CORE = 0.35;
 const CORE_DIV = 18;
 const MAX_SPREAD = 0.40;
+const MIN_RUN = 0.25;
+const COMPACT = 0.50;
 
 /**
  * Does a region's dark/light split look like text rather than a smooth ramp,
@@ -137,7 +160,10 @@ const MAX_SPREAD = 0.40;
  *   1. stroke crossings (background, stroke, background) on enough rows AND
  *      enough columns;
  *   2. a minority cluster that is thin (little of it survives erosion);
- *   3. a minority cluster of one solid colour (small luminance spread).
+ *   3. a minority cluster of one solid colour (small luminance spread);
+ *   4. a stem, curve or compact mark: a vertical run of minority pixels at
+ *      least MIN_RUN of the strip height, or at least COMPACT of the rows the
+ *      minority pixels occupy (a shallow thin line has neither).
  *
  * @param {Float64Array} lums    Row-major luminance, rw * rh values
  * @param {number} rw
@@ -190,6 +216,24 @@ export function isTextLike(lums, rw, rh, cDark, cLight) {
   }
   const mean = sum / count;
   if (Math.sqrt(Math.max(0, sumSq / count - mean * mean)) / sep > MAX_SPREAD) return false;
+
+  // Longest vertical run of the minority cluster, and how many rows it occupies.
+  let longest = 0;
+  const occupied = new Uint8Array(rh);
+  for (let x = 0; x < rw; x++) {
+    let run = 0;
+    for (let y = 0; y < rh; y++) {
+      if (labels[y * rw + x] === minLabel) {
+        run++;
+        occupied[y] = 1;
+        if (run > longest) longest = run;
+      } else {
+        run = 0;
+      }
+    }
+  }
+  const rows = occupied.reduce((a, v) => a + v, 0);
+  if (longest < MIN_RUN * rh && longest < COMPACT * rows) return false;
 
   // Core share: minority pixels whose whole (2R+1) square is minority.
   const R = Math.max(1, Math.round(rh / CORE_DIV));

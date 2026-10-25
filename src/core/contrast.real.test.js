@@ -31,12 +31,21 @@ function winner(name) {
 
 // minContrast: the lowest a real text strip scores in that box (rounded down).
 // Every false ribbon pair scored 2.01 or less before the fix.
+// Fixtures kwh_grid2 and pct2469 are 2 px-margin crops of boxes
+// [62,924,470,25] and [59,965,490,26] of a 600 x 1298 screenshot.
 const CASES = [
   { name: 'mwh762',     minContrast: 2.3, note: '"762.03 MWh": teal and purple panels' },
   { name: 'batte154',   minContrast: 2.3, note: '"BATTE.. 1.54"' },
   { name: 'mwh_kwh',    minContrast: 2.5, note: '"MWh kWh"' },
   { name: 'kwh_grid',   minContrast: 2.9, note: '"kWh GRID"' },
-  { name: 's105_80039', minContrast: 2.7, note: '"1.05 800.39" (already right, must stay right)' }
+  { name: 's105_80039', minContrast: 2.7, note: '"1.05 800.39" (already right, must stay right)' },
+  // Second round: a thin ribbon edge line over the dark panel gap used to win
+  // with #4E5F7F on #393C46 (1.71) and #4B577F on #393C46 (1.56). Real text:
+  // "kWh" about 3.2 and the "GRID" pill about 3.6; "63.33 kWh" is genuinely
+  // faint (about 1.65, dark on indigo), so that box must fail, but on its own
+  // colours.
+  { name: 'kwh_grid2',  minContrast: 3.0,  note: '"kWh GRID" (box 2): thin ribbon edge over the dark panel' },
+  { name: 'pct2469',    minContrast: 1.62, note: '"24.69% 63.33 kWh": thin ribbon edge over the dark panel' }
 ];
 
 describe('worstStripContrast: real chart crops with gradient ribbons', () => {
