@@ -307,7 +307,7 @@ describe('worstStripContrast: a thin line crossing the gap between text items', 
 
 describe('worstStripContrast: a box that reaches below the card into a darker gap', () => {
   const CARD = [78, 82, 179];
-  const GAP = [57, 60, 72];
+  const GAP = [30, 32, 40];     // card against gap is about 2.3:1, the ink is fainter
   const INK = [43, 51, 96];     // about 1.6:1 on CARD
   const CW = 300;
   const CH = 44;                // card rows 0..27, gap rows 28..43
@@ -329,6 +329,20 @@ describe('worstStripContrast: a box that reaches below the card into a darker ga
     const tall = worstStripContrast(image(), 0, 0, CW, CH);
     const tight = worstStripContrast(image(false), 0, 0, CW, 28);
     expect(tall.contrast).toBeCloseTo(tight.contrast, 0);
+  });
+
+  it('never raises the reading: text fainter than the card edge is reported, brighter text is not', () => {
+    // Same box with a pale gap: card against gap is now about 1.7:1, below the
+    // ink's 1.8:1. The retry only ever lowers the whole-box reading, so the
+    // box keeps that reading (the card edge), exactly as before the retry.
+    const pale = makeImage(CW, CH, (x, y) => {
+      if (y >= 28) return [57, 60, 72];
+      const glyph = x % 8 < 2 && y >= 5 && y < 19 && (x < 56 || x >= 240);
+      return glyph ? INK : CARD;
+    });
+    const withBands = worstStripContrast(pale, 0, 0, CW, CH);
+    const without = worstStripContrast(pale, 0, 0, CW, CH, { bands: false });
+    expect(withBands.contrast).toBeCloseTo(without.contrast, 6);
   });
 
   it('keeps the old result when bands are turned off (the card against the gap)', () => {

@@ -1,0 +1,82 @@
+/**
+ * core/contrast.js: boxes taken from a real PaddleOCR run (work item 020,
+ * follow-up to PR 80).
+ *
+ * The fixture sweeps in the other test files build their boxes from the image
+ * size, so they cannot see what the real detector does at reduced scale: it
+ * returns wide boxes that span a pill, the dark gap of a chart and a second
+ * pill, and boxes whose strips no longer pass the text-shape test. Those boxes
+ * were captured by running the app on scaled, cropped copies of the fixtures
+ * in real Chrome, and are stored as data in __fixtures__/real-ocr-boxes.json:
+ *
+ *   src    the committed image the case is cut from: "kwh_grid" and
+ *          "kwh_grid2" are fixtures here, "tim-full-screenshot-5" is the work
+ *          item 020 screenshot of the energy chart
+ *   k      scale applied to src (corner-aligned bilinear, scaleImageCorner)
+ *   crop   [cx, cy] px trimmed off the left and top after scaling
+ *   fit    true when the app also resizes the result into 800 to 1400 px
+ *          before OCR (small images only); the stand-in is fitLikeApp
+ *   box    [x, y, w, h] the OCR box, in the pixels of that final image
+ *   label  the text OCR read
+ *   main   what the code before PR 80 reports on these exact pixels
+ *   ref    what the same label reports at 1x, where there is one; for a box
+ *          that includes the faint "63.33 kWh" it is that text's 1.65 (note)
+ *   real   the contrast the real browser run gave on main and on PR 80
+ *
+ * Every case here is a box where PR 80 as first written reported a LOWER
+ * contrast than main. The rule: a result is never lower than main's unless it
+ * lands within REF_TOL of the 1x value or closer to it than main was (then the
+ * lower figure is the real one, and main was over-reporting). The causes it guards against:
+ *   - the band retry reaching the dark gap and reporting dark grey on darker
+ *     grey (1.3 to 1.4) for a wide "kWh ... GRID" box;
+ *   - the band retry on a box of plain text on one background, where cutting
+ *     the box into bands leaves only half-covered strokes: a lighter ink than
+ *     the real one, so a pass reads as a fail ("43.69%" 6.2 to 3.7).
+ *
+ * The F5 cases read the screenshot from the work folder, where it is
+ * committed; all other inputs are in __fixtures__.
+ */
+
+import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { worstStripContrast } from './contrast.js';
+import { decodePng } from './__fixtures__/decode-png.js';
+import { cropTopLeft, fitLikeApp, scaleImageCorner } from './__fixtures__/box-sweep.js';
+
+const here = (rel) => fileURLToPath(new URL(rel, import.meta.url));
+const SOURCES = {
+  'tim-full-screenshot-5': '../../.claude/work/020-iccc-swatch-multi-region-boxes/images/tim-full-screenshot-5.png',
+  kwh_grid: './__fixtures__/kwh_grid.png',
+  kwh_grid2: './__fixtures__/kwh_grid2.png'
+};
+const CASES = JSON.parse(fs.readFileSync(here('./__fixtures__/real-ocr-boxes.json'), 'utf8'));
+
+const REF_TOL = 0.35; // contrast units
+const MAIN_TOL = 0.05;
+
+const sources = {};
+const built = new Map();
+function imageFor({ src, k, crop, fit }) {
+  const key = [src, k, crop, fit].join();
+  if (!built.has(key)) {
+    sources[src] ??= decodePng(fs.readFileSync(here(SOURCES[src])));
+    const img = cropTopLeft(scaleImageCorner(sources[src], k), ...crop);
+    built.set(key, fit ? fitLikeApp(img) : img);
+  }
+  return built.get(key);
+}
+
+describe('worstStripContrast: real OCR boxes at reduced and increased scale', () => {
+  it.each(CASES.map((c) => [`${c.src} x${c.k} crop ${c.crop} "${c.label}" box ${c.box}`, c]))(
+    '%s is not read lower than before',
+    (name, c) => {
+      const r = worstStripContrast(imageFor(c), ...c.box);
+      expect(r).not.toBeNull();
+      // Lower than main is fine only where it is the better reading: within
+      // REF_TOL of the 1x value, or closer to it than main was.
+      if (c.ref !== null && Math.abs(r.contrast - c.ref) <= Math.max(REF_TOL, Math.abs(c.main - c.ref))) return;
+      expect(r.contrast).toBeGreaterThanOrEqual(c.main - MAIN_TOL);
+    }
+  );
+});

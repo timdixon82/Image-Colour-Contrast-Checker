@@ -235,25 +235,40 @@ export function isTextLike(lums, rw, rh, cDark, cLight) {
   const rows = occupied.reduce((a, v) => a + v, 0);
   if (longest < MIN_RUN * rh && longest < COMPACT * rows) return false;
 
-  // Core share: minority pixels whose whole (2R+1) square is minority.
+  return coreShare(labels, rw, rh, minLabel, count) <= MAX_CORE;
+}
+
+/**
+ * Share of the `which`-labelled pixels whose whole (2R+1) square is also
+ * `which`, R = strip height / CORE_DIV (at least 1 px). Strokes are thin and
+ * have few such pixels; a card, pill or ribbon is a blob and has most of them.
+ *
+ * @param {Uint8Array} labels  one label per pixel
+ * @param {number} rw
+ * @param {number} rh
+ * @param {number} which       the label to measure
+ * @param {number} count       how many pixels carry that label
+ * @returns {number}
+ */
+function coreShare(labels, rw, rh, which, count) {
   const R = Math.max(1, Math.round(rh / CORE_DIV));
   let core = 0;
   for (let y = 0; y < rh; y++) {
     for (let x = 0; x < rw; x++) {
-      if (labels[y * rw + x] !== minLabel) continue;
+      if (labels[y * rw + x] !== which) continue;
       let deep = true;
       for (let dy = -R; dy <= R && deep; dy++) {
         const yy = y + dy;
         if (yy < 0 || yy >= rh) continue;
         for (let dx = -R; dx <= R; dx++) {
           const xx = x + dx;
-          if (xx >= 0 && xx < rw && labels[yy * rw + xx] !== minLabel) { deep = false; break; }
+          if (xx >= 0 && xx < rw && labels[yy * rw + xx] !== which) { deep = false; break; }
         }
       }
       if (deep) core++;
     }
   }
-  return core / count <= MAX_CORE;
+  return core / count;
 }
 
 /**
@@ -289,9 +304,12 @@ export function regionContrast(imageData, x, y, w, h) {
  * whether the region's two clusters are arranged like text (see isTextLike).
  * The flag stays internal so RegionResult keeps its shape.
  *
- * @returns {{ result: RegionResult, textLike: boolean, inkShare: number, inkLighter: boolean }|null}
+ * `inkCore` (only with `wantCore`) is how much of the ink cluster is solid
+ * blob rather than stroke, see coreShare.
+ *
+ * @returns {{ result: RegionResult, textLike: boolean, inkShare: number, inkLighter: boolean, inkCore: number }|null}
  */
-function measureRegion(imageData, x, y, w, h, checkShape) {
+function measureRegion(imageData, x, y, w, h, checkShape, wantCore = false) {
   const W = imageData.width, H = imageData.height;
   const data = imageData.data;
 
@@ -322,6 +340,7 @@ function measureRegion(imageData, x, y, w, h, checkShape) {
 
   let r0 = 0, g0 = 0, b0 = 0, n0 = 0;
   let r1 = 0, g1 = 0, b1 = 0, n1 = 0;
+  const side = wantCore ? new Uint8Array(rw * rh) : null;
   i = 0;
   for (let yy = y1; yy < y2; yy++) {
     const rowStart = yy * W;
@@ -330,6 +349,7 @@ function measureRegion(imageData, x, y, w, h, checkShape) {
       const v = lums[i++];
       if (Math.abs(v - cLight) < Math.abs(v - cDark)) {
         r1 += data[off]; g1 += data[off + 1]; b1 += data[off + 2]; n1++;
+        if (side) side[i - 1] = 1;
       } else {
         r0 += data[off]; g0 += data[off + 1]; b0 += data[off + 2]; n0++;
       }
@@ -353,7 +373,8 @@ function measureRegion(imageData, x, y, w, h, checkShape) {
     // Share of the region the minority (ink) cluster covers, and whether that
     // ink is the lighter of the two clusters. Used by thinBrightLine.
     inkShare: Math.min(n0, n1) / (n0 + n1),
-    inkLighter: n1 < n0
+    inkLighter: n1 < n0,
+    inkCore: side ? coreShare(side, rw, rh, n1 < n0 ? 1 : 0, Math.min(n0, n1)) : 0
   };
 }
 
@@ -363,11 +384,14 @@ function measureRegion(imageData, x, y, w, h, checkShape) {
  * This ensures each letter in a word is individually sampled.
  *
  * Only strips that look like text (see isTextLike) compete, so a stretch of
- * plain background between words cannot win. If no strip looks like text, the
- * box is retried as three overlapping horizontal bands (see BAND_HEIGHT), so
- * text with a card edge or a gap under it is still found; if that finds none
- * it falls back to the whole box, then to the lowest of all strips, so a real
- * failure is never silenced.
+ * plain background between words cannot win. If no strip looks like text the
+ * box is measured whole. When that whole-box reading is itself a card against
+ * a gap rather than text (see isSolidBlob), the box is also tried as three
+ * overlapping horizontal bands (see BAND_HEIGHT), so text with a card edge or
+ * a gap under it is found; a band reading replaces the whole-box one only when
+ * it is lower, so the retry can only add a failure, never hide one. If nothing
+ * can be measured it falls back to the lowest of all strips, so a real failure
+ * is never silenced.
  *
  * @param {ImageData} imageData
  * @param {number} x
@@ -388,24 +412,24 @@ export function worstStripContrast(imageData, x, y, w, h, { dropRibbonLines = tr
   const first = textStrips(imageData, x, y, w, h, dropRibbonLines);
   if (first.text.length) return lowest(first.text);
 
+  const whole = measureRegion(imageData, x, y, w, h, false, true);
   const bandH = Math.round(h * BAND_HEIGHT);
-  if (bands && bandH >= MIN_BAND) {
+  if (bands && whole && isSolidBlob(whole, w, h) && bandH >= MIN_BAND) {
     const found = [];
     for (const start of BAND_STARTS) {
       const by = y + Math.round(h * start);
-      found.push(...textStrips(imageData, x, by, w, Math.min(bandH, y + h - by), dropRibbonLines).text);
+      found.push(...textStrips(imageData, x, by, w, Math.min(bandH, y + h - by), dropRibbonLines, true).text);
     }
-    if (found.length) return lowest(found);
+    if (found.length && lowest(found).contrast < whole.result.contrast) return lowest(found);
   }
 
-  const whole = regionContrast(imageData, x, y, w, h);
-  if (whole) return whole;
+  if (whole) return whole.result;
   return first.all.length ? lowest(first.all) : null;
 }
 
 // A box that reaches past the text (below a card into the gap, or up over its
 // edge) puts three colours in every strip, so no strip looks like text. The
-// retry looks at BAND_HEIGHT of the box at each of BAND_STARTS (top, middle,
+// retry (see isSolidBlob for when it runs) looks at BAND_HEIGHT of the box at each of BAND_STARTS (top, middle,
 // bottom), so the band holding the text is free of what lies beyond it. The
 // numbers are not tuned finely: 0.5 to 0.7 of the height, with three or four
 // starts, gave the same result within 3 % on the sweep fixtures. MIN_BAND keeps
@@ -414,12 +438,31 @@ const BAND_HEIGHT = 0.6;
 const BAND_STARTS = [0, 0.2, 0.4];
 const MIN_BAND = 8;
 
+// The retry runs only when the whole-box reading is itself not text: the box is
+// wide enough to hold several items (WIDE_BOX times its height), and its ink
+// cluster is a solid blob (SOLID_CORE) that takes up less than SOLID_SHARE of it,
+// a card, pill or gap rather than strokes. That is what a box reaching past a
+// card looks like. A box of plain text on one background has stroke-thin ink
+// and is usually a single label; cutting it into bands only leaves half-covered
+// strokes, so the whole-box reading stands. Measured on real OCR boxes
+// (contrast.realboxes.test.js): without this the retry lowered 70 or more
+// readings of plain text, some from a pass to a fail ("43.69%" 6.2 to 3.7).
+// The three numbers are the loosest that kept every such box out on that data;
+// they were not fitted finer.
+const WIDE_BOX = 5;
+const SOLID_CORE = 0.6;
+const SOLID_SHARE = 0.4;
+
+/** Is a whole-box reading one solid region against another, in a wide box, rather than text? */
+const isSolidBlob = (m, w, h) => w >= WIDE_BOX * h && m.inkShare <= SOLID_SHARE && m.inkCore >= SOLID_CORE;
+
 /**
- * Measure one box as vertical strips.
+ * Measure one box as vertical strips. `noBrightLines` is for the bands: see
+ * dropBandLines.
  * @returns {{ text: RegionResult[], all: RegionResult[] }}  the text-like strips
  *          that survive the ribbon rules, and every strip that was measured
  */
-function textStrips(imageData, x, y, w, h, dropRibbonLines) {
+function textStrips(imageData, x, y, w, h, dropRibbonLines, noBrightLines = false) {
   const stripW  = Math.max(4, Math.floor(h * 0.6));
   const nStrips = Math.max(3, Math.round(w / stripW));
   const actualW = w / nStrips;
@@ -434,6 +477,7 @@ function textStrips(imageData, x, y, w, h, dropRibbonLines) {
   const lines = dropRibbonLines ? thinBrightLines(strips) : [];
   const kept = strips.map((m, s) => !!(m && m.textLike && !(lines.length && isRibbonLine(strips, s, lines))));
   if (dropRibbonLines) dropLoneLines(strips, kept);
+  if (noBrightLines) dropBandLines(strips, kept);
 
   return {
     text: strips.filter((m, s) => kept[s]).map((m) => m.result),
@@ -528,6 +572,24 @@ function continuesLine(strips, s) {
     line++;
   }
   return line > 0;
+}
+
+/**
+ * In a band, the text sought lies under a card edge and is dark on the card. A
+ * thin bright line is the ribbon crossing the gap, so it is never that text,
+ * and any other strip whose ink is the lighter colour has to be held by a
+ * second strip of the same pair: one such strip is the texture of the gap
+ * between two cards. Edits `kept` in place.
+ *
+ * @param {({ result: RegionResult, inkShare: number, inkLighter: boolean }|null)[]} strips
+ * @param {boolean[]} kept
+ */
+function dropBandLines(strips, kept) {
+  const keep = kept.map((k, s) => k && !isThinBright(strips[s]));
+  kept.forEach((k, s) => {
+    kept[s] = keep[s] && (!strips[s].inkLighter ||
+      keep.some((other, j) => other && j !== s && pairRelation(strips[j].result, strips[s].result)));
+  });
 }
 
 /**
