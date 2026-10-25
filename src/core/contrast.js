@@ -91,6 +91,69 @@ export function kmeans2(values) {
   return [c0, c1];
 }
 
+// Thresholds for isTextLike. All are relative to the cluster separation, so
+// faint text is judged by its shape and never by its absolute contrast.
+//   BAND         0.15  hysteresis half-band as a share of separation. Kept at
+//                      the review's starting value: synthetic ramps stayed
+//                      "not text" and synthetic strokes stayed "text" up to
+//                      +/-6 levels of noise, so no tuning was needed.
+//   LINE_CHANGES 2     bg, stroke, bg: the minimum for a stroke crossing.
+//   LINE_SHARE   0.20  share of rows (or columns) that must be stroke-like.
+//                      Synthetic text strips score about 0.4 or more; ramps
+//                      and hard edges score 0. 0.20 is inside the review's
+//                      0.15 to 0.30 range and kept as the starting value.
+//                      Real fonts are untested (see PR notes).
+//   MIN_MINORITY 0.02  smaller cluster must hold at least this share of pixels.
+const BAND = 0.15;
+const LINE_CHANGES = 2;
+const LINE_SHARE = 0.20;
+const MIN_MINORITY = 0.02;
+
+/**
+ * Does a region's dark/light split look like text rather than a smooth ramp
+ * or a single hard edge? Labels each pixel dark or light with hysteresis
+ * (a Schmitt trigger, so noise on a ramp makes no fake transitions), then
+ * counts label changes along every row and column. Text strokes give a row
+ * or column at least two changes (background, stroke, background); a ramp or
+ * one boundary gives at most one.
+ *
+ * @param {Float64Array} lums    Row-major luminance, rw * rh values
+ * @param {number} rw
+ * @param {number} rh
+ * @param {number} cDark         Dark k-means centre
+ * @param {number} cLight        Light k-means centre
+ * @returns {boolean}
+ */
+export function isTextLike(lums, rw, rh, cDark, cLight) {
+  const sep = cLight - cDark;
+  const mid = (cDark + cLight) / 2;
+  const lo = mid - BAND * sep;
+  const hi = mid + BAND * sep;
+
+  /** Count stroke-like lines along one axis; also tally light labels. */
+  const scan = (lines, len, lineStride, step) => {
+    let strokeLines = 0, light = 0;
+    for (let l = 0; l < lines; l++) {
+      let i = l * lineStride;
+      let state = lums[i] >= mid;
+      let changes = 0;
+      for (let k = 0; k < len; k++, i += step) {
+        const v = lums[i];
+        if (state ? v < lo : v > hi) { state = !state; changes++; }
+        if (state) light++;
+      }
+      if (changes >= LINE_CHANGES) strokeLines++;
+    }
+    return { share: strokeLines / lines, light };
+  };
+
+  const rows = scan(rh, rw, rw, 1);
+  const minority = Math.min(rows.light, rw * rh - rows.light) / (rw * rh);
+  if (minority < MIN_MINORITY) return false;
+  if (rows.share >= LINE_SHARE) return true;
+  return scan(rw, rh, 1, rw).share >= LINE_SHARE;
+}
+
 /**
  * Contrast result for a single image region.
  * @typedef {Object} RegionResult
@@ -115,6 +178,18 @@ export function kmeans2(values) {
  * @returns {RegionResult|null}
  */
 export function regionContrast(imageData, x, y, w, h) {
+  const m = measureRegion(imageData, x, y, w, h, false);
+  return m ? m.result : null;
+}
+
+/**
+ * Shared body of regionContrast. When `checkShape` is true it also reports
+ * whether the region's two clusters are arranged like text (see isTextLike).
+ * The flag stays internal so RegionResult keeps its shape.
+ *
+ * @returns {{ result: RegionResult, textLike: boolean }|null}
+ */
+function measureRegion(imageData, x, y, w, h, checkShape) {
   const W = imageData.width, H = imageData.height;
   const data = imageData.data;
 
@@ -170,13 +245,21 @@ export function regionContrast(imageData, x, y, w, h) {
   const bgHex = rgbToHex(...bgRgb);
   const contrast = wcagContrast(luminanceFloat(...fgRgb), luminanceFloat(...bgRgb));
 
-  return { contrast, fgHex, bgHex, fgRgb, bgRgb };
+  return {
+    result: { contrast, fgHex, bgHex, fgRgb, bgRgb },
+    textLike: checkShape ? isTextLike(lums, rw, rh, cDark, cLight) : false
+  };
 }
 
 /**
  * Split a bounding box into narrow vertical strips (~one character wide at
- * 60 % of cap height) and return the strip with the lowest contrast ratio.
+ * 60 % of cap height) and return the text strip with the lowest contrast.
  * This ensures each letter in a word is individually sampled.
+ *
+ * Only strips that look like text (see isTextLike) compete, so a stretch of
+ * plain background between words cannot win. If no strip looks like text it
+ * falls back to the whole box, then to the lowest of all strips, so a real
+ * failure is never silenced.
  *
  * @param {ImageData} imageData
  * @param {number} x
@@ -189,17 +272,25 @@ export function worstStripContrast(imageData, x, y, w, h) {
   const stripW    = Math.max(4, Math.floor(h * 0.6));
   const nStrips   = Math.max(3, Math.round(w / stripW));
   const actualW   = w / nStrips;
-  const results   = [];
+  const all       = [];
+  const textual   = [];
 
   for (let s = 0; s < nStrips; s++) {
     const sx = x + Math.round(s * actualW);
     const sw = Math.max(4, Math.round(actualW));
-    const r  = regionContrast(imageData, sx, y, sw, h);
-    if (r) results.push(r);
+    const m  = measureRegion(imageData, sx, y, sw, h, true);
+    if (!m) continue;
+    all.push(m.result);
+    if (m.textLike) textual.push(m.result);
   }
 
-  if (results.length === 0) return regionContrast(imageData, x, y, w, h);
-  return results.reduce((worst, r) => r.contrast < worst.contrast ? r : worst, results[0]);
+  const lowest = (list) =>
+    list.reduce((worst, r) => (r.contrast < worst.contrast ? r : worst), list[0]);
+
+  if (textual.length) return lowest(textual);
+  const whole = regionContrast(imageData, x, y, w, h);
+  if (whole) return whole;
+  return all.length ? lowest(all) : null;
 }
 
 /**
