@@ -817,7 +817,7 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 800;
-  color: var(--accent);
+  color: var(--accent-small); /* --accent is 5.94:1 (Dark) and 6.83:1 (Muted Dark) on --neutral-bg */
   background: var(--neutral-bg);
 }
 /* Small text: --accent is brand orange / sand in the dark themes (large

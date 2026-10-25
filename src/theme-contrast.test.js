@@ -83,6 +83,25 @@ describe.each(THEMES)('%s theme: text tokens stay AAA on every surface', (theme)
   });
 });
 
+// --accent is brand orange or sand in the dark themes: 5.94:1 (Dark) and
+// 6.83:1 (Muted Dark) on --neutral-bg. So no rule that paints --neutral-bg may
+// set its own text to --accent; it must use --accent-small (>= 7:1 above).
+describe('small text on --neutral-bg never uses --accent', () => {
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, sel, body]) => ({ sel: sel.trim(), body }));
+  const offenders = rules
+    .filter(({ body }) => /(^|[\s;])background(-color)?:\s*var\(--neutral-bg\)/.test(body))
+    .filter(({ body }) => /(^|[\s;])color:\s*var\(--accent\)/.test(body))
+    .map(({ sel }) => sel);
+
+  it('no rule combines background --neutral-bg with color --accent', () => {
+    expect(offenders).toEqual([]);
+  });
+
+  it('the check-group label uses --accent-small on --neutral-bg', () => {
+    expect(css).toMatch(/\.check-group-row th\s*\{[^}]*color:\s*var\(--accent-small\)/);
+  });
+});
+
 describe.each(THEMES)('%s theme: filled controls (primary button, skip link) are AAA', (theme) => {
   const t = tokens(theme);
 
