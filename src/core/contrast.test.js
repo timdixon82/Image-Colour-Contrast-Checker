@@ -158,6 +158,21 @@ describe('isTextLike', () => {
     expect(isTextLike(s.lums, s.w, s.h, s.cDark, s.cLight)).toBe(false);
   });
 
+  it('is false for a wide solid blob (a ribbon is not a stroke)', () => {
+    // 16 px wide, 16 px tall block in a 40x36 region: both axes cross it twice,
+    // but almost all of it is deeper than a stroke could be.
+    const img = makeImage(40, 36, (x, y) => (x >= 12 && x < 28 && y >= 10 && y < 26 ? [0, 0, 0] : WHITE));
+    const s = labelled(img, 0, 0, 40, 36);
+    expect(isTextLike(s.lums, s.w, s.h, s.cDark, s.cLight)).toBe(false);
+  });
+
+  it('is false when strokes cross one axis only (a ribbon edge line)', () => {
+    // Full-height 2 px vertical line: every row crosses it, no column does.
+    const img = makeImage(40, 28, (x) => (x >= 19 && x < 21 ? [0, 0, 0] : WHITE));
+    const s = labelled(img, 0, 0, 40, 28);
+    expect(isTextLike(s.lums, s.w, s.h, s.cDark, s.cLight)).toBe(false);
+  });
+
   it('is true for stroke-like text', () => {
     const img = makeImage(40, 28, (x, y) => (isStroke(x, y, 28) ? [0, 0, 0] : WHITE));
     const s = labelled(img, 4, 2, 24, 24);

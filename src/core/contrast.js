@@ -91,31 +91,53 @@ export function kmeans2(values) {
   return [c0, c1];
 }
 
-// Thresholds for isTextLike. All are relative to the cluster separation, so
-// faint text is judged by its shape and never by its absolute contrast.
-//   BAND         0.15  hysteresis half-band as a share of separation. Kept at
-//                      the review's starting value: synthetic ramps stayed
-//                      "not text" and synthetic strokes stayed "text" up to
-//                      +/-6 levels of noise, so no tuning was needed.
+// Thresholds for isTextLike. All are relative to the cluster separation or to
+// the strip size, so faint text is judged by its shape and never by its
+// absolute contrast.
+//
+//   BAND         0.15  hysteresis half-band as a share of separation.
 //   LINE_CHANGES 2     bg, stroke, bg: the minimum for a stroke crossing.
-//   LINE_SHARE   0.20  share of rows (or columns) that must be stroke-like.
-//                      Synthetic text strips score about 0.4 or more; ramps
-//                      and hard edges score 0. 0.20 is inside the review's
-//                      0.15 to 0.30 range and kept as the starting value.
-//                      Real fonts are untested (see PR notes).
+//   LINE_SHARE   0.20  share of rows AND of columns that must be stroke-like.
 //   MIN_MINORITY 0.02  smaller cluster must hold at least this share of pixels.
+//   MAX_CORE     0.35  at most this share of the minority pixels may have their
+//                      whole (2R+1) square inside the cluster, R = strip height
+//                      / CORE_DIV (18), at least 1 px. Strokes are thin; a
+//                      ribbon is a wide blob.
+//   MAX_SPREAD   0.40  std dev of the minority cluster's luminance as a share
+//                      of the separation. A stroke is one solid colour.
+//
+// Why each rule exists, from per-strip numbers on a real chart screenshot
+// (dark labels on flat panels, gradient ribbons between them; fixtures in
+// src/core/__fixtures__). Real text strips (35 kept): smaller line share 0.22
+// to 0.9, core 0.00 to 0.29, spread 0.09 to 0.32. Ribbon strips
+// the first version wrongly kept:
+//   - ribbon edges with one axis only (row share 0.00 to 0.08, or column
+//     share 0.04): rejected by requiring BOTH axes. A glyph has strokes
+//     across its rows and its columns; a one-pixel-wide ribbon edge has them
+//     in one direction only. (The first version accepted either axis.)
+//   - wide ribbon blobs against a dark panel (core 0.43 to 0.64): rejected by
+//     MAX_CORE (real strips reach 0.29, so that margin is small).
+//   - a hard panel edge plus gradient (spread 0.52 to 0.53): rejected by
+//     MAX_SPREAD; the minority "cluster" is a mixture, not one colour.
+// Sharpness of steps relative to the separation was measured too and did not
+// separate them (ribbon edges are as crisp as glyph edges), so it is not used.
 const BAND = 0.15;
 const LINE_CHANGES = 2;
 const LINE_SHARE = 0.20;
 const MIN_MINORITY = 0.02;
+const MAX_CORE = 0.35;
+const CORE_DIV = 18;
+const MAX_SPREAD = 0.40;
 
 /**
- * Does a region's dark/light split look like text rather than a smooth ramp
- * or a single hard edge? Labels each pixel dark or light with hysteresis
- * (a Schmitt trigger, so noise on a ramp makes no fake transitions), then
- * counts label changes along every row and column. Text strokes give a row
- * or column at least two changes (background, stroke, background); a ramp or
- * one boundary gives at most one.
+ * Does a region's dark/light split look like text rather than a smooth ramp,
+ * a single hard edge, or a gradient ribbon? Labels each pixel dark or light
+ * with hysteresis (a Schmitt trigger, so noise on a ramp makes no fake
+ * transitions), then requires all of:
+ *   1. stroke crossings (background, stroke, background) on enough rows AND
+ *      enough columns;
+ *   2. a minority cluster that is thin (little of it survives erosion);
+ *   3. a minority cluster of one solid colour (small luminance spread).
  *
  * @param {Float64Array} lums    Row-major luminance, rw * rh values
  * @param {number} rw
@@ -130,9 +152,12 @@ export function isTextLike(lums, rw, rh, cDark, cLight) {
   const lo = mid - BAND * sep;
   const hi = mid + BAND * sep;
 
-  /** Count stroke-like lines along one axis; also tally light labels. */
-  const scan = (lines, len, lineStride, step) => {
-    let strokeLines = 0, light = 0;
+  /**
+   * Hysteresis-label every line along one axis. Returns the share of lines
+   * with a stroke crossing and, when `labels` is given, writes the labels.
+   */
+  const scan = (lines, len, lineStride, step, labels) => {
+    let strokeLines = 0;
     for (let l = 0; l < lines; l++) {
       let i = l * lineStride;
       let state = lums[i] >= mid;
@@ -140,18 +165,51 @@ export function isTextLike(lums, rw, rh, cDark, cLight) {
       for (let k = 0; k < len; k++, i += step) {
         const v = lums[i];
         if (state ? v < lo : v > hi) { state = !state; changes++; }
-        if (state) light++;
+        if (labels) labels[i] = state ? 1 : 0;
       }
       if (changes >= LINE_CHANGES) strokeLines++;
     }
-    return { share: strokeLines / lines, light };
+    return strokeLines / lines;
   };
 
-  const rows = scan(rh, rw, rw, 1);
-  const minority = Math.min(rows.light, rw * rh - rows.light) / (rw * rh);
-  if (minority < MIN_MINORITY) return false;
-  if (rows.share >= LINE_SHARE) return true;
-  return scan(rw, rh, 1, rw).share >= LINE_SHARE;
+  const n = rw * rh;
+  const labels = new Uint8Array(n);
+  const rowShare = scan(rh, rw, rw, 1, labels);
+  let light = 0;
+  for (let i = 0; i < n; i++) light += labels[i];
+  const minLabel = light <= n - light ? 1 : 0;
+  if (Math.min(light, n - light) / n < MIN_MINORITY) return false;
+  if (rowShare < LINE_SHARE) return false;
+  if (scan(rw, rh, 1, rw) < LINE_SHARE) return false;
+
+  // Spread of the minority cluster's luminance.
+  let count = 0, sum = 0, sumSq = 0;
+  for (let i = 0; i < n; i++) {
+    if (labels[i] !== minLabel) continue;
+    count++; sum += lums[i]; sumSq += lums[i] * lums[i];
+  }
+  const mean = sum / count;
+  if (Math.sqrt(Math.max(0, sumSq / count - mean * mean)) / sep > MAX_SPREAD) return false;
+
+  // Core share: minority pixels whose whole (2R+1) square is minority.
+  const R = Math.max(1, Math.round(rh / CORE_DIV));
+  let core = 0;
+  for (let y = 0; y < rh; y++) {
+    for (let x = 0; x < rw; x++) {
+      if (labels[y * rw + x] !== minLabel) continue;
+      let deep = true;
+      for (let dy = -R; dy <= R && deep; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= rh) continue;
+        for (let dx = -R; dx <= R; dx++) {
+          const xx = x + dx;
+          if (xx >= 0 && xx < rw && labels[yy * rw + xx] !== minLabel) { deep = false; break; }
+        }
+      }
+      if (deep) core++;
+    }
+  }
+  return core / count <= MAX_CORE;
 }
 
 /**
