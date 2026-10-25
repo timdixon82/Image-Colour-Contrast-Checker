@@ -201,3 +201,16 @@ describe('CLAUDE.md colour table matches src/styles.css', () => {
     }
   });
 });
+
+describe.each(THEMES)('%s theme: header logo ring', (theme) => {
+  const t = tokens(theme);
+  const TILE = '#061528'; // public/favicon.svg tile fill
+  it('--fg-muted ring reaches 3:1 against --bg-card', () => {
+    expect(ratio(t['--fg-muted'], t['--bg-card'])).toBeGreaterThanOrEqual(3);
+  });
+  if (theme.endsWith('dark')) {
+    it('--fg-muted ring reaches 3:1 against the logo tile', () => {
+      expect(ratio(t['--fg-muted'], TILE)).toBeGreaterThanOrEqual(3);
+    });
+  }
+});

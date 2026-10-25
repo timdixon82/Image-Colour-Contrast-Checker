@@ -42,4 +42,17 @@ describe('header favicon styling', () => {
   it('keeps the logo from shrinking', () => {
     expect(logo).toMatch(/flex-shrink:\s*0/);
   });
+
+  it.each(['dark', 'muted-dark'])('draws a token-coloured ring on %s only', (theme) => {
+    const re = new RegExp(`\\[data-theme="${theme}"\\]\\s+\\.app-header-logo\\s*[,{][^{}]*\\{([^}]*)\\}|\\[data-theme="${theme}"\\]\\s+\\.app-header-logo\\s*\\{([^}]*)\\}`);
+    const m = css.match(re);
+    const body = m?.[1] ?? m?.[2] ?? '';
+    expect(body).toMatch(/outline:\s*1px solid var\(--fg-muted\)/);
+    expect(body).toMatch(/border-radius:\s*[\d.]+rem/);
+    expect(body).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+
+  it('leaves the light themes without a ring', () => {
+    expect(css).not.toMatch(/\[data-theme="(?:light|muted-light)"\]\s+\.app-header-logo/);
+  });
 });
