@@ -731,9 +731,18 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
 }
-.external-checkers-list a { color: var(--accent); font-size: 0.85rem; white-space: nowrap; }
+.external-checkers-list a {
+  /* inline-block, not flex: keeps the text, arrow and sr-only note in one line box */
+  display: inline-block;
+  min-height: 44px; /* WCAG 2.5.5 AAA target size */
+  min-width: 44px;
+  line-height: 44px;
+  color: var(--accent);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
 .results-table code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
 .results-table .examples { font-style: italic; color: var(--fg-muted); max-width: 240px; }
 .results-table td { border-bottom: none; }

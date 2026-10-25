@@ -39,22 +39,38 @@ export const CVD_TYPES = [
  */
 export const checkInfoUrl = (id) => `${SITE_URL}/#check-info-${id}`;
 
-/** URL for the Tas the Artist Vestibular Accessible Design Checker. */
-export const VESTIBULAR_CHECKER_URL =
-  'https://tastheartist.com/vestibular-accessible-design-checker/';
+const VESTIBULAR_CHECKER_BASE = 'https://vadchecker.com/tool/';
+const HEX6 = /^#?([0-9a-f]{6})$/i;
 
 /**
- * Short brand label used as the visible text in the web report link only.
- * The arrow glyph that follows it is rendered separately with aria-hidden.
+ * Builds the VADChecker (Tas's Vestibular Accessible Design Checker) link for
+ * one colour pair. `txt` is the text colour, `bg` the background, both hex
+ * without the hash. Falls back to the bare tool URL if either value is not a
+ * 6-digit hex colour.
+ * @param {string} fgHex
+ * @param {string} bgHex
+ * @returns {string}
  */
-export const VESTIBULAR_CHECKER_BRAND_LABEL = 'Tas the Artist';
+export function vestibularCheckerUrl(fgHex, bgHex) {
+  const fg = HEX6.exec(String(fgHex ?? ''));
+  const bg = HEX6.exec(String(bgHex ?? ''));
+  if (!fg || !bg) return VESTIBULAR_CHECKER_BASE;
+  return `${VESTIBULAR_CHECKER_BASE}?txt=${fg[1].toLowerCase()}&bg=${bg[1].toLowerCase()}`;
+}
+
+/**
+ * Short brand label used as the visible text in the web report link and the
+ * Markdown link. The arrow glyph that follows it is rendered separately with
+ * aria-hidden.
+ */
+export const VESTIBULAR_CHECKER_BRAND_LABEL = 'VADChecker';
 
 /**
  * Full descriptive label used as the web aria-label, the PDF link text,
  * and the Markdown link text.
- * If the visible text "Tas the Artist" is ever removed from the web link
+ * If the visible text "VADChecker" is ever removed from the web link
  * and the aria-label is removed too, restore a sr-only "(opens in new window)"
  * span to preserve the new-window announcement for screen reader users.
  */
 export const VESTIBULAR_CHECKER_FULL_LABEL =
-  'Check and adjust colours with Tas the Artist: Vestibular Accessible Design Checker (opens in new window)';
+  'Check and adjust this colour pair with VADChecker (opens in new window)';
