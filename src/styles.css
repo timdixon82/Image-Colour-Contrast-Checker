@@ -39,6 +39,7 @@
   --border:        #D1D5DB;
   --accent:        #0C3B64;
   --accent-hover:  #0A3052;
+  --accent-small:  #0C3B64;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgb(12 59 100 / 0.08);
   --warm:          #EB9C52;
@@ -113,6 +114,7 @@
   --border:        #D1D5DB;
   --accent:        #0C3B64;
   --accent-hover:  #0A3052;
+  --accent-small:  #0C3B64;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgb(12 59 100 / 0.08);
   --warm:          #EB9C52;
@@ -138,6 +140,7 @@
   --border:        #1C3A5C;
   --accent:        #EB9C52;
   --accent-hover:  #ECBB83;
+  --accent-small:  #F8C48F; /* small text: 8.39:1 on --neutral-bg, 7.56:1 on the queue-stage tint */
   --accent-text:   #061528;
   --accent-subtle: rgb(235 156 82 / 0.16);
   --warm:          #52C7EB;
@@ -164,6 +167,7 @@
   --border:        #D2D8DE;
   --accent:        #234A73;
   --accent-hover:  #1B3A5C;
+  --accent-small:  #234A73;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgb(35 74 115 / 0.08);
   --warm:          #703D1F;
@@ -189,6 +193,7 @@
   --border:        #2C3F54;
   --accent:        #E3C196;
   --accent-hover:  #E8D3BA;
+  --accent-small:  #F5E4CE; /* small text: 9.34:1 on --neutral-bg, 7.47:1 on the queue-stage tint */
   --accent-text:   #142536;
   --accent-subtle: rgb(227 193 150 / 0.16);
   --warm:          #8EBDE1;
@@ -593,7 +598,7 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 .queue-row[data-stage="decoding"] .queue-stage,
 .queue-row[data-stage="ocr"]      .queue-stage,
 .queue-row[data-stage="analysing"] .queue-stage {
-  background: var(--accent-subtle); color: var(--accent);
+  background: var(--accent-subtle); color: var(--accent-small);
 }
 
 /* ── Results ─────────────────────────────────────────────────────────────── */
@@ -810,7 +815,8 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 .check-name  { font-weight: 700; white-space: nowrap; }
 .check-value { font-variant-numeric: tabular-nums; }
 .check-meaning { color: var(--fg-muted); line-height: 1.45; }
-.check-info  { text-decoration: none; }
+.check-info  { text-decoration: none; color: var(--accent-small); }
+.check-info:hover { color: var(--accent-hover); text-decoration: underline; }
 
 /* ── Roll-up badges ──────────────────────────────────────────────────────── */
 
