@@ -204,9 +204,9 @@ Key colour contrast values — all ≥ 7:1 (WCAG 2.2 AAA) across all four themes
 
 | Token | Light | Dark | Muted Light | Muted Dark |
 |---|---|---|---|---|
-| `--pass` | `#15662F` | `#8FD3A2` | `#1E5631` | `#A7D9B5` |
-| `--fail` | `#A12525` | `#F0A6A6` | `#8A2A2A` | `#E6A9A9` |
-| `--warn` | `#544012` | `#DDB84B` | `#4E3C18` | `#DFC686` |
+| `--pass` | `#125929` | `#8FD3A2` | `#1E5631` | `#A7D9B5` |
+| `--fail` | `#8C2020` | `#F1ABAB` | `#822727` | `#ECBEBE` |
+| `--warn` | `#544012` | `#DDB94D` | `#4E3C18` | `#DFC787` |
 
 Status pills use **solid** `--pass-bg` / `--fail-bg` / `--warn-bg` backgrounds so contrast is independent of what is behind them.
 
