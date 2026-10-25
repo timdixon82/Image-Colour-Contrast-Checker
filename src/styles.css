@@ -56,7 +56,7 @@
   --code-bg:       #ECEEF1;
 
   /* ── App-specific warn tokens (not in DS; Tim-verified AAA) ─────────── */
-  --warn:          #544012;   /* 8.2:1 on warn-bg, 9.1:1 on neutral-bg   */
+  --warn:          #544012;   /* 8.06:1 on warn-bg, 8.53:1 on neutral-bg, 9.15:1 on bg */
   --warn-bg:       #F0E8C8;
 
   /* ── Structural ─────────────────────────────────────────────────────── */
@@ -216,7 +216,7 @@
   --pass-bg:       #1C3528;
   --fail:          #ECBEBE;
   --fail-bg:       #3A2020;
-  --warn:          #DFC787;   /* bumped from #E8C97A: original fell to 6.6:1 on --bg-card */
+  --warn:          #DFC787;   /* 8.47:1 on warn-bg, 7.98:1 on --bg-card, 7.01:1 on --neutral-bg (tightest) */
   --warn-bg:       #332B12;
 }
 

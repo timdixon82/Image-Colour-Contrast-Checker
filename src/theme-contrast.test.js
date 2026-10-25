@@ -165,3 +165,22 @@ describe('VADChecker: surfaces stay under 60% HSL saturation (Vestibular SAFE)',
     expect(ratio(tokens('light')['--fg'], '#FFFFFF')).toBeGreaterThanOrEqual(14);
   });
 });
+
+describe('CLAUDE.md colour table matches src/styles.css', () => {
+  const md = readFileSync(new URL('../CLAUDE.md', import.meta.url), 'utf8');
+  const rows = [...md.matchAll(/^\| `(--[\w-]+)`[^|]*\|\s*`(#\w{6})`\s*\|\s*`(#\w{6})`\s*\|\s*`(#\w{6})`\s*\|\s*`(#\w{6})`\s*\|$/gm)];
+
+  it('lists the status, text and button tokens', () => {
+    const names = rows.map((r) => r[1]);
+    for (const n of ['--fg', '--fg-muted', '--neutral', '--pass', '--fail', '--warn', '--accent-small', '--button-bg', '--button-bg-hover']) {
+      expect(names, n).toContain(n);
+    }
+  });
+
+  it.each(THEMES.map((t, i) => [t, i + 2]))('%s column equals the CSS values', (theme, col) => {
+    const t = tokens(theme);
+    for (const row of rows) {
+      expect(row[col].toUpperCase(), `${row[1]} in ${theme}`).toBe(t[row[1]].toUpperCase());
+    }
+  });
+});
