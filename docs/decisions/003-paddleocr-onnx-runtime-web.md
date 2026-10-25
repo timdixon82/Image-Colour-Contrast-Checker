@@ -23,4 +23,4 @@ Bundle the models from `@gutenye/ocr-models` (a devDependency) and copy them int
 
 ## Consequences
 
-The application produces accurate detections on real screenshots, the user keeps their image on their device, and the OCR engine is swappable through the adapter pattern in `src/adapters/`. The cost is roughly 28 MB of model and runtime files on first use, cached afterwards in Cache Storage (see ADR 008). The iOS WebGPU fragility (code detects it and forces WASM) is a known invariant; `preloader.js` and `paddle-ocr.js` keep their detection logic in sync.
+The application produces accurate detections on real screenshots, the user keeps their image on their device, and the OCR engine is swappable through the adapter pattern in `src/adapters/`. The cost is roughly 44 MB of model and runtime files on first use, cached afterwards in Cache Storage (see ADR 008). The iOS WebGPU fragility (code detects it and forces WASM) is a known invariant; `preloader.js` and `paddle-ocr.js` keep their detection logic in sync.

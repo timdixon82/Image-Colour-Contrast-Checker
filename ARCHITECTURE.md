@@ -191,10 +191,10 @@ platform) decides which WASM variant is fetched:
 | File | Size (approx) | When |
 |------|--------------|------|
 | `models/ch_PP-OCRv4_det_infer.onnx` | 4.7 MB | Always |
-| `models/ch_PP-OCRv4_rec_infer.onnx` | 10.5 MB | Always |
+| `models/ch_PP-OCRv4_rec_infer.onnx` | 10.8 MB | Always |
 | `models/ppocr_keys_v1.txt` | 26 KB | Always |
-| `ort/ort-wasm-simd-threaded.jsep.wasm` + `.mjs` | 26 MB | WebGPU build |
-| `ort/ort-wasm-simd-threaded.wasm` + `.mjs` | 12.6 MB | WASM build |
+| `ort/ort-wasm-simd-threaded.jsep.wasm` + `.mjs` | 28.3 MB | WebGPU build |
+| `ort/ort-wasm-simd-threaded.wasm` + `.mjs` | 14.2 MB | WASM build |
 
 `onProgress` signature: `{ pct, label, fileIndex, fileCount, done }`. Progress
 uses a streaming `fetch()` body reader; it falls back to approximate sizes on
@@ -393,7 +393,7 @@ A single hand-written service worker does two jobs:
 2. **Model caching** — cache-first for `/models/` and `/ort/` requests, stored
    in the Cache Storage API (`icc-model-cache-v*`). iOS Safari evicts large
    files from its HTTP cache between visits; Cache Storage is durable, so the
-   ~30 MB of models and runtime download only once.
+   ~44 MB of models and runtime download only once.
 
 Only one service worker can control a scope, so both jobs share this file. Bump
 `MODEL_CACHE` in `sw.js` whenever the runtime or model files change.

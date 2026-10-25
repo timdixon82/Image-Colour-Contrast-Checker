@@ -12,7 +12,7 @@
  *     contributors (MIT licence), kept behaviourally identical.
  *  2. Persistent caching of the OCR model and ONNX runtime files. iOS Safari
  *     evicts large resources from its HTTP cache between visits, so without
- *     this the ~30 MB of models re-downloads on every page load. Cache Storage
+ *     this the ~44 MB of models re-downloads on every page load. Cache Storage
  *     is far more durable, so the files are fetched once and reused.
  */
 

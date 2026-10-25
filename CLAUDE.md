@@ -271,7 +271,7 @@ name from the installed package versions:
    version>/` request, stored in Cache Storage (`icc-model-cache-ort<ort
    version>-models<ocr-models version>`, derived at build time, so it cannot be
    forgotten on an upgrade). iOS Safari evicts large files from its HTTP cache
-   between visits; Cache Storage is durable, so the ~30 MB of models download
+   between visits; Cache Storage is durable, so the ~44 MB of models download
    once. The runtime folder is versioned (`public/ort-<version>/`, page code
    gets it as `__ORT_DIR__`) so a returning visitor's older worker, which only
    matches `/ort/`, cannot serve old runtime files to the new page. See
