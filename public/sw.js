@@ -16,7 +16,7 @@ let coepCredentialless = false;
 
 // Cache for the model + runtime files. Bump the version suffix whenever the
 // ONNX runtime or model files change, so stale bytes are not served.
-const MODEL_CACHE = 'icc-model-cache-v1';
+const MODEL_CACHE = 'icc-model-cache-v2';
 const CACHEABLE_PATH = /\/(?:models|ort)\//;
 
 if (typeof window === 'undefined') {
