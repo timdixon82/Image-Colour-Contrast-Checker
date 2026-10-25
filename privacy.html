@@ -103,7 +103,7 @@
 
         <section>
           <h3>Network requests</h3>
-          <p>Aside from the GoatCounter analytics request described above, the only network requests this tool makes are a one-time download of the AI model files and the WebAssembly runtime it needs to analyse your images. These model and runtime files are served from the same origin as the tool itself (<code>image-colour-contrast-checker.timdixon.net</code>) and are cached by your browser after the first download.</p>
+          <p>Aside from the GoatCounter analytics request described above, the only network requests this tool makes by itself are a one-time download of the AI model files and the WebAssembly runtime it needs to analyse your images. These model and runtime files are served from the same origin as the tool itself (<code>image-colour-contrast-checker.timdixon.net</code>) and are cached by your browser after the first download.</p>
           <p>The files downloaded on first use are:</p>
           <ul>
             <li>PaddleOCR PP-OCRv4 text detection model (<code>ch_PP-OCRv4_det_infer.onnx</code>)</li>
@@ -116,7 +116,15 @@
 
         <section>
           <h3>Third-party scripts</h3>
-          <p>No third-party scripts, fonts or stylesheets are loaded from external origins. All JavaScript — including the GoatCounter analytics snippet (<code>count.js</code>) — is served from <code>image-colour-contrast-checker.timdixon.net</code>. The only request that leaves your device is the single anonymous page-view sent to GoatCounter, described above.</p>
+          <p>No third-party scripts, fonts or stylesheets are loaded from external origins. All JavaScript — including the GoatCounter analytics snippet (<code>count.js</code>) — is served from <code>image-colour-contrast-checker.timdixon.net</code>. The only request this tool sends by itself is the single anonymous page-view sent to GoatCounter, described above. Links to other tools send nothing unless you click them, as explained under &ldquo;Links to other tools&rdquo; below.</p>
+        </section>
+
+        <section>
+          <h3>Links to other tools</h3>
+          <p>Each colour combination in the report has links to two other accessibility tools: the WebAIM Contrast Checker and VADChecker (at vadchecker.com, made by Tas the Artist). Nothing is sent unless you choose to click one.</p>
+          <p>If you click, your browser opens that site in a new window. The link address contains the two colour codes for that combination, as text and background, for example <code>?txt=ffffff&amp;bg=122222</code>. The site receives those two colour codes, plus what a browser normally sends, such as your IP (Internet Protocol) address. The links are set to open with no referring address, so the site is not told which page you came from. It never receives your image, the text found in your image, or the file name.</p>
+          <p>The same links appear in downloaded PDF and Markdown reports. Anyone who clicks them later sends the colour codes in the same way.</p>
+          <p>Those sites have their own privacy practices. This tool does not control them. Please read their privacy information if you want to know how they handle data.</p>
         </section>
 
         <section>
