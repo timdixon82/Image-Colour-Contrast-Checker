@@ -19,7 +19,8 @@
 import { describe, it, expect } from 'vitest';
 import { deflateSync } from 'node:zlib';
 
-import { buildPdf } from './pdf.js';
+import { buildPdf, PDF_TEXT_PAIRS } from './pdf.js';
+import { hexToRgb, luminance, wcagContrast } from '../core/contrast.js';
 import { veraPdfAvailable, verapdfXml } from '../lib/pdf-ua/verapdf-test-utils.js';
 
 /**
@@ -172,5 +173,17 @@ describe.skipIf(!veraPdfAvailable)('pdf export — veraPDF PDF/UA-1 compliance',
     if (failedMatch) {
       expect(parseInt(failedMatch[1], 10)).toBe(0);
     }
+  });
+});
+
+describe('PDF palette contrast (WCAG 2.2 AAA)', () => {
+  const lum = (hex) => luminance(...hexToRgb(hex));
+
+  it('declares text/background pairs', () => {
+    expect(PDF_TEXT_PAIRS.length).toBeGreaterThan(0);
+  });
+
+  it.each(PDF_TEXT_PAIRS.map((p) => [p.name, p]))('%s is at least 7:1', (_name, p) => {
+    expect(wcagContrast(lum(p.fg), lum(p.bg))).toBeGreaterThanOrEqual(7);
   });
 });

@@ -1,6 +1,6 @@
 // Preloads OCR model and runtime files into the browser HTTP cache before
 // the user can interact with the app. Files are detected based on WebGPU
-// availability so only the relevant WASM variant is downloaded (~30 MB total).
+// availability so only the relevant WASM variant is downloaded (~44 MB total).
 
 // iOS/iPadOS expose navigator.gpu but ORT's WebGPU backend does not work
 // there, so those devices use the WASM runtime. Keep in sync with
@@ -16,15 +16,15 @@ function getFiles() {
   const useWebGpu = typeof navigator !== 'undefined' && !!navigator.gpu && !isAppleMobile();
   return [
     { label: 'Text detection model',  path: 'models/ch_PP-OCRv4_det_infer.onnx',                               approxBytes: 4_700_000  },
-    { label: 'Text recognition model',path: 'models/ch_PP-OCRv4_rec_infer.onnx',                               approxBytes: 10_500_000 },
+    { label: 'Text recognition model',path: 'models/ch_PP-OCRv4_rec_infer.onnx',                               approxBytes: 10_800_000 },
     {
       label: useWebGpu ? 'OCR runtime (WebGPU)' : 'OCR runtime',
-      path:  useWebGpu ? 'ort/ort-wasm-simd-threaded.jsep.wasm' : 'ort/ort-wasm-simd-threaded.wasm',
-      approxBytes: useWebGpu ? 26_000_000 : 12_600_000
+      path:  `${__ORT_DIR__}/` + (useWebGpu ? 'ort-wasm-simd-threaded.jsep.wasm' : 'ort-wasm-simd-threaded.wasm'),
+      approxBytes: useWebGpu ? 28_300_000 : 14_200_000
     },
     {
       label: 'OCR runtime module',
-      path:  useWebGpu ? 'ort/ort-wasm-simd-threaded.jsep.mjs' : 'ort/ort-wasm-simd-threaded.mjs',
+      path:  `${__ORT_DIR__}/` + (useWebGpu ? 'ort-wasm-simd-threaded.jsep.mjs' : 'ort-wasm-simd-threaded.mjs'),
       approxBytes: useWebGpu ? 46_000 : 24_000
     },
     { label: 'Character dictionary',  path: 'models/ppocr_keys_v1.txt',                                        approxBytes: 26_000     },

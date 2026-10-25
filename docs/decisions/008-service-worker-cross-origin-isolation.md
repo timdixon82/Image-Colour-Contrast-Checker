@@ -4,7 +4,7 @@ Status: accepted; the vendored upstream code carries a small standing risk (back
 
 ## Context
 
-Multi-threaded WebAssembly (WASM) requires `SharedArrayBuffer`, which a browser only exposes when the page is cross-origin isolated. A page is cross-origin isolated when it is served with two HyperText Transfer Protocol (HTTP) response headers: `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`. GitHub Pages cannot send custom HTTP response headers (see the standing exception at `docs/exceptions/github-pages-headers.md` and global decision record 011). Separately, iOS Safari evicts large files from its standard HTTP cache between visits, causing a 28 MB re-download every time the user returns.
+Multi-threaded WebAssembly (WASM) requires `SharedArrayBuffer`, which a browser only exposes when the page is cross-origin isolated. A page is cross-origin isolated when it is served with two HyperText Transfer Protocol (HTTP) response headers: `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`. GitHub Pages cannot send custom HTTP response headers (see the standing exception at `docs/exceptions/github-pages-headers.md` and global decision record 011). Separately, iOS Safari evicts large files from its standard HTTP cache between visits, causing a large re-download of the model and runtime files every time the user returns.
 
 ## Decision
 
@@ -21,4 +21,4 @@ Ship a single hand-written service worker at `public/sw.js` that does two jobs i
 
 ## Consequences
 
-Multi-threaded WASM works on GitHub Pages. The 28 MB of model and runtime files download once and then load instantly from Cache Storage. The cross-origin isolation half is vendored from an upstream project (`coi-serviceworker`) with no version manifest and no Subresource Integrity check, so a future advisory against `coi-serviceworker` must be tracked manually. The team will include a check of the `coi-serviceworker` upstream in monthly housekeeping. Bump `MODEL_CACHE` in `public/sw.js` whenever the model or runtime files change to retire the previous cache.
+Multi-threaded WASM works on GitHub Pages. The 44 MB of model and runtime files download once and then load instantly from Cache Storage. The cross-origin isolation half is vendored from an upstream project (`coi-serviceworker`) with no version manifest and no Subresource Integrity check, so a future advisory against `coi-serviceworker` must be tracked manually. The team will include a check of the `coi-serviceworker` upstream in monthly housekeeping. Bump `MODEL_CACHE` in `public/sw.js` whenever the model or runtime files change to retire the previous cache.

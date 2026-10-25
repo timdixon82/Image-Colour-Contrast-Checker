@@ -4,7 +4,7 @@ Status: accepted (backfilled 2026-05-23).
 
 ## Context
 
-ICCC has three runtime dependencies (`@gutenye/ocr-browser`, `onnxruntime-web`, `pdfmake`) and two development dependencies (`@gutenye/ocr-models`, `vite`). The PaddleOCR model files and the ONNX Runtime Web (ORT) WASM binaries together weigh about 28 MB. Committing them to the repository would bloat git history on every model update.
+ICCC has three runtime dependencies (`@gutenye/ocr-browser`, `onnxruntime-web`, `pdfmake`) and two development dependencies (`@gutenye/ocr-models`, `vite`). The PaddleOCR model files and the ONNX Runtime Web (ORT) WASM binaries together weigh about 44 MB. Committing them to the repository would bloat git history on every model update.
 
 ## Decision
 

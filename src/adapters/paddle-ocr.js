@@ -21,7 +21,10 @@ const MODEL_PATHS = {
 };
 
 // ORT needs an absolute URL — a relative path resolves to the bundle dir.
-ort.env.wasm.wasmPaths = new URL('ort/', document.baseURI).href;
+// __ORT_DIR__ is the versioned runtime folder (ort-<version>), injected at
+// build time, so an old service worker's cache of an earlier runtime is never
+// used. Keep in sync with preloader.js and scripts/sw.template.js.
+ort.env.wasm.wasmPaths = new URL(`${__ORT_DIR__}/`, document.baseURI).href;
 
 let ocrPromise = null;
 

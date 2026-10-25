@@ -8,7 +8,7 @@
  *     to be lifted into a standalone package later.
  *   - Works in BOTH Node.js (tests, server) and the browser (Vite + Node
  *     polyfills). The produced bytes are identical in both environments.
- *   - Hides PDFKit 0.18.0's two PDF/UA bugs so consumers never touch them:
+ *   - Hides two PDFKit PDF/UA bugs (found in 0.18.0, workarounds still needed and verified with 0.20.2) so consumers never touch them:
  *       1. The `subset: 'PDF/UA'` constructor option emits a malformed CIDSet
  *          that veraPDF rejects. We omit it and inject the `pdfuaid:part`
  *          XMP claim manually instead.
@@ -19,7 +19,7 @@
  *          `doc.table()` uses internally).
  *
  * Dependencies (only these two — keep it portable):
- *   - pdfkit       0.18.0
+ *   - pdfkit       0.20.2 (^0.20.2)
  *   - blob-stream  (browser Blob output)
  *
  * No DOM APIs. No `document`, no `window`.
@@ -113,7 +113,7 @@ const FONT_MEDIUM = 'Medium';
 /**
  * The XMP fragment that asserts the PDF/UA-1 conformance claim.
  * Injected manually (rather than via `subset: 'PDF/UA'`) to avoid PDFKit
- * 0.18.0's malformed-CIDSet bug. See ADR 010, Finding 1.
+ * PDFKit's malformed-CIDSet bug. See ADR 010, Finding 1.
  * @returns {string}
  */
 function pdfUaXmp() {
@@ -127,7 +127,7 @@ function pdfUaXmp() {
 /**
  * Create a PDFDocument configured for PDF/UA-1 authoring.
  *
- * Applies the full set of PDF/UA prerequisites and the PDFKit 0.18.0
+ * Applies the full set of PDF/UA prerequisites and the PDFKit
  * workarounds:
  *   - `tagged: true` so a structure tree is produced.
  *   - `lang` → catalog `/Lang`.
@@ -165,7 +165,7 @@ export function createDocument(options) {
 
   const doc = new PDFDocument({
     // NOTE: do NOT pass `subset: 'PDF/UA'` — it emits a malformed CIDSet in
-    // PDFKit 0.18.0 (ADR 010, Finding 1). We claim PDF/UA via XMP below.
+    // PDFKit (ADR 010, Finding 1). We claim PDF/UA via XMP below.
     // pdfVersion '1.5' is the value the smoke test validated against; keep it
     // unless a later veraPDF run confirms a different version still passes.
     //
@@ -313,7 +313,7 @@ export function addFigure(doc, imageData, altText, options = {}) {
  * Temporarily override `doc.link` to inject visible `text` as the annotation
  * `Contents` value, then run `fn`, then restore the original `doc.link`.
  *
- * PDFKit 0.18.0 bug (§7.18.1): in `tagged` mode, `doc.link()` always sets
+ * PDFKit bug (§7.18.1): in `tagged` mode, `doc.link()` always sets
  * `Contents` to an empty string. veraPDF rejects empty Contents on link
  * annotations. This wrapper injects the correct string for the duration of
  * one `doc.text()` call without mutating any persistent state.
@@ -342,7 +342,7 @@ function _withLinkContents(doc, text, fn) {
  *
  * PDF/UA-1 §7.18 requires every link annotation to be wrapped in a `Link`
  * structure element with a non-empty `Contents` key on the annotation.
- * PDFKit 0.18.0 bug: when `tagged` mode is active, `doc.link()` sets
+ * PDFKit bug: when `tagged` mode is active, `doc.link()` sets
  * `Contents` to an empty string, violating §7.18.1. This helper works around
  * that via `_withLinkContents`.
  *
@@ -440,7 +440,7 @@ export function addLink(doc, parentStruct, text, url, options = {}) {
  *
  * Scope and Headers attributes are injected directly into the struct's
  * attribute dictionary (as a `doc.ref()` object), bypassing the PDFKit
- * 0.18.0 bug where `doc.struct('TH', { scope })` silently drops those values.
+ * PDFKit bug (seen in 0.18.0; workaround kept for 0.20.2) where `doc.struct('TH', { scope })` silently drops those values.
  *
  * @param {import('pdfkit')} doc
  * @param {AddTableOptions} options
@@ -725,7 +725,7 @@ export function addTable(doc, options) {
  * `stroke`, …). Do NOT emit text or images that carry meaning here — those must
  * be real structure elements (use addParagraph / addFigure).
  *
- * PDFKit 0.18.0 quirk: calling `doc.table()` immediately after `artifact()`
+ * PDFKit quirk: calling `doc.table()` immediately after `artifact()`
  * (with no `addHeading()` or `addParagraph()` call in between) causes the table's content to be
  * emitted without proper tagging — veraPDF will flag it as untagged content.
  * Always place at least one `addHeading()` or `addParagraph()` call between an

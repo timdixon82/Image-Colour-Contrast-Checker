@@ -15,7 +15,8 @@ export default [
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
-      globals: globals.browser,
+      // __ORT_DIR__ is injected by vite.config.js (define).
+      globals: { ...globals.browser, __ORT_DIR__: 'readonly' },
     },
     rules: {
       'no-unused-vars': ['error', { caughtErrorsIgnorePattern: '^_' }],
@@ -35,7 +36,7 @@ export default [
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
-      globals: { ...globals.browser, ...globals.node },
+      globals: { ...globals.browser, ...globals.node, __ORT_DIR__: 'readonly' },
     },
     rules: {
       'no-unused-vars': ['error', { caughtErrorsIgnorePattern: '^_' }],

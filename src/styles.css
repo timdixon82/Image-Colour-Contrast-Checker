@@ -34,27 +34,30 @@
   /* ── Theme 1 · Light (default) ──────────────────────────────────────── */
   --bg:            #F4F6F8;
   --bg-card:       #FFFFFF;
-  --fg:            #1A1A1A;
+  --fg:            #2A2A2A;
   --fg-muted:      #46505E;
   --border:        #D1D5DB;
   --accent:        #0C3B64;
   --accent-hover:  #0A3052;
+  --accent-small:  #0C3B64;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgb(12 59 100 / 0.08);
+  --button-bg:     #234A73; /* filled controls: softer than brand navy so white text reads SAFE in VADChecker (9.14:1 rest, 11.63:1 hover) */
+  --button-bg-hover: #1B3A5C;
   --warm:          #EB9C52;
   --warm-hover:    #E88E38;
   --warm-text:     #1A1A1A;
-  --pass:          #15662F;
+  --pass:          #125929;
   --pass-bg:       #D9F0E1;
-  --fail:          #A12525;
+  --fail:          #8C2020;
   --fail-bg:       #F6DEDE;
   --neutral:       #46505E;
   --neutral-bg:    #ECEEF1;
   --code-bg:       #ECEEF1;
 
   /* ── App-specific warn tokens (not in DS; Tim-verified AAA) ─────────── */
-  --warn:          #544012;   /* 8.2:1 on warn-bg, 9.1:1 on neutral-bg   */
-  --warn-bg:       #F6E8C8;
+  --warn:          #544012;   /* 8.06:1 on warn-bg, 8.53:1 on neutral-bg, 9.15:1 on bg */
+  --warn-bg:       #F0E8C8;
 
   /* ── Structural ─────────────────────────────────────────────────────── */
   --shadow:        0 1px 3px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.05);
@@ -108,51 +111,57 @@
 [data-theme="light"] {
   --bg:            #F4F6F8;
   --bg-card:       #FFFFFF;
-  --fg:            #1A1A1A;
+  --fg:            #2A2A2A;
   --fg-muted:      #46505E;
   --border:        #D1D5DB;
   --accent:        #0C3B64;
   --accent-hover:  #0A3052;
+  --accent-small:  #0C3B64;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgb(12 59 100 / 0.08);
+  --button-bg:     #234A73; /* filled controls: softer than brand navy so white text reads SAFE in VADChecker (9.14:1 rest, 11.63:1 hover) */
+  --button-bg-hover: #1B3A5C;
   --warm:          #EB9C52;
   --warm-hover:    #E88E38;
   --warm-text:     #1A1A1A;
-  --pass:          #15662F;
+  --pass:          #125929;
   --pass-bg:       #D9F0E1;
-  --fail:          #A12525;
+  --fail:          #8C2020;
   --fail-bg:       #F6DEDE;
   --neutral:       #46505E;
   --neutral-bg:    #ECEEF1;
   --code-bg:       #ECEEF1;
   --warn:          #544012;
-  --warn-bg:       #F6E8C8;
+  --warn-bg:       #F0E8C8;
 }
 
 /* ── Theme 2 · Dark ─────────────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --bg:            #061528;
-  --bg-card:       #0D2440;
+  --bg:            #0A1525;
+  --bg-card:       #11233E;
   --fg:            #E2E7EC;
-  --fg-muted:      #A3C3DA; /* app override: 7.18:1 on --neutral-bg (#15314F); 8.47:1 on --bg-card (#0D2440) — both AAA */
+  --fg-muted:      #A3C3DA; /* app override: 7.18:1 on --neutral-bg (#15314F); 8.53:1 on --bg-card (#11233E) — both AAA */
   --border:        #1C3A5C;
   --accent:        #EB9C52;
   --accent-hover:  #ECBB83;
+  --accent-small:  #F8C48F; /* small text: 8.39:1 on --neutral-bg, 7.56:1 on the queue-stage tint */
   --accent-text:   #061528;
   --accent-subtle: rgb(235 156 82 / 0.16);
+  --button-bg:     #EB9C52;
+  --button-bg-hover: #ECBB83;
   --warm:          #52C7EB;
   --warm-hover:    #6AC5E7;
   --warm-text:     #061528;
   --sky:           #52C7EB;
   --code-bg:       #15314F;
   --neutral-bg:    #15314F;
-  --neutral:       #9FB6CC;
+  --neutral:       #A9C0D6;
   --pass:          #8FD3A2;
   --pass-bg:       #10331F;
-  --fail:          #F0A6A6;
+  --fail:          #F1ABAB;
   --fail-bg:       #3A1A1A;
-  --warn:          #DDB84B;
-  --warn-bg:       #3A2C0C;
+  --warn:          #DDB94D;
+  --warn-bg:       #3A2C10;
 }
 
 /* ── Theme 3 · Muted Light ──────────────────────────────────────────────── */
@@ -164,16 +173,19 @@
   --border:        #D2D8DE;
   --accent:        #234A73;
   --accent-hover:  #1B3A5C;
+  --accent-small:  #234A73;
   --accent-text:   #FFFFFF;
   --accent-subtle: rgb(35 74 115 / 0.08);
+  --button-bg:     #234A73;
+  --button-bg-hover: #1B3A5C;
   --warm:          #703D1F;
   --warm-hover:    #5E331A;
   --warm-text:     #FFFFFF;
   --pass:          #1E5631;
   --pass-bg:       #DDEEE2;
-  --fail:          #8A2A2A;
+  --fail:          #822727;
   --fail-bg:       #F0DCDC;
-  --neutral:       #4A535D;
+  --neutral:       #454E58;
   --neutral-bg:    #E7EAED;
   --code-bg:       #E7EAED;
   --warn:          #4E3C18;
@@ -189,8 +201,11 @@
   --border:        #2C3F54;
   --accent:        #E3C196;
   --accent-hover:  #E8D3BA;
+  --accent-small:  #F5E4CE; /* small text: 9.34:1 on --neutral-bg, 7.47:1 on the queue-stage tint */
   --accent-text:   #142536;
   --accent-subtle: rgb(227 193 150 / 0.16);
+  --button-bg:     #E3C196;
+  --button-bg-hover: #E8D3BA;
   --warm:          #8EBDE1;
   --warm-hover:    #A6CBE8;
   --warm-text:     #142536;
@@ -199,9 +214,9 @@
   --neutral:       #C2CCD6;
   --pass:          #A7D9B5;
   --pass-bg:       #1C3528;
-  --fail:          #E6A9A9;
+  --fail:          #ECBEBE;
   --fail-bg:       #3A2020;
-  --warn:          #DFC686;   /* bumped from #E8C97A: original fell to 6.6:1 on --bg-card */
+  --warn:          #DFC787;   /* 8.47:1 on warn-bg, 7.98:1 on --bg-card, 7.01:1 on --neutral-bg (tightest) */
   --warn-bg:       #332B12;
 }
 
@@ -245,9 +260,11 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   position: absolute;
   top: -50px;
   left: 16px;
-  background: var(--accent);
+  background: var(--button-bg);
   color: var(--accent-text);
   padding: 10px 16px;
+  min-height: 44px; /* WCAG 2.5.8 */
+  box-sizing: border-box;
   border-radius: 0 0 8px 8px;
   font-weight: 700;
   z-index: 9999;
@@ -397,6 +414,8 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 .dropzone:focus-visible,
 .dropzone:hover,
 .dropzone-active { border-color: var(--accent); background: var(--bg-card); }
+/* .dropzone sets outline: none, which beats the global rule; restore the ring (2.4.13) */
+.dropzone:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .dropzone-active { transform: scale(1.005); }
 .dropzone-inner { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .dropzone-icon { font-size: 36px; color: var(--accent); }
@@ -529,8 +548,8 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 }
 .button:hover { border-color: var(--accent); }
 .button:active { transform: translateY(1px); }
-.button-primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-.button-primary:hover { background: var(--accent-hover); }
+.button-primary { background: var(--button-bg); color: var(--accent-text); border-color: var(--button-bg); }
+.button-primary:hover { background: var(--button-bg-hover); border-color: var(--button-bg-hover); }
 .button-ghost { background: transparent; }
 .button:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -593,7 +612,7 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 .queue-row[data-stage="decoding"] .queue-stage,
 .queue-row[data-stage="ocr"]      .queue-stage,
 .queue-row[data-stage="analysing"] .queue-stage {
-  background: var(--accent-subtle); color: var(--accent);
+  background: var(--accent-subtle); color: var(--accent-small);
 }
 
 /* ── Results ─────────────────────────────────────────────────────────────── */
@@ -731,9 +750,18 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
 }
-.external-checkers-list a { color: var(--accent); font-size: 0.85rem; white-space: nowrap; }
+.external-checkers-list a {
+  /* inline-block, not flex: keeps the text, arrow and sr-only note in one line box */
+  display: inline-block;
+  min-height: 44px; /* WCAG 2.5.5 AAA target size */
+  min-width: 44px;
+  line-height: 44px;
+  color: var(--accent);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
 .results-table code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
 .results-table .examples { font-style: italic; color: var(--fg-muted); max-width: 240px; }
 .results-table td { border-bottom: none; }
@@ -791,13 +819,18 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 800;
-  color: var(--accent);
+  color: var(--accent-small); /* --accent is 5.94:1 (Dark) and 6.83:1 (Muted Dark) on --neutral-bg; dark themes override below */
   background: var(--neutral-bg);
 }
+/* Small text: --accent is brand orange / sand in the dark themes (large
+   elements only), so use the muted foreground there (>= 7:1 on --neutral-bg). */
+[data-theme="dark"]       .check-group-row th,
+[data-theme="muted-dark"] .check-group-row th { color: var(--fg-muted); }
 .check-name  { font-weight: 700; white-space: nowrap; }
 .check-value { font-variant-numeric: tabular-nums; }
 .check-meaning { color: var(--fg-muted); line-height: 1.45; }
-.check-info  { text-decoration: none; }
+.check-info  { text-decoration: underline; color: var(--accent-small); } /* underline: colour alone is 1.2-1.4:1 from the label (1.4.1) */
+.check-info:hover { color: var(--accent-hover); text-decoration-thickness: 2px; }
 
 /* ── Roll-up badges ──────────────────────────────────────────────────────── */
 

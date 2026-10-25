@@ -74,7 +74,7 @@ See `src/core/contrast.js` for the contrast-ratio math.
 | Chrome (Android)        | Full | WASM OCR |
 | Safari (iOS / iPadOS)   | Full | WASM OCR; WebGPU disabled (ORT's WebGPU backend is unsupported on iOS) |
 
-First use downloads about 28 MB total (PaddleOCR detection + recognition models + ORT WASM). A service worker caches them in the Cache Storage API, so later visits load them without re-downloading.
+First use downloads about 44 MB total (PaddleOCR detection + recognition models + ORT WASM). A service worker caches them in the Cache Storage API, so later visits load them without re-downloading.
 
 ## Privacy
 

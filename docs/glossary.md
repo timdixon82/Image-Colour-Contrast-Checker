@@ -22,7 +22,7 @@ Project-specific terms used across the ICCC wiki and codebase. General team term
 
 **GoatCounter.** The team's privacy-friendly, cookie-free page-view analytics service. ICCC uses its own dedicated counter at `iccc.goatcounter.com`, not the team's shared counter. See `docs/privacy.md` and ADR 009.
 
-**icc-model-cache-v1.** The Cache Storage key used by the service worker to persist PaddleOCR model files and ORT WASM binaries. The version suffix is bumped when those files change.
+**icc-model-cache-ort<version>-models<version>.** The Cache Storage key used by the service worker to persist PaddleOCR model files and ORT WASM binaries. It is derived at build time from the installed onnxruntime-web and ocr-models versions, so it changes whenever either is upgraded. Earlier releases used `icc-model-cache-v1` and `-v2`; the worker deletes those on activation.
 
 **Layered project structure.** The directory split of `src/` into `core/`, `adapters/`, `render/`, `export/`, and `ui/`, with a strict dependency direction. See ADR 002.
 

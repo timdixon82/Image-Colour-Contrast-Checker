@@ -1,6 +1,15 @@
 import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { runtimeInfo } from './scripts/runtime-version.mjs';
+import { swProblem } from './scripts/sw-check.mjs';
+
+// Versioned OCR runtime folder, e.g. ort-1.30.0 (see scripts/runtime-version.mjs).
+const { ortDir } = runtimeInfo(fileURLToPath(new URL('.', import.meta.url)));
+
+let cfg; // resolved Vite config, captured for the require-generated-sw plugin
 
 export default defineConfig({
   base: './',
@@ -14,6 +23,7 @@ export default defineConfig({
   define: {
     __dirname: JSON.stringify(''),
     __filename: JSON.stringify(''),
+    __ORT_DIR__: JSON.stringify(ortDir),
   },
   plugins: [
     // Polyfill Node.js built-ins required by PDFKit for browser use.
@@ -23,6 +33,25 @@ export default defineConfig({
       include: ['buffer', 'stream', 'zlib', 'util', 'process'],
       overrides: { fs: false },
     }),
+    {
+      // public/sw.js is generated (scripts/copy-models.mjs). Without it the page
+      // is not cross-origin isolated and OCR fails with only a console error, so
+      // fail the production build, and warn on dev start, instead of shipping that.
+      name: 'require-generated-sw',
+      configResolved(config) {
+        cfg = config;
+      },
+      buildStart() {
+        if (cfg.command === 'build') return;
+        const problem = swProblem(cfg.publicDir);
+        if (problem) this.warn(`[sw] ${problem}`);
+      },
+      closeBundle() {
+        if (cfg.command !== 'build') return;
+        const problem = swProblem(resolve(cfg.root, cfg.build.outDir));
+        if (problem) throw new Error(`[sw] ${problem}`);
+      },
+    },
     {
       // js-clipper/clipper.js contains a Latin-1 byte (0xb9, superscript-1 in a
       // comment) that Rolldown (Vite 6+) rejects as non-UTF-8. Rollup 5 was

@@ -175,7 +175,7 @@ The orchestrator is `main.js`. It runs this pipeline for each file and calls the
 Tim Dixon Design System v1.0 (May 2026). All tokens live in `src/styles.css`.
 
 **Brand colours (used in logo, wordmark, and large accents):**
-- Brand navy  `#0C3B64` — primary accent in light themes
+- Brand navy  `#0C3B64` — primary accent in light themes (logo, wordmark, text, accents). Filled controls with light text in the Light theme use `--button-bg` `#234A73` (hover `#1B3A5C`) instead, because white on pure navy reads HARSH in VADChecker; white on `#234A73` is 9.14:1 and on the hover 11.63:1
 - Brand orange `#EB9C52` — primary accent in dark themes (WARN-level, large elements only)
 - Brand sky    `#52C7EB` — secondary accent in dark themes
 
@@ -204,9 +204,19 @@ Key colour contrast values — all ≥ 7:1 (WCAG 2.2 AAA) across all four themes
 
 | Token | Light | Dark | Muted Light | Muted Dark |
 |---|---|---|---|---|
-| `--pass` | `#15662F` | `#8FD3A2` | `#1E5631` | `#A7D9B5` |
-| `--fail` | `#A12525` | `#F0A6A6` | `#8A2A2A` | `#E6A9A9` |
-| `--warn` | `#544012` | `#DDB84B` | `#4E3C18` | `#DFC686` |
+| `--fg` | `#2A2A2A` | `#E2E7EC` | `#2B3138` | `#E2E7EC` |
+| `--fg-muted` | `#46505E` | `#A3C3DA` | `#444B55` | `#AACFDE` |
+| `--neutral` | `#46505E` | `#A9C0D6` | `#454E58` | `#C2CCD6` |
+| `--pass` | `#125929` | `#8FD3A2` | `#1E5631` | `#A7D9B5` |
+| `--fail` | `#8C2020` | `#F1ABAB` | `#822727` | `#ECBEBE` |
+| `--warn` | `#544012` | `#DDB94D` | `#4E3C18` | `#DFC787` |
+| `--accent-small` | `#0C3B64` | `#F8C48F` | `#234A73` | `#F5E4CE` |
+| `--button-bg` (primary button, skip link fill) | `#234A73` | `#EB9C52` | `#234A73` | `#E3C196` |
+| `--button-bg-hover` | `#1B3A5C` | `#ECBB83` | `#1B3A5C` | `#E8D3BA` |
+
+Surfaces: Dark `--bg` `#0A1525`, `--bg-card` `#11233E`, `--neutral-bg` `#15314F`, `--warn-bg` `#3A2C10`. Light `--warn-bg` `#F0E8C8`. Every surface and button fill in all four themes is kept under 60% HSL saturation (apart from Dark's brand-orange button fills) so VADChecker's Vestibular Strain check reads SAFE; `src/theme-contrast.test.js` guards this and the 7:1 ratios.
+
+`--accent-small` is for small accent text (info icon, queue stage). In the dark themes `--accent` is brand orange or sand, for large elements and for text on `--bg` and `--bg-card` only (not 7:1 on `--neutral-bg`), so small accent text on tinted or neutral surfaces uses `--accent-small`.
 
 Status pills use **solid** `--pass-bg` / `--fail-bg` / `--warn-bg` backgrounds so contrast is independent of what is behind them.
 
@@ -247,17 +257,25 @@ Current version: **0.4.19** — bump `package.json` on every behavioural change.
 
 ---
 
-## Service worker (`public/sw.js`)
+## Service worker (`scripts/sw.template.js` -> `public/sw.js`)
 
 A single hand-written service worker, registered by `<script src="sw.js">` in
-`index.html`, does two things:
+`index.html`, does two things. The hand-written source is
+`scripts/sw.template.js`; `scripts/copy-models.mjs` writes the shipped
+`public/sw.js` (gitignored) from it, filling in the runtime folder and cache
+name from the installed package versions:
 
 1. **Cross-origin isolation** — injects COOP/COEP headers (the `coi-serviceworker`
    logic) so `crossOriginIsolated` is true and multi-threaded WASM works.
-2. **Model caching** — cache-first for any `/models/` or `/ort/` request, stored
-   in Cache Storage (`icc-model-cache-v*`). iOS Safari evicts large files from
-   its HTTP cache between visits; Cache Storage is durable, so the ~30 MB of
-   models download once. Bump `MODEL_CACHE` when the runtime/model files change.
+2. **Model caching** — cache-first for any `/models/` or `/ort-<onnxruntime-web
+   version>/` request, stored in Cache Storage (`icc-model-cache-ort<ort
+   version>-models<ocr-models version>`, derived at build time, so it cannot be
+   forgotten on an upgrade). iOS Safari evicts large files from its HTTP cache
+   between visits; Cache Storage is durable, so the ~44 MB of models download
+   once. The runtime folder is versioned (`public/ort-<version>/`, page code
+   gets it as `__ORT_DIR__`) so a returning visitor's older worker, which only
+   matches `/ort/`, cannot serve old runtime files to the new page. See
+   `scripts/runtime-version.mjs`.
 
 There can only be one service worker per scope, so both jobs live in this file.
 
