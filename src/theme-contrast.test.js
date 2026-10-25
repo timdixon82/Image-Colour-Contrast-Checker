@@ -6,9 +6,18 @@ const css = readFileSync(new URL('./styles.css', import.meta.url), 'utf8');
 const THEMES = ['light', 'dark', 'muted-light', 'muted-dark'];
 
 function tokens(theme) {
-  const m = css.match(new RegExp(`\\[data-theme="${theme}"\\]\\s*\\{([^}]*)\\}`));
+  const marker = `[data-theme="${theme}"]`;
+  const start = css.indexOf(marker);
+  if (start === -1) throw new Error(`Theme block not found: ${marker}`);
+  const open = css.indexOf('{', start + marker.length);
+  if (open === -1 || css.slice(start + marker.length, open).trim() !== '') {
+    throw new Error(`Theme block has no opening brace: ${marker}`);
+  }
+  const close = css.indexOf('}', open);
+  if (close === -1) throw new Error(`Theme block is not closed: ${marker}`);
+  const body = css.slice(open + 1, close);
   const out = {};
-  for (const [, k, v] of m[1].matchAll(/(--[\w-]+):\s*(#[0-9A-Fa-f]{6})\b/g)) out[k] = v;
+  for (const [, k, v] of body.matchAll(/(--[\w-]+):\s*(#[0-9A-Fa-f]{6})\b/g)) out[k] = v;
   return out;
 }
 
