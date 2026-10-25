@@ -59,7 +59,8 @@ const hslSaturation = (hex) => {
 describe.each(THEMES)('%s theme: text tokens stay AAA on every surface', (theme) => {
   const t = tokens(theme);
   const surfaces = ['--bg', '--bg-card', '--neutral-bg'];
-  const texts = ['--fg', '--fg-muted', '--pass', '--fail', '--warn'];
+  // --neutral is the text colour of .verdict-no_text, so it is held to AAA on every surface.
+  const texts = ['--fg', '--fg-muted', '--neutral', '--pass', '--fail', '--warn'];
 
   it.each(texts)('%s is at least 7:1 on every surface', (tok) => {
     for (const s of surfaces) {

@@ -206,6 +206,7 @@ Key colour contrast values — all ≥ 7:1 (WCAG 2.2 AAA) across all four themes
 |---|---|---|---|---|
 | `--fg` | `#2A2A2A` | `#E2E7EC` | `#2B3138` | `#E2E7EC` |
 | `--fg-muted` | `#46505E` | `#A3C3DA` | `#444B55` | `#AACFDE` |
+| `--neutral` | `#46505E` | `#A9C0D6` | `#454E58` | `#C2CCD6` |
 | `--pass` | `#125929` | `#8FD3A2` | `#1E5631` | `#A7D9B5` |
 | `--fail` | `#8C2020` | `#F1ABAB` | `#822727` | `#ECBEBE` |
 | `--warn` | `#544012` | `#DDB94D` | `#4E3C18` | `#DFC787` |
