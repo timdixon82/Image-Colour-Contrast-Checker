@@ -819,7 +819,7 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 800;
-  color: var(--accent-small); /* --accent is 5.94:1 (Dark) and 6.83:1 (Muted Dark) on --neutral-bg */
+  color: var(--accent-small); /* --accent is 5.94:1 (Dark) and 6.83:1 (Muted Dark) on --neutral-bg; dark themes override below */
   background: var(--neutral-bg);
 }
 /* Small text: --accent is brand orange / sand in the dark themes (large
@@ -829,8 +829,8 @@ a:hover   { color: var(--accent-hover); text-decoration: underline; }
 .check-name  { font-weight: 700; white-space: nowrap; }
 .check-value { font-variant-numeric: tabular-nums; }
 .check-meaning { color: var(--fg-muted); line-height: 1.45; }
-.check-info  { text-decoration: none; color: var(--accent-small); }
-.check-info:hover { color: var(--accent-hover); text-decoration: underline; }
+.check-info  { text-decoration: underline; color: var(--accent-small); } /* underline: colour alone is 1.2-1.4:1 from the label (1.4.1) */
+.check-info:hover { color: var(--accent-hover); text-decoration-thickness: 2px; }
 
 /* ── Roll-up badges ──────────────────────────────────────────────────────── */
 

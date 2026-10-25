@@ -118,6 +118,13 @@ describe('dropzone keeps the global focus ring (WCAG 2.4.13)', () => {
   });
 });
 
+describe('info links inside text are not distinguished by colour alone (axe link-in-text-block)', () => {
+  it('.check-info is underlined at rest', () => {
+    const m = css.match(/\.check-info\s*\{([^}]*)\}/);
+    expect(m[1]).toMatch(/text-decoration:\s*underline/);
+  });
+});
+
 describe.each(THEMES)('%s theme: filled controls (primary button, skip link) are AAA', (theme) => {
   const t = tokens(theme);
 
