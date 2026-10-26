@@ -13,7 +13,8 @@ import {
   worstStripContrast,
   isTextLike,
   kmeans2,
-  luminance
+  luminance,
+  wcagContrast
 } from './contrast.js';
 import { analyseImage } from './analyse.js';
 
@@ -302,5 +303,70 @@ describe('worstStripContrast: a thin line crossing the gap between text items', 
     });
     const r = worstStripContrast(img, 0, 4, LW, 20);
     expect(near(r.fgHex, faint, 12)).toBe(true);
+  });
+});
+
+describe('worstStripContrast: a box that reaches below the card into a darker gap', () => {
+  const CARD = [78, 82, 179];
+  const GAP = [30, 32, 40];     // card against gap is about 2.3:1, the ink is fainter
+  const INK = [43, 51, 96];     // about 1.6:1 on CARD
+  const CW = 300;
+  const CH = 44;                // card rows 0..27, gap rows 28..43
+
+  const image = (gap = true) => makeImage(CW, CH, (x, y) => {
+    if (y >= 28 && gap) return GAP;
+    const glyph = x % 8 < 2 && y >= 5 && y < 19 && (x < 56 || x >= 240);
+    return glyph ? INK : CARD;
+  });
+
+  it('reports the ink on the card, not the card against the gap', () => {
+    const r = worstStripContrast(image(), 0, 0, CW, CH);
+    expect(near(r.fgHex, INK, 20)).toBe(true);
+    expect(near(r.bgHex, CARD, 20)).toBe(true);
+    expect(r.contrast).toBeLessThan(2);
+  });
+
+  it('is the same result as a box that stops at the card', () => {
+    const tall = worstStripContrast(image(), 0, 0, CW, CH);
+    const tight = worstStripContrast(image(false), 0, 0, CW, 28);
+    expect(tall.contrast).toBeCloseTo(tight.contrast, 0);
+  });
+
+  it('reads anti-aliased strokes at the ink, not at the blend of ink and card', () => {
+    // At reduced scale a stroke is two full pixels with a half-covered pixel
+    // either side. The band retry used to take the mean of all three, so the
+    // ink read lighter than it is and pulled down every label of the same
+    // colours. The reading must be within 0.2 of the full ink's (the blend is 0.29 low).
+    const edge = mix(CARD, INK, 0.5);
+    const soft = makeImage(CW, CH, (x, y) => {
+      if (y >= 28) return GAP;
+      const glyph = y >= 5 && y < 19 && (x < 56 || x >= 240);
+      if (!glyph) return CARD;
+      const col = x % 8;
+      return col === 1 || col === 2 ? INK : col === 0 || col === 3 ? edge : CARD;
+    });
+    const r = worstStripContrast(soft, 0, 0, CW, CH);
+    const exact = wcagContrast(luminance(...INK), luminance(...CARD));
+    expect(near(r.bgHex, CARD, 20)).toBe(true);
+    expect(Math.abs(r.contrast - exact)).toBeLessThan(0.2);
+  });
+
+  it('never raises the reading: text fainter than the card edge is reported, brighter text is not', () => {
+    // Same box with a pale gap: card against gap is now about 1.7:1, below the
+    // ink's 1.8:1. The retry only ever lowers the whole-box reading, so the
+    // box keeps that reading (the card edge), exactly as before the retry.
+    const pale = makeImage(CW, CH, (x, y) => {
+      if (y >= 28) return [57, 60, 72];
+      const glyph = x % 8 < 2 && y >= 5 && y < 19 && (x < 56 || x >= 240);
+      return glyph ? INK : CARD;
+    });
+    const withBands = worstStripContrast(pale, 0, 0, CW, CH);
+    const without = worstStripContrast(pale, 0, 0, CW, CH, { bands: false });
+    expect(withBands.contrast).toBeCloseTo(without.contrast, 6);
+  });
+
+  it('keeps the old result when bands are turned off (the card against the gap)', () => {
+    const r = worstStripContrast(image(), 0, 0, CW, CH, { bands: false });
+    expect(near(r.bgHex, GAP, 20) || near(r.fgHex, GAP, 20)).toBe(true);
   });
 });

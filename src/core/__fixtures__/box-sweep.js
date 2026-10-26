@@ -46,6 +46,72 @@ export function scaleImage(img, k) {
   return { width, height, data };
 }
 
+/**
+ * Bilinear resample by `k` with the sample point at x / k (corner aligned),
+ * which is how the images behind real-OCR-boxes.json were made. scaleImage
+ * above samples pixel centres, so it lands half a pixel away and does not
+ * reproduce those pixels. Used only to rebuild that data.
+ */
+export function scaleImageCorner(img, k) {
+  const width = Math.round(img.width * k), height = Math.round(img.height * k);
+  const data = new Uint8ClampedArray(width * height * 4);
+  const g = (x, y, c) => img.data[(y * img.width + x) * 4 + c];
+  for (let y = 0; y < height; y++) {
+    const sy = Math.min(img.height - 1.001, y / k);
+    const y0 = Math.floor(sy), fy = sy - y0;
+    for (let x = 0; x < width; x++) {
+      const sx = Math.min(img.width - 1.001, x / k);
+      const x0 = Math.floor(sx), fx = sx - x0;
+      for (let c = 0; c < 4; c++) {
+        data[(y * width + x) * 4 + c] = Math.round(
+          g(x0, y0, c) * (1 - fx) * (1 - fy) + g(x0 + 1, y0, c) * fx * (1 - fy) +
+          g(x0, y0 + 1, c) * (1 - fx) * fy + g(x0 + 1, y0 + 1, c) * fx * fy
+        );
+      }
+    }
+  }
+  return { width, height, data };
+}
+
+/**
+ * Bilinear resample to round(w * k) by round(h * k) with pixel-centre sampling
+ * and the true size ratio (source size over target size, not 1 / k). This is
+ * the resampler of the real-OCR probe, so it reproduces, byte for byte, the
+ * scaled images the boxes tagged `"rs": "exact"` in real-ocr-boxes.json were
+ * read from. scaleImage above uses 1 / k and differs by a fraction of a pixel.
+ */
+export function scaleImageExact(img, k) {
+  if (k === 1) return img;
+  const width = Math.max(1, Math.round(img.width * k)), height = Math.max(1, Math.round(img.height * k));
+  const data = new Uint8ClampedArray(width * height * 4);
+  const rx = img.width / width, ry = img.height / height;
+  for (let y = 0; y < height; y++) {
+    const fy = Math.min(Math.max((y + 0.5) * ry - 0.5, 0), img.height - 1);
+    const y0 = Math.floor(fy), y1 = Math.min(y0 + 1, img.height - 1), ty = fy - y0;
+    for (let x = 0; x < width; x++) {
+      const fx = Math.min(Math.max((x + 0.5) * rx - 0.5, 0), img.width - 1);
+      const x0 = Math.floor(fx), x1 = Math.min(x0 + 1, img.width - 1), tx = fx - x0;
+      for (let c = 0; c < 4; c++) {
+        const a = img.data[(y0 * img.width + x0) * 4 + c], b = img.data[(y0 * img.width + x1) * 4 + c];
+        const d = img.data[(y1 * img.width + x0) * 4 + c], e = img.data[(y1 * img.width + x1) * 4 + c];
+        data[(y * width + x) * 4 + c] = Math.round((a + (b - a) * tx) * (1 - ty) + (d + (e - d) * tx) * ty);
+      }
+    }
+  }
+  return { width, height, data };
+}
+
+/**
+ * Resample the way the app does before OCR: the long edge is brought into
+ * 800 to 1400 px (see targetSize in image.js). The browser's own resampler
+ * is not reproducible here, so a bilinear stand-in is used.
+ */
+export function fitLikeApp(img) {
+  const long = Math.max(img.width, img.height);
+  if (long >= 800 && long <= 1400) return img;
+  return scaleImage(img, (long < 800 ? 800 : 1400) / long);
+}
+
 export const DEFAULT_SCALES = [1, 1.25, 1.5, 2, 2.5, 3];
 export const DEFAULT_CROPS = [[0, 0], [5, 0], [0, 3]];
 // [left, top, right, bottom] growth in px (negative trims) from the margin box.
