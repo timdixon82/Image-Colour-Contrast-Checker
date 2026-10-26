@@ -13,7 +13,8 @@ import {
   worstStripContrast,
   isTextLike,
   kmeans2,
-  luminance
+  luminance,
+  wcagContrast
 } from './contrast.js';
 import { analyseImage } from './analyse.js';
 
@@ -329,6 +330,25 @@ describe('worstStripContrast: a box that reaches below the card into a darker ga
     const tall = worstStripContrast(image(), 0, 0, CW, CH);
     const tight = worstStripContrast(image(false), 0, 0, CW, 28);
     expect(tall.contrast).toBeCloseTo(tight.contrast, 0);
+  });
+
+  it('reads anti-aliased strokes at the ink, not at the blend of ink and card', () => {
+    // At reduced scale a stroke is two full pixels with a half-covered pixel
+    // either side. The band retry used to take the mean of all three, so the
+    // ink read lighter than it is and pulled down every label of the same
+    // colours. The reading must be within 0.2 of the full ink's (the blend is 0.29 low).
+    const edge = mix(CARD, INK, 0.5);
+    const soft = makeImage(CW, CH, (x, y) => {
+      if (y >= 28) return GAP;
+      const glyph = y >= 5 && y < 19 && (x < 56 || x >= 240);
+      if (!glyph) return CARD;
+      const col = x % 8;
+      return col === 1 || col === 2 ? INK : col === 0 || col === 3 ? edge : CARD;
+    });
+    const r = worstStripContrast(soft, 0, 0, CW, CH);
+    const exact = wcagContrast(luminance(...INK), luminance(...CARD));
+    expect(near(r.bgHex, CARD, 20)).toBe(true);
+    expect(Math.abs(r.contrast - exact)).toBeLessThan(0.2);
   });
 
   it('never raises the reading: text fainter than the card edge is reported, brighter text is not', () => {

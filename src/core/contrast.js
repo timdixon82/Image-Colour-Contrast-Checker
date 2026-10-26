@@ -307,9 +307,12 @@ export function regionContrast(imageData, x, y, w, h) {
  * `inkCore` (only with `wantCore`) is how much of the ink cluster is solid
  * blob rather than stroke, see coreShare.
  *
+ * `deepInk` reads the ink colour from the strongest pixels of the ink cluster
+ * rather than all of them (see deepestInk). The bands use it.
+ *
  * @returns {{ result: RegionResult, textLike: boolean, inkShare: number, inkLighter: boolean, inkCore: number }|null}
  */
-function measureRegion(imageData, x, y, w, h, checkShape, wantCore = false) {
+function measureRegion(imageData, x, y, w, h, checkShape, wantCore = false, deepInk = false) {
   const W = imageData.width, H = imageData.height;
   const data = imageData.data;
 
@@ -360,8 +363,10 @@ function measureRegion(imageData, x, y, w, h, checkShape, wantCore = false) {
   const mean1 = n1 ? [r1 / n1, g1 / n1, b1 / n1] : [255, 255, 255];
 
   // Text = minority cluster; background = majority.
-  const fgRgb = (n0 <= n1) ? mean0 : mean1;
-  const bgRgb = (n0 <= n1) ? mean1 : mean0;
+  const inkSide = (n0 <= n1) ? 0 : 1;
+  let fgRgb = inkSide ? mean1 : mean0;
+  const bgRgb = inkSide ? mean0 : mean1;
+  if (deepInk) fgRgb = deepestInk(data, lums, x1, y1, rw, rh, W, inkSide ? cLight : cDark, inkSide ? cDark : cLight) || fgRgb;
 
   const fgHex = rgbToHex(...fgRgb);
   const bgHex = rgbToHex(...bgRgb);
@@ -379,6 +384,31 @@ function measureRegion(imageData, x, y, w, h, checkShape, wantCore = false) {
 }
 
 /**
+ * The ink colour of a region measured from its strongest pixels: the DEEP_SHARE
+ * of the ink cluster that lies furthest (in luminance) from the background
+ * cluster. Anti-aliased edge pixels sit between ink and background, so the
+ * plain cluster mean is lighter than the stroke; at reduced scale most pixels
+ * of a thin stroke are edge pixels.
+ * @returns {number[]|null}  [r, g, b], or null when the cluster is too small
+ */
+function deepestInk(data, lums, x1, y1, rw, rh, W, inkLum, bgLum) {
+  const px = [];
+  let i = 0;
+  for (let yy = y1; yy < y1 + rh; yy++) {
+    for (let xx = x1; xx < x1 + rw; xx++, i++) {
+      const v = lums[i];
+      if (Math.abs(v - inkLum) < Math.abs(v - bgLum)) px.push([Math.abs(v - bgLum), (yy * W + xx) * 4]);
+    }
+  }
+  if (px.length < 4) return null;
+  px.sort((a, b) => b[0] - a[0]);
+  const n = Math.max(1, Math.ceil(px.length * DEEP_SHARE));
+  let r = 0, g = 0, b = 0;
+  for (let k = 0; k < n; k++) { const o = px[k][1]; r += data[o]; g += data[o + 1]; b += data[o + 2]; }
+  return [r / n, g / n, b / n];
+}
+
+/**
  * Split a bounding box into narrow vertical strips (~one character wide at
  * 60 % of cap height) and return the text strip with the lowest contrast.
  * This ensures each letter in a word is individually sampled.
@@ -386,10 +416,11 @@ function measureRegion(imageData, x, y, w, h, checkShape, wantCore = false) {
  * Only strips that look like text (see isTextLike) compete, so a stretch of
  * plain background between words cannot win. If no strip looks like text the
  * box is measured whole. When that whole-box reading is itself a card against
- * a gap rather than text (see isSolidBlob), the box is also tried as three
+ * a gap rather than text (see isSolidBlob), the box is also tried as
  * overlapping horizontal bands (see BAND_HEIGHT), so text with a card edge or
  * a gap under it is found; a band reading replaces the whole-box one only when
- * it is lower, so the retry can only add a failure, never hide one. If nothing
+ * it is clearly lower (BAND_MARGIN), so the retry can only add a failure, never
+ * hide one, and a half-covered stroke cannot pass as one. If nothing
  * can be measured it falls back to the lowest of all strips, so a real failure
  * is never silenced.
  *
@@ -429,7 +460,7 @@ export function worstStripContrast(imageData, x, y, w, h, { dropRibbonLines = tr
     const found = seen
       .filter(({ r, band }) => band < last || seen.some((o) => o.band < last && pairRelation(o.r, r)))
       .map(({ r }) => r);
-    if (found.length && lowest(found).contrast < whole.result.contrast) return lowest(found);
+    if (found.length && lowest(found).contrast < whole.result.contrast - BAND_MARGIN) return lowest(found);
   }
 
   if (whole) return whole.result;
@@ -446,6 +477,23 @@ export function worstStripContrast(imageData, x, y, w, h, { dropRibbonLines = tr
 const BAND_HEIGHT = 0.6;
 const BAND_STARTS = [0, 0.2, 0.4];
 const MIN_BAND = 8;
+
+// A band cuts the glyphs, so at reduced scale the strokes it sees are half
+// covered and the ink reads lighter than the text is: by up to 0.5 contrast on
+// the energy screenshot at 0.6x to 1x. Such a reading is lower than the real
+// text, and it then pulls down the pair of every other label that shares its
+// colours ("595.07" 3.18 to 2.69 at 0.85x). Two measures, both checked on real
+// OCR boxes (contrast.realboxes.test.js) and on the dumped sweeps:
+//   - a band reads its ink as the mean of the DEEP_SHARE strongest
+//     part of the ink cluster (see deepestInk), the strokes that are not
+//     half covered;
+//   - the band reading replaces the whole-box one only when it is lower by
+//     BAND_MARGIN, a smaller difference being about what noise does when the
+//     retry has found nothing. The real finds are 0.6 to 1.1 lower (faint
+//     63.33 kWh 2.7 to 1.7; MWh kWh 3.5 to 2.6).
+// Neither number is fitted finer than a sweep of 0.2 to 0.45 and 0.5 to 0.75.
+const BAND_MARGIN = 0.3;
+const DEEP_SHARE = 0.6;
 
 // The retry runs only when the whole-box reading is itself not text: the box is
 // wide enough to hold several items (WIDE_BOX times its height), and its ink
@@ -480,7 +528,7 @@ function textStrips(imageData, x, y, w, h, dropRibbonLines, noBrightLines = fals
   for (let s = 0; s < nStrips; s++) {
     const sx = x + Math.round(s * actualW);
     const sw = Math.max(4, Math.round(actualW));
-    strips.push(measureRegion(imageData, sx, y, sw, h, true));
+    strips.push(measureRegion(imageData, sx, y, sw, h, true, false, noBrightLines));
   }
 
   const lines = dropRibbonLines ? thinBrightLines(strips) : [];
@@ -602,6 +650,15 @@ function dropBandLines(strips, kept) {
 }
 
 /**
+ * Does a strip beside a thin bright line carry the line on? A ribbon edge
+ * crosses its neighbours in the same dark gap and at a contrast within 1 of the
+ * line's, just a slightly different colour. A lone teal "kW" glyph next to white
+ * digits has a contrast several points away, so it is text, not a line.
+ */
+const continuesInColour = (n, line) =>
+  Math.abs(n.result.contrast - line.result.contrast) <= 1 && rgbDist(n.result.bgRgb, line.result.bgRgb) <= LINE_SAME;
+
+/**
  * Drop a lone thin bright line from the text-like strips (in place). Where a
  * ribbon edge crosses a gap it passes the shape test on one strip where it is
  * steep, and the strips either side are not text, so it is a strip of its own
@@ -612,7 +669,9 @@ function dropBandLines(strips, kept) {
  *   2. no other kept strip has its pair (so it is not part of a word);
  *   3. other kept strips do hold a pair together (so there is real text to
  *      report instead, and a box with a single odd strip is left alone);
- *   4. the strips beside it that hold anything are all non-text.
+ *   4. the strips beside it that hold anything are all non-text, and one of
+ *      them carries the line on in a similar colour (see continuesInColour), so
+ *      a glyph with blank space round it is never taken for a line.
  *
  * @param {({ result: RegionResult, textLike: boolean, inkShare: number, inkLighter: boolean }|null)[]} strips
  * @param {boolean[]} kept  one flag per strip; entries are cleared when dropped
@@ -624,7 +683,7 @@ function dropLoneLines(strips, kept) {
   kept.forEach((k, s) => {
     if (!k || paired[s] || !isThinBright(strips[s])) return;
     const beside = [strips[s - 1], strips[s + 1]].filter(Boolean);
-    if (beside.length && beside.every((n) => !n.textLike)) kept[s] = false;
+    if (beside.length && beside.every((n) => !n.textLike) && beside.some((n) => continuesInColour(n, strips[s]))) kept[s] = false;
   });
 }
 
