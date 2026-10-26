@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.6.0...v0.7.0) (2026-10-26)
+
+
+### Features
+
+* outline the header logo on dark and muted-dark themes ([c3e0428](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/c3e0428ad0945dfc14b9db0a7bcb76a32eea3785))
+* show favicon mark beside the header title ([286cf54](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/286cf5467747e56a27b9340d8174961859af17f0))
+* show favicon mark beside the header title ([1f883a3](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/1f883a35549ec9250e979fbdf9b9469dce502777))
+
+
+### Bug Fixes
+
+* drop a strip only when it is part of an uncorroborated thin bright line ([fe314cb](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/fe314cb75bb81e0255bc06e2bbd03f1b32520eae))
+* ignore band readings that only show in the lowest band ([a43f58c](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/a43f58ccaa1adbb4fb917704524263ace7178054))
+* ignore ribbon-line strips when picking the worst text pair in a wide OCR box ([ad7d0ac](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/ad7d0ace335ecb97f2ead91d1939685251d17d49))
+* ignore ribbon-line strips when picking the worst text pair in a wide OCR box ([7cebdf0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/7cebdf04d17df9eb79d430ec98602a2976dea3c6))
+* read band ink from its strongest pixels so reduced-scale labels are not lowered ([f44cfa6](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/f44cfa69b63c63c7fa562828b35c23533e659673))
+* report real text for a lone ribbon edge and for boxes that reach below a card ([5d14289](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/5d1428997ff1fc76e2977b0442e4ff786fe45ba1))
+* report real text for a lone ribbon edge and for boxes that reach below a card ([3379693](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/3379693d9ca77e360749d59eefa5bc113f92f277))
+* stop the band retry lowering real text and reading dark gap texture ([a074c20](https://github.com/timdixon82/Image-Colour-Contrast-Checker/commit/a074c20597572e3a9c07fa628a6806e364f3e1d9))
+
 ## [0.6.0](https://github.com/timdixon82/Image-Colour-Contrast-Checker/compare/v0.5.1...v0.6.0) (2026-10-25)
 
 
