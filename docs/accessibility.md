@@ -94,7 +94,7 @@ The accessibility CI workflow (`.github/workflows/accessibility.yml`) builds the
 
 ### Accessibility tools
 
-Pa11y, `@axe-core/cli`, and `wait-on` are pinned in `.github/accessibility-tools/package.json`. Dependabot tracks this manifest and proposes version bumps automatically. CI installs them with `npm ci` from the committed `package-lock.json` in that directory.
+Pa11y, `@axe-core/cli`, and `wait-on` are pinned in `ci-tools/accessibility-tools/package.json`. Dependabot tracks this manifest and proposes version bumps automatically. CI installs them with `npm ci` from the committed `package-lock.json` in that directory.
 
 ### ChromeDriver strategy (CDN-based exact version match)
 
@@ -114,7 +114,7 @@ If the CDN approach fails (for example, if GitHub Actions removes the Chrome bin
   run: npm install -g browser-driver-manager@2.0.1 && npx browser-driver-manager install chrome
 ```
 
-Also remove `--chromedriver-path "$CHROMEDRIVER_PATH"` and the surrounding conditional from both axe steps, and revert to `npm install -g pa11y@9.1.1 @axe-core/cli@4.11.3 wait-on@8.0.1` in place of the `npm ci` in `.github/accessibility-tools/`.
+Also remove `--chromedriver-path "$CHROMEDRIVER_PATH"` and the surrounding conditional from both axe steps, and revert to `npm install -g pa11y@9.1.1 @axe-core/cli@4.11.3 wait-on@8.0.1` in place of the `npm ci` in `ci-tools/accessibility-tools/`.
 
 ### ~~ACC-ICCC-005 — pdfmake does not produce a tagged PDF; images have no structural alt text (WCAG 4.1.2 Level A, PDF/UA context)~~
 

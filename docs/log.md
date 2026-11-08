@@ -21,3 +21,7 @@ Files created in this session:
 - `docs/patterns/cross-origin-isolation-service-worker.md`: project-level pattern.
 - `docs/stacks/browser-ai-application.md`: project-level stack note.
 - `todo.md`: setup-build items for Sean.
+
+## [2026-11-08] decision | npm tool folders moved to ci-tools
+
+Moved `.github/lint-tools` and `.github/accessibility-tools` to `ci-tools/lint-tools` and `ci-tools/accessibility-tools`, because Dependabot cannot open npm update pull requests for folders under the root `.github` folder (error `dependency_file_not_supported`). The two npm entries in `.github/dependabot.yml` now point at the new folders, `lint.yml` and `accessibility.yml` were refreshed from the template, and `docs/accessibility.md` names the new path. Earlier work-folder notes under `.claude/work` keep the old path as history. The deploy workflow uses an allowlist, so `ci-tools` is not published.
