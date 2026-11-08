@@ -26,7 +26,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: npm
-    directory: /.github/accessibility-tools
+    directory: /ci-tools/accessibility-tools
     schedule:
       interval: weekly
     cooldown:
@@ -36,7 +36,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: npm
-    directory: /.github/lint-tools
+    directory: /ci-tools/lint-tools
     schedule:
       interval: weekly
     cooldown:
