@@ -183,8 +183,8 @@ describe('VADChecker: light text', () => {
   });
 });
 
-describe('CLAUDE.md colour table matches src/styles.css', () => {
-  const md = readFileSync(new URL('../CLAUDE.md', import.meta.url), 'utf8');
+describe('Architecture guide colour table matches src/styles.css', () => {
+  const md = readFileSync(new URL('../docs/architecture-guide.md', import.meta.url), 'utf8');
   const rows = [...md.matchAll(/^\| `(--[\w-]+)`[^|]*\|\s*`(#\w{6})`\s*\|\s*`(#\w{6})`\s*\|\s*`(#\w{6})`\s*\|\s*`(#\w{6})`\s*\|$/gm)];
 
   it('lists the status, text and button tokens', () => {
