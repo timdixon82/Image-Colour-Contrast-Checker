@@ -9,6 +9,7 @@ ICCC is on the Browser AI Application stack (Vite, vanilla JavaScript, ONNX Runt
 ### Core wiki pages
 
 - [Project log](log.md): the chronological, append-only record of decisions, dispatches, and changes.
+- [Architecture guide](architecture-guide.md): module map, data types, pipeline, per-folder editing rules, brand tokens and contrast values, adding an export format, the service worker, and deployment.
 - [Glossary](glossary.md): project-specific terms (OCR, ONNX Runtime Web, contrast, vestibular, and more).
 - [Coding standards](coding-standards.md): project-specific notes; inherits the global standards and the Browser AI Application stack.
 - [Accessibility](accessibility.md): WCAG 2.2 AAA posture, known status, and any accepted exceptions.

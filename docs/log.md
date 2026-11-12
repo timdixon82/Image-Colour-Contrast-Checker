@@ -25,3 +25,7 @@ Files created in this session:
 ## [2026-11-08] decision | npm tool folders moved to ci-tools
 
 Moved `.github/lint-tools` and `.github/accessibility-tools` to `ci-tools/lint-tools` and `ci-tools/accessibility-tools`, because Dependabot cannot open npm update pull requests for folders under the root `.github` folder (error `dependency_file_not_supported`). The two npm entries in `.github/dependabot.yml` now point at the new folders, `lint.yml` and `accessibility.yml` were refreshed from the template, and `docs/accessibility.md` names the new path. Earlier work-folder notes under `.claude/work` keep the old path as history. The deploy workflow uses an allowlist, so `ci-tools` is not published.
+
+## [2026-11-12] ingest | Architecture guide moved out of CLAUDE.md
+
+The architecture guide moved from `CLAUDE.md` to [docs/architecture-guide.md](architecture-guide.md), unchanged apart from removed divider lines and a stale version number. `CLAUDE.md` now carries only the rules that are easy to break. See AgentTeam Decision 024.
