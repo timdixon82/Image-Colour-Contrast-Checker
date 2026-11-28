@@ -74,3 +74,9 @@ page-initial.png
 page-after-upload.png
 pdf-visual-audit-page1.png
 *-theme.png
+
+# Local audit trail written by a team hook, not for the repository
+/lint.md
+
+# Local audit trail written by a team hook, not for the repository
+.claude/.status-rebuild.lock
